@@ -1,7 +1,7 @@
 import { Meta } from '@/layouts/Meta'
 import { Main } from '@/templates/Main'
 
-import beachImg from '@/public/assets/images/blue-beach.png'
+//import beachImg from '@/public/assets/images/blue-beach.png'
 
 const Hello = () => {
 

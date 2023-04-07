@@ -19,7 +19,7 @@ const Main = (props: IMainProps) => {
       {props.meta}
 
       <div className="mx-auto max-w-screen-md">
-        <header className="bg-gray-900 text-white fixed top-0 z-10 w-1/2">
+        <header className="bg-white text-purple-700 fixed top-0 z-10 w-full">
           <nav className="container mx-auto flex justify-start">
             <ul className="flex h-16 items-center">
               <li className="flex-grow flex-shrink"><Link href="/hello"
@@ -29,7 +29,7 @@ const Main = (props: IMainProps) => {
                                                        className="px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">블로그</Link>
               </li>
               <li className="flex-grow flex-shrink"><Link href="https://github.com/vrerv"
-                                                       className="block px-4 py-2 hover:bg-gray-800 no-underline text-white"><i
+                                                       className="block px-4 py-2 hover:bg-gray-800 no-underline"><i
                 className="fab fa-github mr-2"></i>GitHub</Link></li>
               {/*
                     <li className="flex-grow flex-shrink"><a href="#services" className="px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">도전</a></li>
