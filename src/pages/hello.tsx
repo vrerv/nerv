@@ -5,7 +5,7 @@ import { Main } from '@/templates/Main'
 
 const Hello = () => {
 
-    return <Main meta={<Meta title="Lorem ipsum" description="Lorem ipsum" />}>
+    return <Main meta={<Meta title="VReRV - Hello" description="Main site" />}>
       <section id="hello" className="bg-gray-100 py-12 h-96 items-center pt-16 hover:bg-purple-500 transition duration-300 ease-in-out transform0">
         <div className="container mx-auto px-4">
           <h1 className="text-4xl font-bold mb-4">브레브에 오신것을 환영합니다.</h1>
