@@ -23,13 +23,13 @@ const Main = (props: IMainProps) => {
           <nav className="container mx-auto flex justify-start">
             <ul className="flex h-16 items-center">
               <li className="flex-grow flex-shrink"><Link href="/hello"
-                                                       className="block px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">안녕하세요</Link>
+                                                       className="block px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">안녕하세요</Link>
               </li>
               <li className="flex-grow flex-shrink"><Link href="/blog"
-                                                       className="px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">블로그</Link>
+                                                       className="px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">블로그</Link>
               </li>
               <li className="flex-grow flex-shrink"><Link href="https://github.com/vrerv"
-                                                       className="block px-4 py-2 hover:bg-gray-800 no-underline"><i
+                                                       className="block px-4 py-2 hover:bg-gray-200 no-underline"><i
                 className="fab fa-github mr-2"></i>GitHub</Link></li>
               {/*
                     <li className="flex-grow flex-shrink"><a href="#services" className="px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">도전</a></li>

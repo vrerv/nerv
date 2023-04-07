@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { NextSeo } from 'next-seo';
+import ogImage from '../../public/assets/images/vrerv-1600x900.png'
 
 import { AppConfig } from '@/utils/AppConfig';
 
@@ -57,6 +58,11 @@ const Meta = (props: IMetaProps) => {
           url: props.canonical,
           locale: AppConfig.locale,
           site_name: AppConfig.site_name,
+          images: [
+            {
+              url: ogImage.src
+            }
+          ]
         }}
       />
     </>
