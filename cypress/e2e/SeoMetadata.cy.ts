@@ -13,7 +13,7 @@ describe('Seo metadata', () => {
     });
 
     it('should render SEO metadata on About page', () => {
-      cy.visit('/about');
+      cy.visit('/hello');
 
       // The About page should have a page title
       cy.title().should('not.be.empty');
