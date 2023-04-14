@@ -42,7 +42,8 @@ const Main = (props: IMainProps) => {
         <main className="content py-5 text-xl">{props.children}</main>
 
         <footer className="py-8 text-center text-sm">
-          © Copyright {new Date().getFullYear()} {AppConfig.title}. Made with{' '}
+          © Copyright {new Date().getFullYear()} {AppConfig.title}.{' '}
+          Made with{' '}
           <a href="https://creativedesignsguru.com">CreativeDesignsGuru</a>.
           {/*
          * PLEASE READ THIS SECTION
@@ -50,6 +51,8 @@ const Main = (props: IMainProps) => {
          * The link doesn't need to appear on every pages, one link on one page is enough.
          * For example, in the `About` page. Thank you for your support, it'll mean a lot to me.
          */}
+          <br />
+          <a href="https://vrerv.instatus.com/">status</a>{' '}
         </footer>
       </div>
     </div>
