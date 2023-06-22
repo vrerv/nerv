@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 
 import { AppConfig } from '@/utils/AppConfig';
 import { useRouter } from "next/router";
+import { useTheme } from "next-themes";
 
 type IMainProps = {
   meta: ReactNode;
@@ -12,7 +14,9 @@ type IMainProps = {
 const Main = (props: IMainProps) => {
 
   const router = useRouter()
-  console.log("router.asPath", router.asPath)
+  const theme = useTheme()
+  console.log("router.asPath", router.asPath, theme.resolvedTheme)
+
 
   return (
     <div>
@@ -30,7 +34,10 @@ const Main = (props: IMainProps) => {
         <div className="text-primary-700 fixed top-0 z-10 w-full">
           <div className="flex justify-center items-center">
             <div className="bg-bg-50 dark:bg-bg-800 flex justify-start w-full md:w-1/2">
-              <ul className="flex h-16 items-center">
+              <ul className="flex h-16 items-center space-x-2">
+                <ul className="flex-grow flex-shrink pl-4">
+                  <Image src={theme.resolvedTheme === "dark" ? "/assets/images/vrerv-logo.svg" : "/assets/images/vrerv-logo-light-blue.svg"} alt="VReRV" width={24} height={24} />
+                </ul>
                 <ul className="flex-grow flex-shrink"><Link href="/hello"
                                                             className="block px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">안녕하세요</Link>
                 </ul>

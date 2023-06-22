@@ -59,7 +59,7 @@ const Blog = (props: InferGetStaticPropsType<typeof getStaticProps>) => {
   const { mdxSource, toc, frontMatter } = props.post;
   const { authorDetails, prev, next } = props;
   return (
-    <Main meta={<Meta title={"VReRV - Blog - " + frontMatter.title} description="Lorem ipsum" />}>
+    <Main meta={<Meta title={"VReRV - Blog - " + frontMatter.title} description={frontMatter.summary} />}>
       <div className="p-4">
         <MDXLayoutRenderer layout={frontMatter.layout || 'PostSimple'} mdxSource={mdxSource} toc={toc}
                            frontMatter={frontMatter}
