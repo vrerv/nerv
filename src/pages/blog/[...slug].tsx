@@ -42,7 +42,6 @@ export const getStaticProps: GetStaticProps<IBlogUrl, IBlogUrl> = async ({
   const prev = allPosts[postIndex + 1] || null
   const next = allPosts[postIndex - 1] || null
   const post = await getFileBySlug('blog', params?.slug.join('/'))
-  /*
   const authorList = post.frontMatter.authors || ['default']
   const authorPromise = authorList.map(async (author: any) => {
     const authorResults = await getFileBySlug('authors', [author])
@@ -50,32 +49,33 @@ export const getStaticProps: GetStaticProps<IBlogUrl, IBlogUrl> = async ({
   })
   const authorDetails = await Promise.all(authorPromise)
 
-   */
-
   console.log("post", post)
   return {
     props: {
       slug: params!.slug,
-      post: post
+      post: post,
+      authorDetails: authorDetails,
+      prev: prev,
+      next: next,
     },
   };
 };
 
 const Blog = (props: InferGetStaticPropsType<typeof getStaticProps>) => {
-  //console.log("MDXComponents", MDXComponents);
+
   const { mdxSource, toc, frontMatter } = props.post;
   const { authorDetails, prev, next } = props;
   return (
     <Main meta={<Meta title={"VReRV - Blog - " + frontMatter.title} description="Lorem ipsum" />}>
       <div className="pt-16" />
-      <div className="p-2 mt-6 space-y-6 font-display text-2xl tracking-tight text-blue-900">
+      <article className="prose dark:prose-dark p-2 mt-6 space-y-6 tracking-tight">
         <MDXLayoutRenderer layout={frontMatter.layout || 'PostDefaultLayout'} mdxSource={mdxSource} toc={toc}
                            frontMatter={frontMatter}
                            authorDetails={authorDetails}
                            prev={prev}
                            next={next}
         />
-      </div>
+      </article>
     </Main>
   );
 };

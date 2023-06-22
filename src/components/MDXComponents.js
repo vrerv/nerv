@@ -5,7 +5,6 @@ import Image from './Image'
 import CustomLink from './Link'
 import TOCInline from './TOCInline'
 import Pre from './Pre'
-import { H1 } from "./Hx";
 //import { BlogNewsletterForm } from './NewsletterForm'
 
 
