@@ -1,18 +1,11 @@
-import type {
-  GetStaticPaths,
-  GetStaticProps,
-  InferGetStaticPropsType,
-} from 'next';
+import type { GetStaticPaths, GetStaticProps, InferGetStaticPropsType } from "next";
 
-import { serialize } from 'next-mdx-remote/serialize';
-import { MDXRemote } from 'next-mdx-remote';
-import { Meta } from '@/layouts/Meta';
-import { Main } from '@/templates/Main';
-import * as path from "path";
-import * as fs from "fs/promises";
+import { Meta } from "@/layouts/Meta";
+import { Main } from "@/templates/Main";
 // @ts-ignore
 import { MDXComponents, MDXLayoutRenderer } from "../../components/MDXComponents";
-import { formatSlug, getAllFilesFrontMatter, getFileBySlug, getFiles } from '@/lib/mdx'
+// @ts-ignore
+import { formatSlug, getAllFilesFrontMatter, getFileBySlug, getFiles } from "@/lib/mdx";
 
 type IBlogUrl = {
   slug: string[];
@@ -25,7 +18,7 @@ type IBlogUrl = {
 export const getStaticPaths: GetStaticPaths<IBlogUrl> = async () => {
   const posts = getFiles('blog')
   return {
-    paths: posts.map((p) => ({
+    paths: posts.map((p: any) => ({
       params: { slug: formatSlug(p).split('/') },
     })),
     fallback: false,
@@ -67,8 +60,7 @@ const Blog = (props: InferGetStaticPropsType<typeof getStaticProps>) => {
   const { authorDetails, prev, next } = props;
   return (
     <Main meta={<Meta title={"VReRV - Blog - " + frontMatter.title} description="Lorem ipsum" />}>
-      <div className="pt-16" />
-      <div>
+      <div className="p-4">
         <MDXLayoutRenderer layout={frontMatter.layout || 'PostSimple'} mdxSource={mdxSource} toc={toc}
                            frontMatter={frontMatter}
                            authorDetails={authorDetails}

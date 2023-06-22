@@ -15,45 +15,59 @@ const Main = (props: IMainProps) => {
   console.log("router.asPath", router.asPath)
 
   return (
-    <div className="w-full px-1 text-gray-700 antialiased">
+    <div>
       {props.meta}
+      <div className="pt-16" />
+      <div className="py-0 text-xl max-w-full">
+          <div className="flex justify-center items-center w-full">
+            <div className="bg-bg-100 dark:bg-bg-900 w-full md:w-1/2">
+              {props.children}
+            </div>
+          </div>
+      </div>
+      <div className="pt-16" />
+      <div className="py-5 text-xl w-full">
+        <div className="text-primary-700 fixed top-0 z-10 w-full">
+          <div className="flex justify-center items-center">
+            <div className="bg-bg-50 dark:bg-bg-800 flex justify-start w-full md:w-1/2">
+              <ul className="flex h-16 items-center">
+                <ul className="flex-grow flex-shrink"><Link href="/hello"
+                                                            className="block px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">안녕하세요</Link>
+                </ul>
+                <ul className="flex-grow flex-shrink"><Link href="/blog"
+                                                            className="px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">블로그</Link>
+                </ul>
+                <ul className="flex-grow flex-shrink"><Link href="https://github.com/vrerv"
+                                                            className="block px-4 py-2 hover:bg-gray-200 no-underline"><i
+                  className="fab fa-github mr-2"></i>GitHub</Link></ul>
+                {/*
+                      <li className="flex-grow flex-shrink"><a href="#services" className="px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">도전</a></li>
+                      <li className="flex-grow flex-shrink"><a href="#contact" className="px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">문의하기</a></li>
+                      */}
+              </ul>
+            </div>
+          </div>
+        </div>
 
-      <div className="mx-auto max-w-screen-md">
-        <header className="bg-white text-purple-700 fixed top-0 z-10 w-full">
-          <nav className="container mx-auto flex justify-start">
-            <ul className="flex h-16 items-center">
-              <li className="flex-grow flex-shrink"><Link href="/hello"
-                                                       className="block px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">안녕하세요</Link>
-              </li>
-              <li className="flex-grow flex-shrink"><Link href="/blog"
-                                                       className="px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">블로그</Link>
-              </li>
-              <li className="flex-grow flex-shrink"><Link href="https://github.com/vrerv"
-                                                       className="block px-4 py-2 hover:bg-gray-200 no-underline"><i
-                className="fab fa-github mr-2"></i>GitHub</Link></li>
-              {/*
-                    <li className="flex-grow flex-shrink"><a href="#services" className="px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">도전</a></li>
-                    <li className="flex-grow flex-shrink"><a href="#contact" className="px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">문의하기</a></li>
-                    */}
-            </ul>
-          </nav>
-        </header>
-
-        <main className="content py-5 text-xl">{props.children}</main>
-
-        <footer className="py-8 text-center text-sm">
-          © Copyright {new Date().getFullYear()} {AppConfig.title}.{' '}
-          Made with{' '}
-          <a href="https://creativedesignsguru.com">CreativeDesignsGuru</a>.
-          {/*
+        <div className="text-primary-700 fixed bottom-0 z-10 w-full">
+          <div className="flex justify-center items-center">
+            <div className="bg-bg-50 dark:bg-bg-800 flex justify-center w-full md:w-1/2">
+              <footer className="py-8 text-center text-sm">
+                © Copyright {new Date().getFullYear()} {AppConfig.title}.{' '}
+                Made with{' '}
+                <a href="https://creativedesignsguru.com">CreativeDesignsGuru</a>.
+                {/*
          * PLEASE READ THIS SECTION
          * I'm an indie maker with limited resources and funds, I'll really appreciate if you could have a link to my website.
          * The link doesn't need to appear on every pages, one link on one page is enough.
          * For example, in the `About` page. Thank you for your support, it'll mean a lot to me.
          */}
-          <br />
-          <a href="https://vrerv.instatus.com/">status</a>{' '}
-        </footer>
+                <br />
+                <a href="https://vrerv.instatus.com/">status</a>{' '}
+              </footer>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
