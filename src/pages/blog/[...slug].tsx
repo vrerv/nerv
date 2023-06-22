@@ -68,14 +68,14 @@ const Blog = (props: InferGetStaticPropsType<typeof getStaticProps>) => {
   return (
     <Main meta={<Meta title={"VReRV - Blog - " + frontMatter.title} description="Lorem ipsum" />}>
       <div className="pt-16" />
-      <article className="prose dark:prose-dark p-2 mt-6 space-y-6 tracking-tight">
-        <MDXLayoutRenderer layout={frontMatter.layout || 'PostDefaultLayout'} mdxSource={mdxSource} toc={toc}
+      <div>
+        <MDXLayoutRenderer layout={frontMatter.layout || 'PostSimple'} mdxSource={mdxSource} toc={toc}
                            frontMatter={frontMatter}
                            authorDetails={authorDetails}
                            prev={prev}
                            next={next}
         />
-      </article>
+      </div>
     </Main>
   );
 };
