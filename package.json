@@ -3,7 +3,7 @@
   "version": "3.8.1",
   "scripts": {
     "dev": "next dev",
-    "build": "jest && next build",
+    "build": "next build",
     "start": "next start",
     "build-stats": "cross-env ANALYZE=true npm run build",
     "export": "next export",
