@@ -2,22 +2,27 @@ import Link from 'next/link';
 
 import { Meta } from '@/layouts/Meta'
 import { Main } from '@/templates/Main'
+import { formatSlug, getAllFilesFrontMatter, getFileBySlug, getFiles } from '@/lib/mdx'
 
-const Blog = () => (
+const Blog = ({ posts }) => (
   <Main meta={<Meta title="VReRV - Blog" description="Blog site" />}>
-    <p className="pt-16">
-      공사중...
-    </p>
+    <div className="pt-16" />
 
-    {[...Array(0)].map((_, index) => (
+    {posts.map((post, index) => (
       <div
-        className="my-4 w-full rounded-md border-2 border-gray-400 px-2 py-1"
-        key={index}
+        className="my-4 w-full px-2 py-1"
+        key={post.slug}
       >
-        <Link href={`/blog/blog-${index}`}>{`Blog - ${index}`}</Link>
+        <Link href={`/blog/${post.slug}`}>{`${post.title}`}</Link>
       </div>
     ))}
   </Main>
 );
+
+
+export async function getStaticProps({ params }) {
+  const allPosts = await getAllFilesFrontMatter('blog')
+  return { props: { posts: allPosts } };
+}
 
 export default Blog;
