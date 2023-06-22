@@ -30,11 +30,11 @@ const Main = (props: IMainProps) => {
           </div>
       </div>
       <div className="pt-16" />
-      <div className="py-5 text-xl w-full">
+      <div className="py-5 text-lg md:text-xl w-full">
         <div className="text-primary-700 fixed top-0 z-10 w-full">
           <div className="flex justify-center items-center">
             <div className="bg-bg-50 dark:bg-bg-800 flex justify-start w-full md:w-1/2">
-              <ul className="flex h-16 items-center space-x-2">
+              <ul className="flex h-16 items-center sm:space-x-2">
                 <li className="flex-grow flex-shrink pl-4">
                   <Image src={theme.resolvedTheme === "dark" ? "/assets/images/vrerv-logo.svg" : "/assets/images/vrerv-logo-light-blue.svg"} alt="VReRV" width={24} height={24} />
                 </li>
@@ -59,7 +59,7 @@ const Main = (props: IMainProps) => {
         <div className="text-primary-700 fixed bottom-0 z-10 w-full">
           <div className="flex justify-center items-center">
             <div className="bg-bg-50 dark:bg-bg-800 flex justify-center w-full md:w-1/2">
-              <footer className="py-8 text-center text-sm">
+              <footer className="py-2 text-center text-sm">
                 © Copyright {new Date().getFullYear()} {AppConfig.title}.{' '}
                 Made with{' '}
                 <a href="https://creativedesignsguru.com">CreativeDesignsGuru</a>.
