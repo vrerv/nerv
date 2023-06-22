@@ -35,18 +35,18 @@ const Main = (props: IMainProps) => {
           <div className="flex justify-center items-center">
             <div className="bg-bg-50 dark:bg-bg-800 flex justify-start w-full md:w-1/2">
               <ul className="flex h-16 items-center space-x-2">
-                <ul className="flex-grow flex-shrink pl-4">
+                <li className="flex-grow flex-shrink pl-4">
                   <Image src={theme.resolvedTheme === "dark" ? "/assets/images/vrerv-logo.svg" : "/assets/images/vrerv-logo-light-blue.svg"} alt="VReRV" width={24} height={24} />
-                </ul>
-                <ul className="flex-grow flex-shrink"><Link href="/hello"
+                </li>
+                <li className="flex-grow flex-shrink"><Link href="/hello"
                                                             className="block px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">안녕하세요</Link>
-                </ul>
-                <ul className="flex-grow flex-shrink"><Link href="/blog"
+                </li>
+                <li className="flex-grow flex-shrink"><Link href="/blog"
                                                             className="px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">블로그</Link>
-                </ul>
-                <ul className="flex-grow flex-shrink"><Link href="https://github.com/vrerv"
+                </li>
+                <li className="flex-grow flex-shrink"><Link href="https://github.com/vrerv"
                                                             className="block px-4 py-2 hover:bg-gray-200 no-underline"><i
-                  className="fab fa-github mr-2"></i>GitHub</Link></ul>
+                  className="fab fa-github mr-2"></i>GitHub</Link></li>
                 {/*
                       <li className="flex-grow flex-shrink"><a href="#services" className="px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">도전</a></li>
                       <li className="flex-grow flex-shrink"><a href="#contact" className="px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">문의하기</a></li>
