@@ -7,6 +7,7 @@ import TOCInline from './TOCInline'
 import Pre from './Pre'
 //import { BlogNewsletterForm } from './NewsletterForm'
 
+import { Mermaid } from './Mermaid';
 
 /**
  * from https://github.com/timlrx/tailwind-nextjs-starter-blog/blob/master/components/MDXComponents.js
@@ -17,6 +18,7 @@ export const MDXComponents = {
   TOCInline,
   a: CustomLink,
   pre: Pre,
+  Mermaid: Mermaid,
   //BlogNewsletterForm: BlogNewsletterForm,
   ///*
   wrapper: ({ components, layout, ...rest }) => {
