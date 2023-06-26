@@ -22,9 +22,10 @@ import rehypePrismPlus from 'rehype-prism-plus'
 import rehypePresetMinify from 'rehype-preset-minify'
 
 const root = process.cwd()
+const dataDir = 'src/data'
 
 export function getFiles(type) {
-  const prefixPaths = path.join(root, 'data', type)
+  const prefixPaths = path.join(root, dataDir, type)
   const files = getAllFilesRecursively(prefixPaths)
   // Only want to return blog/path and ignore root, replace is needed to work on Windows
   return files.map((file) => file.slice(prefixPaths.length + 1).replace(/\\/g, '/'))
@@ -41,8 +42,8 @@ export function dateSortDesc(a, b) {
 }
 
 export async function getFileBySlug(type, slug) {
-  const mdxPath = path.join(root, 'data', type, `${slug}.mdx`)
-  const mdPath = path.join(root, 'data', type, `${slug}.md`)
+  const mdxPath = path.join(root, dataDir, type, `${slug}.mdx`)
+  const mdPath = path.join(root, dataDir, type, `${slug}.md`)
   const source = fs.existsSync(mdxPath)
     ? fs.readFileSync(mdxPath, 'utf8')
     : fs.readFileSync(mdPath, 'utf8')
@@ -59,7 +60,7 @@ export async function getFileBySlug(type, slug) {
   const { code, frontmatter } = await bundleMDX({
     source,
     // mdx imports can be automatically source from the components directory
-    cwd: path.join(root, 'components'),
+    cwd: path.join(root, 'src/components'),
     xdmOptions(options, frontmatter) {
       // this is the recommended way to add custom remark/rehype plugins:
       // The syntax might look weird, but it protects you in case we add/remove
@@ -79,7 +80,7 @@ export async function getFileBySlug(type, slug) {
         rehypeSlug,
         rehypeAutolinkHeadings,
         rehypeKatex,
-        [rehypeCitation, { path: path.join(root, 'data') }],
+        [rehypeCitation, { path: path.join(root, dataDir) }],
         [rehypePrismPlus, { ignoreMissing: true }],
         rehypePresetMinify,
       ]
@@ -108,7 +109,7 @@ export async function getFileBySlug(type, slug) {
 }
 
 export async function getAllFilesFrontMatter(folder) {
-  const prefixPaths = path.join(root, 'data', folder)
+  const prefixPaths = path.join(root, dataDir, folder)
 
   const files = getAllFilesRecursively(prefixPaths)
 

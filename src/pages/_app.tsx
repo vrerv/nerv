@@ -2,6 +2,8 @@ import '../styles/global.css';
 
 import type { AppProps } from 'next/app';
 import { ThemeProvider } from 'next-themes';
+// @ts-ignore
+import { Mermaid } from '../components/Mermaid';
 
 const MyApp = ({ Component, pageProps }: AppProps) => (
 
