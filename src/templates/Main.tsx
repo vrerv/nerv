@@ -17,6 +17,10 @@ const Main = (props: IMainProps) => {
   const theme = useTheme()
   console.log("router.asPath", router.asPath, theme.resolvedTheme)
 
+  const toggleTheme = (_: any) => {
+    theme.resolvedTheme === 'dark' ? theme.setTheme('light') : theme.setTheme('dark')
+  }
+
 
   return (
     <div>
@@ -36,7 +40,10 @@ const Main = (props: IMainProps) => {
             <div className="bg-bg-50 dark:bg-bg-800 flex justify-start w-full md:w-1/2">
               <ul className="flex h-16 items-center sm:space-x-2">
                 <li className="flex-grow flex-shrink pl-4">
-                  <Image src={theme.resolvedTheme === "dark" ? "/assets/images/vrerv-logo.svg" : "/assets/images/vrerv-logo-light-blue.svg"} alt="VReRV" width={24} height={24} />
+                  <Image src={theme.resolvedTheme === "dark" ? "/assets/images/vrerv-logo.svg" : "/assets/images/vrerv-logo-light-blue.svg"}
+                         alt="VReRV" width={24} height={24}
+                         className="cursor-pointer"
+                         onClick={toggleTheme} />
                 </li>
                 <li className="flex-grow flex-shrink"><Link href="/hello"
                                                             className="block px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">안녕하세요</Link>
