@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import Mermaid from "./Mermaid";
 
 const Pre = (props) => {
   const textInput = useRef(null)
@@ -18,6 +19,10 @@ const Pre = (props) => {
     setTimeout(() => {
       setCopied(false)
     }, 2000)
+  }
+
+  if (props.children.props.className === "language-mermaid") {
+    return <Mermaid chart={props.children.props.children} />
   }
 
   return (
