@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { AppConfig } from '@/utils/AppConfig';
 import { useRouter } from "next/router";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 type IMainProps = {
   meta: ReactNode;
@@ -15,11 +16,17 @@ const Main = (props: IMainProps) => {
 
   const router = useRouter()
   const theme = useTheme()
+  const [logoImage, setLogoImage] = useState("/assets/images/vrerv-logo.svg")
   console.log("router.asPath", router.asPath, theme.resolvedTheme)
 
   const toggleTheme = (_: any) => {
     theme.resolvedTheme === 'dark' ? theme.setTheme('light') : theme.setTheme('dark')
   }
+
+  useEffect(() => {
+    const image = theme.resolvedTheme === "dark" ? "/assets/images/vrerv-logo-light-blue.svg" : "/assets/images/vrerv-logo.svg"
+    setLogoImage(image)
+  }, [theme])
 
 
   return (
@@ -40,7 +47,7 @@ const Main = (props: IMainProps) => {
             <div className="bg-bg-50 dark:bg-bg-800 flex justify-start w-full md:w-1/2">
               <ul className="flex h-16 items-center sm:space-x-2">
                 <li className="flex-grow flex-shrink pl-4">
-                  <Image src={theme.resolvedTheme === "dark" ? "/assets/images/vrerv-logo.svg" : "/assets/images/vrerv-logo-light-blue.svg"}
+                  <Image src={logoImage}
                          alt="VReRV" width={24} height={24}
                          className="cursor-pointer"
                          onClick={toggleTheme} />
