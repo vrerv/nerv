@@ -1,9 +1,9 @@
 ---
 title: '자체 서명 인증서로 로컬 개발환경에서 HTTPS 적용하기'
 date: '2023-07-01'
-tags: ['hello']
+tags: ['nginx', 'virtualhost', 'https', 'ssl', 'self-signed', 'tls', 'docker']
 draft: false
-summary: ''
+summary: '로컬 서버 접속시 자체 서명 인증서로 Nginx Reverse Proxy 서버를 구축해 https 로 접속할 수 있는 방법을 설명한다.'
 authors: ['default']
 ---
 
@@ -15,6 +15,24 @@ authors: ['default']
 
 - 개발환경 설정이 안되어 로컬 구동시 운영환경으로 연결되는 경우에 서버 인증서를 로컬에 가져올 수 없는 경우
 - 로컬에서 서버 https 를 접속하거나, 로컬 서버에 접속하는 것을 스위칭하고 싶을 경우
+
+### 방법
+
+1. 로컬에서 서버에 접속하는 도메인을 hosts 파일에 등록한다.
+2. 루트 인증서를 생성한다.
+3. 도메인 인증서를 생성한다.
+4. nginx 를 설치하고, 인증서를 적용한다.
+5. nginx virtual host 를 설정한다.
+6. 루트 인증서를 OS 신뢰저장소에 등록한다.
+7. nginx 를 구동한다. (도커로 구동할 경우 --add-host 옵션으로 도커 컨테이너 안의 서버가 로컬 서버를 바라보는 ip 를 지정해줘야 한다.)
+
+여기서는 설치 편의상 nginx 를 도커로 설치하나, 로컬에 바로 설치하는 편이 ip 문제에서 좀 더 자유롭다.
+
+### 데모
+
+아래 repository 를 통해 아래 본 내용을 스크립트로 쉽게 구동할 수 있다.
+
+* https://github.com/vrerv/local-https
 
 ### 구성의 예
 
@@ -43,8 +61,8 @@ flowchart LR
 현재 디렉토리 아래 아래 디렉토리를 구조로 만들어 관련 파일을 저장한다. docker 구동시 해당 디렉토리를 위치를 넘겨 구동하게 되므로,
 만약 위치를 바꾸면 docker 구동시 옵션을 바꿔줘야 한다.
 
-./ssl - self signed 인증서 저장
-./nginx/conf.d - nginx virtual host 설정
+- ./ssl - self signed 인증서 저장
+- ./nginx/conf.d - nginx virtual host 설정
 
 ## 인증서 생성
 
@@ -99,7 +117,7 @@ hosts 파일에 다음 을 등록한다.
 * Docker 를 먼저설치한다. - Windows 의 경우 WSL 도 필수 설치한다.
 * docker 로 nginx 를 구동한다.
 
-docker nginx 컨테이너 안에서 컨테이너 밖의 서버들에 접속하기 위해서는 --add-host 를 통해 "localnode" 를 docker 에서 바라보는 ip 를 지정해줘야 한다.
+docker nginx 컨테이너 안에서 컨테이너 밖의 서버들에 접속하기 위해서는 --add-host 를 통해 "dockerhost" 를 docker 에서 바라보는 ip 를 지정해줘야 한다.
 이 ip 는 도커를 설치하면서 자동 설정되는 네트워크에 의해 결정되는데 리눅스/맥 과 윈도우즈는 해당 IP 를 찾는 방법이 조금 다르다.
 
 Linux/Mac OS X 의 경우 아래와 같이 구동한다.
@@ -108,6 +126,9 @@ Linux/Mac OS X 의 경우 아래와 같이 구동한다.
 도메인의 각 하위 서버는 nginx virtual host 로 개별 파일에 설정한다.
 
 예를 들면, demo.vrerv.com 은 ./nginx/conf.d/demo.vrerv.com.conf 파일에 아래와 같이 설정한다.
+
+`proxy_pass http://dockerhost:3000;` 부분에 docker 로 설치시 `--add-host dockerhost:127.0.0.1` 형태의 옵션의 호스트명과 일치 시킨다.
+만약 nginx 를 로컬에 설치하였다면, `localhost` 로 설정한다.
 
 ```
 server {
@@ -129,7 +150,7 @@ server {
     ssl_certificate_key /etc/nginx/ssl/vrerv.com.key;
 
     location / {
-        proxy_pass http://localnode:3000;
+        proxy_pass http://dockerhost:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -144,27 +165,33 @@ server {
 
 
 ```bash
-docker run --rm --name nginx -d --add-host localnode:`ifconfig en0 | grep inet | grep -v inet6 | awk '{print \$2}'` -v `pwd`/nginx/conf.d:/etc/nginx/conf.d -v `pwd`/nginx/ssl:/etc/nginx/ssl -p 80:80 -p 443:443 nginx
+docker run --rm --name nginx -d \
+    --add-host dockerhost:`ifconfig en0 | grep inet | grep -v inet6 | awk '{print \$2}'` \
+    -v `pwd`/nginx/conf.d:/etc/nginx/conf.d \
+    -v `pwd`/nginx/ssl:/etc/nginx/ssl \
+    -p 80:80 \
+    -p 443:443 \
+    nginx
 ```
 
 Windows 에서는 WSL 콘솔 (Ubuntu 또는 다른 설치된 리눅스 배포판 이름으로 보이는 명령창) 에서 ifconfig 를 실행하여 나오는 ip 를 사용한다.
 Windows 의 경우 WSL 콘솔 (Ubuntu 또는 다른 설치된 리눅스 배포판 이름으로 보이는 명령창) 로 다음을 실행한다.
 
 ```bash
-docker run --rm --name nginx -d --add-host localnode:{IP를여기에입력} -v `pwd`/nginx/conf.d:/etc/nginx/conf.d -v `pwd`/nginx/ssl:/etc/nginx/ssl -p 80:80 -p 443:443 nginx
+docker run --rm --name nginx -d --add-host dockerhost:{IP를여기에입력} -v `pwd`/nginx/conf.d:/etc/nginx/conf.d -v `pwd`/nginx/ssl:/etc/nginx/ssl -p 80:80 -p 443:443 nginx
 ```
 
 https://demo.vrerv.com  을 호출하면 모두 localhost 로 구동됨을 알 수 있다.
 다만, 인증서가 오류가 날것이다. 따라서 아래 인증서 등록 과정을 해야 한다.
 
-## 루트 인증서 OS 의 신뢰 저장소에 등록 (*..vrerv.com 도메인)
+## 루트 인증서 OS 의 신뢰 저장소에 등록
 
 ./ssl/rootCA.crt 를 아래와 같이 OS 의 신뢰된 루트 인증서 목록에 추가해야 한다.
 
 * Mac OS X - 키체인을 구동 해당 인증서를 드래그해서 가져다 놓는다. 드롭된 인증서를 더블 클릭하여 항상 신뢰로 설정한다.
 * Windows - ./ssl/rootCA.crt 를 더블 클릭한다. "인증서 설치" 누른다. "로컬 컴퓨터" 선택 후 다음. "모든 인증서를 다음 저장소에 저장" 선택후 "찾아보기" 에서 "신뢰할 수 있는 루트 인증 기관" 선택후 다음. "마침".
 
-## Node 인증서 처리
+### Node 인증서 처리
 
 * Node 에서는 루트 인증서를 OS 등록된 것을 사용하지 않는 것으로 보인다. 따라서 아마 SSR 로 서버사이드 호출시 인증서 에러가 날것이다. 해결법은 Node 자체 관리 저장소에 루트 인증서를 등록하면 되지만, 복잡함으로 그냥 인증서 검증 패스 옵션을 .env 에 설정한다.
 
@@ -179,6 +206,8 @@ https://demo.vrerv.com 을 호출하면 모두 localhost 로 구동됨을 알 �
 만약 서버 포트가 변경되면 conf.d/ 에 각 서버의 백엔드 virtual host 설정에서 포트를 바꿔줘야 한다. 물론 도메인 변경시도 마찬가지이다.
 
 ## 문제
+
+Docker 로 Nginx 를 구동할 경우 아래의 문제가 있다.
 
 안타깝게도 docker container 안에서 host pc 를 보는 ip 가 바뀔수도 있다.
 만약 바뀌면 docker container 를 지우고 다시 띄워햐 한다. 지우고 다시 띄우기 위해 docker 구동시 --rm 옵션을 줘서 docker kill시 자동으로 컨텥이너 삭제가 되도록 하는 편이 좋다.
