@@ -11,11 +11,6 @@ authors: ['default']
 
 로컬 개발환경에서 Self-Signed 인증서 사용 HTTPS를 적용해서 테스트 하고 싶을 때 사용할 수 있는 방법 이다.
 
-특별한 사항에서 사용할 수 있다.
-
-- 개발환경 설정이 안되어 로컬 구동시 운영환경으로 연결되는 경우에 서버 인증서를 로컬에 가져올 수 없는 경우
-- 로컬에서 서버 https 를 접속하거나, 로컬 서버에 접속하는 것을 스위칭하고 싶을 경우
-
 ### 방법
 
 1. 로컬에서 서버에 접속하는 도메인을 hosts 파일에 등록한다.
@@ -32,7 +27,7 @@ authors: ['default']
 
 아래 repository 를 통해 아래 본 내용을 스크립트로 쉽게 구동할 수 있다.
 
-* https://github.com/vrerv/local-https
+* [local-https demo](https://github.com/vrerv/local-https)
 
 ### 구성의 예
 
@@ -58,8 +53,8 @@ flowchart LR
 
 ## 디렉토리 구조
 
-현재 디렉토리 아래 아래 디렉토리를 구조로 만들어 관련 파일을 저장한다. docker 구동시 해당 디렉토리를 위치를 넘겨 구동하게 되므로,
-만약 위치를 바꾸면 docker 구동시 옵션을 바꿔줘야 한다.
+현재 디렉토리 아래에 다음과 같은 디렉토리를 구조로 만들어 관련 파일을 저장한다. docker 구동시 해당 디렉토리를 위치를 넘겨 구동하게 되므로,
+만약 위치를 바꾸면 docker 구동시 옵션을 바꿔줘야 한다. nginx 로컬 설치시 관련 디렉토리에 설정을 넣어줘야 한다.
 
 - ./ssl - self signed 인증서 저장
 - ./nginx/conf.d - nginx virtual host 설정
