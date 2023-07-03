@@ -22,8 +22,8 @@ authors: ['default']
 * list 2
 
 Some code:
-```
-val test = "hello world";
+```js
+const test = "hello world";
 ```
 
 **bold text** and *italic text*
@@ -36,15 +36,13 @@ val test = "hello world";
 
 
 ```
-flowchart LR
+<Mermaid chart={`flowchart LR
    A --> B
-   A --> C
+   A --> C`}>
+</Mermaid>
 ```
 
-<div>
-```mermaid
-flowchart LR
+<Mermaid chart={`flowchart LR
    A --> B
-   A --> C
-```
-</div>
+   A --> C`}>
+</Mermaid>

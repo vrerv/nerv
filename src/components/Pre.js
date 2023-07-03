@@ -21,7 +21,8 @@ const Pre = (props) => {
     }, 2000)
   }
 
-  if (props.children.props.className === "language-mermaid") {
+  // TODO: not working because of remark, use remark plugin way to do this (currently not found any good plugin)
+  if (props.children.props.className === "code-highlight language-mermaid") {
     return <Mermaid chart={props.children.props.children} />
   }
 
