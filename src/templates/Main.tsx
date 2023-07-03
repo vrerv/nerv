@@ -35,7 +35,7 @@ const Main = (props: IMainProps) => {
       <div className="pt-16" />
       <div className="py-0 text-xl max-w-full">
           <div className="flex justify-center items-center w-full">
-            <div className="bg-bg-100 dark:bg-bg-900 w-full md:w-1/2">
+            <div className="bg-bg-100 dark:bg-bg-900 w-full md:w-2/3 lg:w-1/2">
               {props.children}
             </div>
           </div>
@@ -44,7 +44,7 @@ const Main = (props: IMainProps) => {
       <div className="py-5 text-lg md:text-xl w-full">
         <div className="text-primary-700 fixed top-0 z-10 w-full">
           <div className="flex justify-center items-center">
-            <div className="bg-bg-50 dark:bg-bg-800 flex justify-start w-full md:w-1/2">
+            <div className="bg-bg-50 dark:bg-bg-800 flex justify-start w-full md:w-2/3 lg:w-1/2">
               <ul className="flex h-16 items-center sm:space-x-2">
                 <li className="flex-grow flex-shrink pl-4">
                   <Image src={logoImage}
@@ -72,7 +72,7 @@ const Main = (props: IMainProps) => {
 
         <div className="text-primary-700 fixed bottom-0 z-10 w-full">
           <div className="flex justify-center items-center">
-            <div className="bg-bg-50 dark:bg-bg-800 flex justify-center w-full md:w-1/2">
+            <div className="bg-bg-50 dark:bg-bg-800 flex justify-center w-full md:w-2/3 lg:w-1/2">
               <footer className="py-2 text-center text-sm">
                 © Copyright {new Date().getFullYear()} {AppConfig.title}.{' '}
                 Made with{' '}
