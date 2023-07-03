@@ -9,7 +9,6 @@ class MyDocument extends Document {
     return (
       <Html lang={AppConfig.locale}>
         <Head>
-          <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
         </Head>
         <body>
           <Main />
