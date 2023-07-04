@@ -103,7 +103,7 @@ hosts 파일에 사용하고자 하는 도메인에 대한 IP 를 등록한다. 
 * 만약 특정 서버만 로컬로 보고 싶다면 예를 들어 백엔드중 api-1만 로컬로 보게 하고 싶다면, 다른 두 백엔드 서버는 "#" 으로 주석처리하면 된다.
 
 ```
-127.0.0.1       www.vrerv.com
+127.0.0.1       demo.vrerv.com
 127.0.0.1       api-1.vrerv.com
 127.0.0.1       api-2.vrerv.com
 127.0.0.1       api-3.vrerv.com
@@ -129,7 +129,7 @@ Linux/Mac OS X 의 경우 아래와 같이 구동한다.
 아래 설정에서 `proxy_pass http://dockerhost:3000;` 부분에 docker 로 설치시 `--add-host dockerhost:127.0.0.1` 옵션을 줘서 호스트명과 일치 시킨다.
 만약 nginx 를 docker 가 아닌 OS 자체에 설치하였다면, `proxy_pass http://localhost:3000` 로 설정한다.
 
-```nginx
+```nginx {5,14,16,17,20} showLinenumbers
 server {
     listen 80;
     listen [::]:80;
