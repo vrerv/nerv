@@ -17,3 +17,13 @@ const Index = () => {
 };
 
 export default Index;
+
+export async function getServerSideProps() {
+  // make "HTTP/1.1 307 Temporary Redirect"
+  return {
+    redirect: {
+      destination: '/hello',
+      permanent: false,
+    },
+  }
+}
