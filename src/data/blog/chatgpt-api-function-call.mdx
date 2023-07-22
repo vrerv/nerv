@@ -1,0 +1,126 @@
+---
+title: OpenAI의 Chat Completion API, 함수 호출 기능 추가
+date: '2023-07-22'
+tags: ['chatgpt', 'openai', 'llm', 'gpt-4', 'python']
+draft: false
+summary: ''
+authors: ['default']
+---
+
+OpenAI가 최근 GPT 모델의 주요 업데이트를 발표했는데, 그 중심에 있는 것이 바로 '함수 호출(function calling)' 기능이다.
+함수 호출은 OpenAI ChatAPI 에서 AI model 이 사용자의 응답을 생성할 때, 사용자가 정의한 함수를 통하여 더 낳은 응답을 생성할 수 있으면, 그 함수의 호출을 요청하는 응답을 먼저생성하고,
+사용자가 그 함수를 호출하여 받은 응답을 ChatAPI 로 추가로 제공하여 질문하면, 해당 함수의 응답을 포함한 최종 응답을 생성하여 사용자에게 제공하는 기능이다.
+
+즉, 기존의 AI model 자체에 추가적인 정보를 제공하거나, 또는 ChatGPT 의 응답의 결과를 자동화하여 어떤 액션을 취하는 등의 확장을 할 수 있다.
+예를 들면, 다음과 같은 경우에 사용할 수 있다.
+
+* 사용자의 요청 메세지에서 웹검색 결과를 통한(함수 호출) 더 낳은 응답을 생성할때
+* 항공사 사이트의 비행 스케줄을 검색하여 최저가의 항공편을 제안하고 더 나아가 해당 항공편을 예약하는 등의 액션을 취할때
+
+이 기능은 새롭게 출시된 'gpt-4-0613'과 'gpt-3.5-turbo-0613' 두 가지 모델에서 지원된다.
+
+## 사용하는 방법
+
+사용자는 함수 정의 목록을 JSON 형식으로 제공하면, AI는 이를 바탕으로 해당 함수를 호출하고 그 결과를 반환하게 된다.
+함수 호출의 여부는 'function_call' 파라미터를 통해 제어할 수 있다.
+
+* auto - AI model 이 자동으로 호출 여부를 결정
+* 특정 함수 이름 - AI model 이 해당 함수를 사용하도록 요청
+* none - 사용하지 않음
+
+AI가 함수 호출에 대한 응답을 제공하면, 응답 메시지의 'function_call' 프로퍼티에 응답 내용이 추가된다.
+함수의 응답을 제공하기 위해 Chat 메시지를 보낼 때는 'role'을 'function' 으로 설정하고 보낸다.
+
+함수 호출 기능이 포함된 Chat API를 사용할 경우에는 아래와 같은 과정을 거치게 된다:
+
+1. 사용자의 쿼리와 'functions' 에 AI 모델이 호출할 수 있는 함수 목록을 제공한다.
+2. 모델은 함수를 호출할지 여부를 결정하며, 함수를 호출할 필요가 있다고 판단되며, 사용자가 함수를 호출할 수 있도록 정의된 함수로 부터 함수 호출을 위한 JSON 데이터를 생성하여 반환한다.
+3. 사용자는 응답에서 함수 호출이 있으면, 실제로 해당 함수를 호출하여 응답을 얻는다. 함수 호출 결과를 이전 쿼리에 추가하여 새로운 쿼리를 보낸다.
+4. AI 모델은 새로운 쿼리를 받아, 함수 호출 결과를 포함한 최종 응답을 생성한다.
+
+아래는 OpenAI에서 제공하는 예제 날씨를 알려주는 함수를 호출하는 예제이다.
+OPENAI_API_KEY 환경 변수에 API 키를 설정하고 예제를 실행한다. 주석은 한글로 번역하였다.
+
+```python
+import openai
+import json
+
+
+# 항상 같은 날씨를 리턴하는 더미 함수의 예, 운영에서는
+# 백엔드 API 또는 외부 API를 호출하는 코드가 될 수 있다.
+def get_current_weather(location, unit="fahrenheit"):
+    """Get the current weather in a given location"""
+    weather_info = {
+        "location": location,
+        "temperature": "72",
+        "unit": unit,
+        "forecast": ["sunny", "windy"],
+    }
+    return json.dumps(weather_info)
+
+
+def run_conversation():
+    # 1 단계: 대화목록과 사용가능한 함수 목록을 GPT 에 전송
+    messages = [{"role": "user", "content": "What's the weather like in Boston?"}]
+    functions = [
+        {
+            "name": "get_current_weather",
+            "description": "Get the current weather in a given location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "The city and state, e.g. San Francisco, CA",
+                    },
+                    "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
+                },
+                "required": ["location"],
+            },
+        }
+    ]
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo-0613",
+        messages=messages,
+        functions=functions,
+        function_call="auto",  # 'auto' 가 기본값이지만, 명확히 하기 위해 설정
+    )
+    response_message = response["choices"][0]["message"]
+
+    # 단계 2: GPT 가 함수를 호출하길 원하는지 확인
+    if response_message.get("function_call"):
+        # 단계 3: 함수 호출
+        # 노트: JSON 응답이 항상 유효하지 않을 수 있으므로 오류를 처리하도록 한다.
+        available_functions = {
+            "get_current_weather": get_current_weather,
+        } # 이 예제에서 함수가 하나만 있지만, 여러개를 넣을 수도 있다.
+        function_name = response_message["function_call"]["name"]
+        fuction_to_call = available_functions[function_name]
+        function_args = json.loads(response_message["function_call"]["arguments"])
+        function_response = fuction_to_call(
+            location=function_args.get("location"),
+            unit=function_args.get("unit"),
+        )
+
+        # 단계 4: 함수 호출한 응답을 메세지에 추가하여 GPT 에 전송
+        messages.append(response_message) # GPT 응답의 대화를 확장
+        messages.append(
+            {
+                "role": "function",
+                "name": function_name,
+                "content": function_response,
+            }
+        ) # 함수 응답으로 대화를 확장
+        second_response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo-0613",
+            messages=messages,
+        ) # 추가된 함수응답을 확인한 GPT 로 부터 새응답을 받는다.
+        return second_response
+
+
+print(run_conversation())
+```
+
+## References
+
+* 자세한 사용법은 OpenAI의 공식 문서에서 확인하실 수 있습니다: [Function Calling Guide](https://platform.openai.com/docs/guides/gpt/function-calling)
