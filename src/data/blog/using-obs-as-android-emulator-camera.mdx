@@ -1,0 +1,90 @@
+---
+title: 비디오파일을 안드로이드 에뮬레이터 카메라의 입력으로 사용하기
+date: '2023-08-02'
+tags: ['virtual camera', 'obs', 'android', 'emulator', 'simulator', 'android']
+draft: false
+summary: ''
+authors: ['default']
+---
+
+import Youtube from './Youtube.js'
+
+## 문제
+
+디바이스 카메라로 사용자의 동작을 측정하는 안드로이드앱을 만들고 있다.
+개발시 안드로이드 에뮬레이터에서 해당 앱을 테스트하려면, 호스트 컴퓨터의 카메라를 에뮬레이터의 카메라로 사용해서 테스트 한다.
+팔벌려뛰기 등의 동작을 감지하는 부분을 테스트하기 위해 맥북앞에서 매번 하기에는 부담스럽다.
+
+이때, 동작 측정을 테스트하기 위해서 카메라 앞에서 사람이 직접 동작을 수행하는 것 보다, 촬영된 동작 비디오를 에뮬레이터의 카메라 입력으로 사용할수는 없을까?
+그렇게 한다면, 땀한방울 흘리지 않고 동작을 반복할수도 있고 중간에 정지할 수도 있다.
+
+## 해결
+
+아래와 같은 방법으로 해결할 수 있다. 아래는 맥북 OSX 에서 안드로이드 스튜디오 에뮬레이터를 사용하는 경우이다.
+
+1. [OBS Studio](https://obsproject.com/) 를 이용하여 가상 카메라 디바이스를 만들고, 비디오를 해당 카메라 장치로 출력시킨다.
+2. 안드로이드 에뮬레이터 설정에서 OBS 가 생성한 가상 카메라를 사용하도록 설정한다.
+
+### OBS Studio 설치및 설정
+
+[Download OBS Studio](https://obsproject.com/download) 에 들어가서 설치파일을 다운로드하여 설치한다.
+
+1. OBS Studio 를 구동한다.
+2. Start Virtual Camera 를 선택한다.
+3. Sources 패널에서 "+" 를 눌러 Media Source 를 선택한다.
+4. 팝업 창에서 확인을 누르고 Local File 에서 비디오 파일을 선택한다. 반복잭생을 위해 "loop" 에 체크한다.
+
+<Youtube src="https://www.youtube.com/embed/DjhW4nywf5o" />
+
+### Virtual Camera 설정
+
+안드로이드에서 에뮬레이터를 사용하기 위해 Device Manager 에서 "Create device" 로 디바이스를 생성한다.
+
+[안드로이드 스튜디오의 디바이스 리스트 화면]
+
+![Device Manager - Device List](/assets/blog/using-obs-as-android-emulator-camera/device-manager-devie-list.png)
+
+디바이스 생성시 "Device Manager > 디바이스 수정 > Advanced Settings > Camera" 에서 카메라를 세가지 타입으로 설정할 수 있다.
+
+- None - 카메라를 사용하지 않는다.
+- Emulated - 카메라를 시뮬레이션한다. 카메라가 가상공간을 배치되어 사용된다.
+- Device - 호스트 컴퓨터의 카메라를 사용한다.
+
+실제 디바이스의 카메라는 내장 카메라가 있다면 그것이 `Webcam0` 으로 잡혀 있을 것이다.
+OBS 의 가상 카메라 장치가 0번이 아니라면, 아래와 같이 AVD 설정 파일을 수동으로 설정해야 한다.
+
+[AVD 카메라 설정 화면]
+
+![Device Manager](/assets/blog/using-obs-as-android-emulator-camera/device-manager-configure-camera.png)
+
+아래 명령으로 OBS 가상 카메라의 디바이스 번호를 알 수 있다.
+아래 결과에서는 0번이 OBS Virtual Camera 이지만, 경우 따라서는 1번이 될 수 도 있다.
+
+```bash
+ffmpeg -f avfoundation -list_devices true -i ""
+```
+
+```bash {2}
+[AVFoundation indev @ 0x148804080] AVFoundation video devices:
+[AVFoundation indev @ 0x148804080] [0] OBS Virtual Camera
+[AVFoundation indev @ 0x148804080] [1] FaceTime HD Camera
+[AVFoundation indev @ 0x148804080] [2] ManyCam Virtual Webcam
+[AVFoundation indev @ 0x148804080] [3] Capture screen 0
+[AVFoundation indev @ 0x148804080] [4] Capture screen 1
+[AVFoundation indev @ 0x148804080] AVFoundation audio devices:
+[AVFoundation indev @ 0x148804080] [0] ManyCam Virtual Microphone
+[AVFoundation indev @ 0x148804080] [1] MacBook Pro Microphone
+```
+
+안드로이드 에뮬레이터의 `config.ini` 설정 파일을 아래와 같이 고친다.
+안드로이드 에뮬레이터의 설정파일은 다음 위치에 있다. `~/.android/avd/<your_device>.avd/config.ini`
+
+```properties
+hw.camera.front=webcam0
+```
+
+안드로이드 에뮬레이터에서 OBS Camera 가 표시되지 않거나 에러가 난다면, 에뮬레이터를 재구동하거나 안드로이드 스튜디오를 재시작해 본다.
+
+## 참고
+
+- [Using the OBS virtual camera in the android](https://www.reddit.com/r/AndroidStudio/comments/ugwufb/using_the_obs_virtual_camera_in_the_android/)
