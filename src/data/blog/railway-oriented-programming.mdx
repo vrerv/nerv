@@ -1,0 +1,156 @@
+---
+title: Railway Oriented Programming
+date: '2023-08-07'
+tags: ['railway-oriented-programming', 'pattern', 'fp', 'functional programming', 'kotlin']
+draft: false
+summary: ''
+authors: ['default']
+---
+
+## 무엇인가?
+
+- 프로그래밍에서 에러를 처리하는 패턴중에 하나
+- 프로그램에서 에러가 발생하는 것을 기본으로 생각하고, 전체적인 프로그램의 구조를 투트랙으로 유지하는 것
+- 즉, 성공적인 케이스는 성공 트랙으로, 실패하는 케이스는 실패 트랙으로 분리하여 생각하는 것
+- 함수형 프로그래밍에서 모나드 형태로 사용하여, 함수들을 연결하여 사용할 수 있도록 하여 더 효과적으로 구현및 처리할 수 있음
+
+## 왜 사용하나?
+
+- `try...catch` 방법은 제어 흐름을 끊어버리기 때문에, 프로그램의 흐름을 파악하기 어려움
+- 에러가 발생할 것을 명시적으로 표시함.
+- 에러와 성공을 모두 처리하면서, 프로그램의 흐름을 명확하게 유지할 수 있음.
+
+## 어떻게 사용할까?
+
+- `Either` 모나드를 사용하여, 성공과 실패를 모두 처리할 수 있도록 함
+- 모든 함수를 `Either` 를 리턴하도록 만들 필요는 없지만, 함수를 연결하기 위한 인터페이스는 투트랙임으로 맞추어야 함. 각 연결을 위해 적절한 어댑터를 사용한다.
+- 여기서는 `Either` 모나드 대신 `kotlin stdlib` 의 [`Result`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-result/) 를 사용하여 성공/실패 예를 보인다.
+
+### Adapters
+
+기존 프로그램은 `Result` 를 리턴하지 않는 경우가 있으므로, 그에 맞는 적절한 어댑터를 사용하여 `Result` 를 리턴하도록 만들어야 함
+
+- Single track functions - 성공만 처리하는 경우
+  ```
+  Result.map { singleTrackFunction(it) }
+  ```
+- Dead-end functions - 리턴이 없는 경우
+  ```
+  Result.onSuccess { deadEndFunction(it) }
+  ```
+- Functions that throws exceptions - 예외를 던지는 경우
+  ```
+  Result.mapCatching { funThrowsException(it) }
+  ```
+- Supervisory functions - 두가지 모두 처리하면서 변환이 없는 경우, e.g. logging 등
+  ```
+  Result.onSuccess { println(it) }
+        .onFailure { println(it) }
+  ```
+
+### Example
+
+원 저자는 `F#` 을 사용하여 예제를 보여주었지만, `Kotlin` 을 사용한 예제로 표현해봤다.
+
+Adapter 적용을 위한 함수
+
+* `validateUserInput` - 성공과 에러를 모두 리턴하는 함수
+* `canonicalize` - 성공만 리턴하는 함수
+* `updateDb` - 리턴이 없는 함수
+* `sendEmail` - 예외를 던지는 함수
+
+두가지 프로그래밍 방식으로 구현한 함수
+
+* `handleUserRequest` - `Result` 를 사용하여 성공과 실패를 모두 처리하는 함수
+* `handleUserRequestByImperative` - 위의 `handleUserRequest` 를 `try...catch` 를 사용하여 구현한 것.
+
+두가지 방법 모두 같은 결과를 리턴하지만, 둘을 봤을때, 어떻게 보면 `handleUserRequestByImperative` 가 더 간결해 보인다.
+그러나, 개별 함수들에서 추가적인 예외사항을 처리하게 되면, 명령형 방식은 더 복잡해지게 된다.
+또한, 명령행 방식에서는 어떤 에러가 명시적으로 일어나고 어디에서 흐름이 멈추는지 알기 힘들다.
+
+[handleUserRequest 함수가 adapter 를 통하여 투트랙으로 연결된 모습]
+
+![Connected Functions](/assets/blog/railway-oriented-programming/connected-functions.png)
+
+#### 예제 코드
+
+아래 내용을 `main.kt` 파일에 넣고 실행해보면 된다.
+
+```kotlin
+fun validateUserInput(req: Request): Result<Request> {
+    if (req.input.isEmpty()) {
+        return Result.failure(RuntimeException("input is empty"))
+    }
+    return Result.success(req)
+}
+
+fun canonicalize(req: Request): Request {
+    return req.copy(input = req.input.trim())
+}
+
+fun updateDb(req: Request) {
+    println("updateDb is done")
+}
+
+fun sendEmail(req: Request) {
+    if (req.input.isEmpty()) {
+        throw RuntimeException("Failed to send email")
+    }
+}
+
+data class Request(val input: String)
+
+infix fun <T, R> Result<T>.flatMap(transformer: (T) -> Result<R>): Result<R> {
+    return if (isSuccess) {
+        transformer(this.getOrThrow())
+    } else {
+        this as Result<R>
+    }
+}
+
+// 함수형 방식으로 구현
+fun handleUserRequest(input: Request): String {
+
+    return Result.success(input)
+        .flatMap(::validateUserInput)
+        .map { canonicalize(it) }
+        .onSuccess { updateDb(it) }
+        .mapCatching { sendEmail(it) }
+        .fold(
+            onSuccess = { "OK" },
+            onFailure = {
+                when (it) {
+                    is RuntimeException -> it.message ?: "Failed to handle request"
+                    else -> "Unknown error"
+                }
+            })
+}
+
+// 명령형 방식으로 구현
+fun handleUserRequestByImperative(input: Request): String {
+
+    return try {
+        validateUserInput(input).getOrThrow()
+        val req = canonicalize(input)
+        updateDb(req)
+        sendEmail(req)
+        "OK"
+    } catch (e: Throwable) {
+        when(e) {
+            is RuntimeException -> e.message ?: "Failed to handle request"
+            else -> "Unknown error"
+        }
+    }
+}
+
+// 두 함수를 실행해 본다.
+fun main() {
+    val input = Request(" ")
+    println("A: " + handleUserRequest(input))
+    println("B: " + handleUserRequestByImperative(input))
+}
+```
+
+## References
+
+* [Railway Oriented Programming](https://fsharpforfunandprofit.com/rop/)
