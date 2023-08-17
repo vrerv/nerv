@@ -1,0 +1,104 @@
+---
+title: 'OpenAI Python Library 사용하기 2 - Token, Embedding'
+date: '2023-08-17'
+tags: ['openai', 'api', 'gpt-4', 'tiktoken', 'embedding']
+draft: false
+summary: ''
+authors: ['default']
+---
+
+## 개요
+
+여기서는 OpenAI API 사용시 기본이되는 Token 과 Embedding 에 대하여 알아본다.
+
+## Token
+
+* 토큰은 텍스트를 작은 단위로 나눠 ML 에서 입력으로 사용하기 위한 단위다.
+* 토큰은 Embedding 을 통해 숫자로 변환된다.
+* 토큰은 과금단위나 모델의 입력 한계로 사용되므로, OpenAI API 사용시 토큰을 카운트 하는 작업이 필요하게 된다.
+* 텍스트가 어떻게 토큰으로 나뉘는지 확인하려면 [OpenAI 의 Tokenizer](https://platform.openai.com/tokenizer) 로 확인할 수 있다.
+  또는 `tiktoken` library 를 사용하여 토큰을 확인할 수 있다.
+* [OpenAI 의 토큰 설명](https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them)
+
+## Embedding
+
+인베딩은 어떤 값(토큰, 단어, 문장등)을 연속된 숫자로 맵핑하는 것이다. 학습을 통하여 개별 변수들의 값의 연관성을 추상화된 보다 낮은 차원의 벡터로 표현한 값이다.
+임베딩은 부동 소수점 숫자의 벡터(목록)이다. 두 벡터 사이의 거리는 관련성을 나타낸다.
+거리가 작으면 관련성이 높고 거리가 크면 관련성이 낮음을 나타낸다.
+
+임베딩은 일반적으로 다음과 같은 용도로 사용된다:
+
+* 검색(쿼리 문자열과의 관련성에 따라 결과의 순위가 매겨지는 경우)
+* 클러스터링(텍스트 문자열을 유사도별로 그룹화)
+* 추천(관련 텍스트 문자열이 있는 항목이 추천되는 경우)
+* 이상값 감지(관련성이 거의 없는 이상값을 식별하는 기능)
+* 다양성 측정(유사성 분포를 분석하는 곳)
+* 분류(가장 유사한 레이블을 기준으로 텍스트 문자열을 분류)
+
+### Embedding Long Inputs
+
+OpenAI 의 Embedding API 를 사용하여 임베딩을 할때, 모델별로 임베딩할 수 있는 최대 토큰의 길이가 있다.
+따라서, 실제 임베딩을 할때에는 최대 길이를 생각해야 하고, 만약 입력이 최대값을 초과한다면, 다음 방법등으로 처리해야 한다.
+
+- 적절한 크기로 요약 한다.
+- 전체를 최대 크기 안으로 나눠서, 평균을하여 하나의 임베딩 값으로 만든다.
+
+#### 평균
+
+- chunk 한것으로 weights 를 chunk 의 길이로 줘서 평균([numpy.average](https://numpy.org/doc/stable/reference/generated/numpy.average.html))한다. (즉, 길이가 긴것이 더 높은 의미 가중치를 가지도록 함)
+- 2-norm ([numpy.linalg.norm](https://numpy.org/doc/stable/reference/generated/numpy.linalg.norm.html)) 으로 나눠 벡터의 값을 0~1 로 만든다.
+
+```python
+chunk_embeddings = np.average(chunk_embeddings, axis=0, weights=chunk_lens)
+        chunk_embeddings = chunk_embeddings / np.linalg.norm(chunk_embeddings)  # normalizes length to 1
+        chunk_embeddings = chunk_embeddings.tolist()
+```
+
+임베딩을 단순화하여 1차원을 표현하여 설명하면 다음과 같이 볼 수 있다.
+
+* 어떤 값을 임베딩 하면, 테이블1 과 같이 임베딩된다고 하자.
+* 이때, Book 의 임베딩을 그냥 1페이지로만 판단했다면, 5 가 되어 사람에 더 가까운 내용이라고 판단되었을 것이다.
+* 하지만, 전체 페이지를 개별 임베딩한 값의 평균을 활용하여 좀더 전체 책내용에 부합하는 임베딩 값을 얻을 수 있고, 이를 통해 전체적으로 보면 컴퓨터와 더 가까운 내용이라고 판단할 수 있다.
+
+[테이블1 - 단순화된 임베딩]
+| 값                              | 임베딩 값 |
+|--------------------------------|-------|
+| Computer                       | 1     |
+| Book page 1                    | 5     |
+| Book page 2                    | 2     |
+| Book page 3                    | 3     |
+| Human                          | 6     |
+
+[그림1 - 단순화된 임베딩]
+```text
+                                    Book's Average Embedding Value
+
+                                    |
+                                    |
+                                    |
+              1        2        3   |                 5        6
+--------------^--------^--------^---v-----------------^--------^-----------   Embedding Values
+              |        |        |   3.3               |        |
+              |        |        |                     |        |
+         +----+------+ |        |      +------+       |    +---+-------+
+         | Computer  | |        |      | page |       |    | Human     |
+         +-----------+ |        |      |      +-------+    +-----------+
+                       |        |      |  1   |
+                       |        |      +------+
+                       |        |
+                       |        |      +------+
+                       |        |      | page |
+                       +--------+------+      |
+                                |      |  2   |
+                                |      +------+
+                                |
+                                |      +------+
+                                |      | page |
+                                +------+      |
+                                       |  3   |
+                                       +------+
+```
+
+## References
+
+- https://github.com/openai/openai-cookbook/blob/main/examples/Embedding_long_inputs.ipynb
