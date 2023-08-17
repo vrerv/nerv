@@ -1,0 +1,57 @@
+---
+title: 'OpenAI Python Library 사용하기 1 - JupyterLab 설치'
+date: '2023-08-17'
+tags: ['openai', 'api', 'gpt-4']
+draft: false
+summary: ''
+authors: ['default']
+---
+
+## 개요
+
+여기서는 openai API 를 사용하기전 준비와 사용법을 알아보기위해 필요한 툴을 설치하고 간단히 openai-cookbook 의 노트북을 하나 실행해 본다.
+
+### 준비
+
+* OpenAI API를 사용하기 위해서는 OpenAI API key를 [OpenAI 사이트](https://platform.openai.com/account/api-keys)에서 발급받는다.
+발급을 위해서 계정을 생성하고, 신용카드 정보를 입력해야 한다.
+* OS 환경변수에 `OPENAI_API_KEY` 를 추가한다. Windows OS 에서 추가하기 위해셔는 windows 메뉴 > 설정 > 시스템 > 정보 > "고급 시스템 설정" 팝업, 환경 변수 버튼 클릭,
+시스템 변수에 추가 버튼 클릭, 변수 이름에 `OPENAI_API_KEY`, 변수 값에 발급받은 API 키를 입력한다.
+
+## PC 에서 Jupyter Notebook 사용하기
+
+### 준비
+
+* `JupyterLab` 은 `Jupyter Notebook`을 대체하는 차세대 웹 기반의 대화형 개발 환경
+* `Miniconda` - `Python` 의 가상환경을 관리하고 패키지를 설치할 수 있는 패키지 관리자의 최소화 버전 (`Python` 말고 다른 언어도 가능?!)
+
+### Miniconda
+
+`Miniconda` 사용시 가상환경 생성 관련 명령, 다양한 환경을 생성하여 여러 버전의 `Python`을 독립된 환경에서 실행 가능.
+
+* `conda create -n "가상환경이름" python=3.8` - 특정 `Python` 버전을 가지는 특정 이름의 가상환경 생성
+* `conda info -e` - 가상환경 목록 확인
+* `conda activate "가상환경이름"` - 특정 이름의 가상환경 활성화
+* `conda deactivate` - 가상환경 비활성화
+* `conda remove -n "가상환경이름" --all` - 특정 이름의 가상환경 삭제
+
+### JupyterLab 설치및 구동
+
+아래는 설치 순서이다.
+
+1. [Miniconda](https://docs.conda.io/en/latest/miniconda.html) 설치 (설치 파일에 `Python` 포함)
+    * Windows 의 경우 설치 파일로 설치를 완료하면 "Anaconda Powershell Prompt (miniconda3)" 가 메뉴에 생성된다. 해당 메뉴를 눌러 실행한다.
+    * OPENAI_API_KEY 환경변수가 잘 설정되었는지 `echo $Env:OPENAI_API_KEY` 명령으로 확인한다.
+2. `conda create -n openai python=3.8` - python 3.8 버전의 openai 이름의 가상환경 생성
+3. `conda activate openai` - openai 이름의 가상환경 활성화
+4. `pip install jupyterlab` - JupyterLab 설치
+5. `pip install tenacity tiktoken openai "openai[datalib]"` - OpenAI API 관련 라이브러리 설치
+6. `jupyter lab .` - 현재디렉토리(`.`)를 notebook root 로 `JupyterLab` 실행, 자동으로 브라우저가 열리면서 `JupyterLab` 웹화면이 표시된다.
+
+### OpenAI API Cookbook 살펴보기
+
+* [OpenAI API Cookbook](https://github.com/openai/openai-cookbook)
+
+`git` 으로 `clone` 하여 로컬에서 `JupyterLab` 으로 실행
+
+`examples/Embedding_long_inputs.ipynb` 노트북을 찾아 실행해본다.
