@@ -1,11 +1,13 @@
 ---
-title: 'OpenAI Python Library 사용하기 2 - Token, Embedding'
+title: 'OpenAI API Library 사용하기 2 - Token, Embedding'
 date: '2023-08-17'
 tags: ['openai', 'api', 'gpt-4', 'tiktoken', 'embedding']
 draft: false
 summary: ''
 authors: ['default']
 ---
+
+import Youtube from "./Youtube"
 
 ## 개요
 
@@ -37,8 +39,10 @@ authors: ['default']
 
 ### Embedding Long Inputs
 
+[OpenAI Cookbook: Embedding Long Inputs](https://github.com/openai/openai-cookbook/blob/main/examples/Embedding_long_inputs.ipynb) 노트북을 통해 토큰을 초과하는 내용을 어떻게 임베딩하는지 알아보자.
+
 OpenAI 의 Embedding API 를 사용하여 임베딩을 할때, 모델별로 임베딩할 수 있는 최대 토큰의 길이가 있다.
-따라서, 실제 임베딩을 할때에는 최대 길이를 생각해야 하고, 만약 입력이 최대값을 초과한다면, 다음 방법등으로 처리해야 한다.
+따라서, 실제 임베딩을 할때에는 최대 길이를 생각해야 하고, 만약 입력이 최대값을 초과한다면, 다음과 같은 방법으로 처리할 수 있다.
 
 - 적절한 크기로 요약 한다.
 - 전체를 최대 크기 안으로 나눠서, 평균을하여 하나의 임베딩 값으로 만든다.
@@ -99,6 +103,5 @@ chunk_embeddings = np.average(chunk_embeddings, axis=0, weights=chunk_lens)
                                        +------+
 ```
 
-## References
-
-- https://github.com/openai/openai-cookbook/blob/main/examples/Embedding_long_inputs.ipynb
+[Youtube1 - 따라하기]
+<Youtube src="https://www.youtube.com/embed/iw3aYYkN3lc" />
