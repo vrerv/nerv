@@ -24,7 +24,8 @@ const Blog = (params: any) => (
 
 export async function getStaticProps() {
   const allPosts = await getAllFilesFrontMatter('blog')
-  return { props: { posts: allPosts } };
+  // prevent duplicated listing by language - TODO: add multilanguage support later
+  return { props: { posts: allPosts.filter((it: any) => !it.slug.endsWith("_en")) } };
 }
 
 export default Blog;
