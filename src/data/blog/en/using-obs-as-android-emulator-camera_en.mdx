@@ -1,0 +1,90 @@
+---
+title: Using video files as input to an Android emulator camera
+date: '2023-08-02'
+tags: ['virtual camera', 'obs', 'android', 'emulator', 'simulator', 'android']
+draft: false
+summary: ''
+authors: ['default']
+---
+
+import Youtube from './Youtube.js'
+
+## Problem
+
+You are creating an Android app that measures user gestures with the device's camera.
+To test the app on an Android emulator during development, use the host computer's camera as the emulator's camera.
+It is not convenient to stand in front of a MacBook every time to test the motion detection part, such as push-ups.
+
+Rather than having a human perform the motion in front of the camera, could you use a video of the motion as the camera input to the emulator to test the motion measurement?
+That way, you can repeat the motion or pause it without breaking a sweat.
+
+## Solution
+
+This can be done in the following way. Here's how to use the Android Studio emulator on MacBook OSX.
+
+1. Create a virtual camera device using [OBS Studio](https://obsproject.com/) and output video to it.
+2. Enable the virtual camera created by OBS in the Android emulator settings.
+
+### Install and set up OBS Studio
+
+Go to [Download OBS Studio](https://obsproject.com/download) to download and install the installation file.
+
+1. Run OBS Studio.
+2. Select Start Virtual Camera.
+3. Press "+" in the Sources panel to select Media Source.
+4. Click OK on the pop-up window and select a video file from Local File. Tick "loop" for looping playback.
+
+<Youtube src="https://www.youtube.com/embed/DjhW4nywf5o" />
+
+### Setting up Virtual Camera
+
+To use the emulator on Android, create a device with "Create device" in Device Manager.
+
+[Android Studio's Device List screen]
+
+![Device Manager - Device List](/assets/blog/using-obs-as-android-emulator-camera/device-manager-devie-list.png)
+
+When creating a device, you can set the camera to one of three types in "Device Manager > Edit Device > Advanced Settings > Camera".
+
+- None - No camera is used.
+- Emulated - Simulates a camera. The camera is placed in a virtual space and used.
+- Device - uses the host computer's camera.
+
+The camera on the physical device will be set to `Webcam0` if it has a built-in camera.
+If the virtual camera device in OBS is not number 0, you need to manually set the AVD configuration file as shown below.
+
+[AVD Camera Settings Screen]
+
+![Device Manager](/assets/blog/using-obs-as-android-emulator-camera/device-manager-configure-camera.png)
+
+The command below shows the device number of the OBS virtual camera.
+In the result below, 0 is the OBS Virtual Camera, but in some cases, it may be 1.
+
+```bash
+ffmpeg -f avfoundation -list_devices true -i ""
+```
+
+```bash {2}
+[AVFoundation indev @ 0x148804080] AVFoundation video devices:
+[AVFoundation indev @ 0x148804080] [0] OBS Virtual Camera
+[AVFoundation indev @ 0x148804080] [1] FaceTime HD Camera
+[AVFoundation indev @ 0x148804080] [2] ManyCam Virtual Webcam
+[AVFoundation indev @ 0x148804080] [3] Capture screen 0
+[AVFoundation indev @ 0x148804080] [4] Capture screen 1
+[AVFoundation indev @ 0x148804080] AVFoundation audio devices:
+[AVFoundation indev @ 0x148804080] [0] ManyCam Virtual Microphone
+[AVFoundation indev @ 0x148804080] [1] MacBook Pro Microphone
+```
+
+Modify the `config.ini` configuration file of the Android emulator as shown below.
+The configuration file of the Android emulator is located in the following location. `~/.android/avd/<your_device>.avd/config.ini`
+
+```properties
+hw.camera.front=webcam0
+```
+
+If you don't see OBS Camera in the Android emulator or get an error, try restarting the emulator or restarting Android Studio.
+
+## References
+
+- [Using the OBS virtual camera in the android](https://www.reddit.com/r/AndroidStudio/comments/ugwufb/using_the_obs_virtual_camera_in_the_android/)
