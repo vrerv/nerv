@@ -1,0 +1,65 @@
+---
+title: Javascript 의 변수 사용 - 초간단 설명
+date: '2023-08-24'
+tags: ['javascript', 'var', 'let', 'const', 'hoisting', 'scope']
+draft: false
+summary: 'ES6 에서 추가된 let, const 로 변수를 선언하고 사용해야 한다. var 사용된 코드 읽을때 변수 호이스팅과 변수 범위에 주의해야 한다.'
+authors: ['default']
+---
+
+## 개요
+
+`Javascript` 에서 변수를 사용하는 방법에 대해서 알아보자.
+
+[그림 1 - 변수 선언 키워드]
+
+<Mermaid chart={`
+flowchart LR
+  let["let (mutable)"]
+  const["const (immutable)"]
+  subgraph ES6["ES6 (ECMAScript 2015)"]
+    let
+    const
+  end
+  var --> let
+  var --> const
+`}>
+</Mermaid>
+
+* [`ES6`](https://www.w3schools.com/js/js_es6.asp) 이후 [`var`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/var) 가 [`let`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let), [`const`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/const) 로 개선되었다고 보면 된다.
+* `var` - 함수 또는 전체 범위로 선언할 수 있는 변수로 `ES6` 이전에 사용되던 변수 선언 방식이다.
+* `let`, `const` - 블록 범위로 선언할 수 있는 변수로 `ES6` 에서 추가된 변수 선언 방식이다. `const` 의 경우 선언및 초기화후 값을 변경할 수 없다.
+
+## Hoisting
+
+모든 선언문(변수, 함수, 클래스)은 실행전 스코프의 최상단으로 옮겨져서 선언된것 처럼 동작하는 방식을 말한다.
+
+변수 호이스팅 동작:
+
+- `var` - 호이스팅 될때, 자동으로 `undefined` 로 초기화됨 (즉 `Temporal Dead Zone` 구간이 없다고 볼 수 있음)
+- `let`, `const` 는 호이스팅이 되나, 자동 초기화가 안되므로 `Temporal Dead Zone` 때문에 호이스팅 효과가 없다고 볼 수 있다. (즉, 신경 안써도 됨)
+
+`let`, `const` 의 경우 호이스팅에 의해 선언문이 최상단으로 옮겨지지만, 원래 `let`, `const` 이 선언된 명령문(초기화 되는 곳)까지는 변수를 참조할 수 없는 `Temporal Dead Zone` 이 존재하고 이때 변수를 참조하면 `ReferenceError` 가 발생한다.
+
+```javascript
+console.log(a); var a; a = 42; // undefined
+console.log(b); let b; b = 42; //ReferenceError: b is not defined
+console.log(c); const c = 42; //ReferenceError: c is not defined
+```
+
+`let`, `const` 는 블록 단위로 스코프 되고 적용됨
+
+```javascript
+let a = 10;
+{ // new block scope
+  //console.log(a); // ReferenceError: a is not defined
+  let a = 20;
+  console.log(a); // 20
+}
+console.log(a); // 10
+```
+
+## 결론
+
+* `const` 사용 권장, 중간에 값을 변경해야 되는 경우만 `let` 사용
+* `var` 사용된 코드 읽을때 변수 호이스팅과 변수 범위에 주의해야 한다
