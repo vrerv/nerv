@@ -52,7 +52,7 @@ console.log(c); const c = 42; //ReferenceError: c is not defined
 ```javascript
 let a = 10;
 { // new block scope
-  //console.log(a); // ReferenceError: a is not defined
+  //console.log(a); // ReferenceError: Cannot access 'a' before initialization
   let a = 20;
   console.log(a); // 20
 }
