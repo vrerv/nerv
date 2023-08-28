@@ -1,0 +1,170 @@
+---
+title: Java/Kotlin Backend Server Logging
+date: '2023-08-28'
+tags: ['java', 'kotlin', 'backend', 'logging', 'springframework']
+draft: false
+summary: ''
+authors: ['default']
+---
+
+## 개요
+
+Java/Kotlin 으로 백엔드 서버를 개발할때, 로깅을 어떻게 하고, 특히 에러 상황에서 어떻게 로그를 처리해야 할지 생각해본다.
+
+- Java/Kotlin Backend Server에서 로깅을 하는 방법
+- Logger, Logging Level, Log Message
+
+## 일반적인 방법
+
+[`Slf4j`](https://www.slf4j.org/) api 를 사용하여 로깅하고, [`Logback`](https://logback.qos.ch/) 등을 사용하여 로그를 저장한다.
+
+일반적으로 Java/Kotlin Backend Server에서 로깅을 하는 방법은 다음과 같다.
+
+- [`Lombok`](https://projectlombok.org/)의 [`@Slf4j`](https://projectlombok.org/features/log) 어노테이션을 사용하여 `Logger`를 선언한다.
+- 필요한 곳에서 `Logger` 로 로깅을 한다.
+
+```java
+@Slf4j
+public class SampleClass {
+	public void sampleMethod(Object arg) {
+		log.info("sampleMethod {}", arg);
+	}
+}
+```
+
+
+아래는 `Kotlin` 에서 [`kotlin-logging`](https://github.com/oshai/kotlin-logging) 를 사용하여 로깅하는 예이다.
+
+```kotlin
+
+class SampleClass {
+	companion object: KLogging()
+	fun sampleMethod(arg: Any) {
+		logger.info { "sampleMethod $arg" }
+	}
+}
+```
+
+### 로깅 메쏘드 호출시 연산을 하지 않는다.
+
+로깅 메쏘드 내부에서는 로그 레벨에 따라 실제 로깅을 하지 않을 수도 있기 때문에 미리 연산을 하면 자원 낭비가 된다.
+
+아래는 그 예이다. 아래의 경우 로그 레벨을 `WARN` 단계로 했다면, 로그는 출력되지 않겠지만, **good** 인 경우 외에는 모두 연산이 일어난다.
+
+```java
+public class SampleClass {
+  public void sampleMethod(Object arg) {
+    log.info("sampleMethod {}", arg); // good
+    if (log.isInfoEnabled()) log.info("sampleMethod " + arg); // not bad, but redundant
+    log.info("sampleMethod {}", arg.toString()); // bad
+    log.info("sampleMethod " + arg); // bad
+    log.info("sampleMethod " + arg.getResultOfVeryLongTask()); // worst
+  }
+}
+```
+
+Kotlin 에서는 아래와 같이 lambda 표현식으로 로깅 메쏘드를 호출하면 연산이 일어나지 않는다.
+
+```kotlin
+logger.info { "sampleMethod $arg" } // good
+if (logger.isInfoEnabled) logger.info("sampleMethod $arg") // not bad, but redundant
+logger.info("sampleMethod $arg") // bad
+logger.info("sampleMethod ${arg.getResultOfVeryLongTask()}") // worst
+```
+
+### 에러를 던질때 로깅하지 않는다.
+
+에러에 대한 중복 로깅을 막기 위해 에러를 던질때 로깅하지 않는다.
+던져진 에러는 어딘가에서 처리되어야 하기 때문에, 그곳에서 로깅을 하면 된다.
+
+```java
+public class SampleClass {
+  public void sampleMethod(Object arg) {
+    try {
+		// do something
+    } catch (RuntimeException e) {
+      log.error("sampleMethod error", e);
+      throw e;
+    }
+  }
+}
+```
+
+```kotlin
+fun sampleMethod(arg: Any) {
+  try {
+    // do something
+  } catch (e: RuntimeException) {
+    logger.error(e) { "sampleMethod error" }
+    throw e
+  }
+}
+```
+
+### 로그 메세지에 객체의 정보를 넣을때, toString() 을 사용한다.
+
+[`toString()`](https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#toString--) 의 용도는 바로 이런 경우를 위해서다.
+
+The Good:
+```kotlin
+data class SampleClass(val id: Long, val name: String) // data class automatically generates toString method
+class SampleClass2(val id: Long, val name: String) {
+  override fun toString(): String {
+    return "SampleClass2(id=$id, name=$name)"
+  }
+}
+
+val a = SampleClass(1, "a")
+val b = SampleClass2(2, "b")
+
+logger.info { "sampleMethod is calling. a=$a, b=$b" }
+```
+
+The Bad:
+```kotlin
+data class SampleClass(val id: Long, val name: String) {
+	fun toDebugMessage(): String {
+		return "SampleClass(id=$id, name=$name)"
+	}
+}
+class SampleClass2(val id: Long, val name: String)
+
+val a = SampleClass(1, "a")
+val b = SampleClass2(2, "b")
+
+logger.info { "sampleMethod is calling. a=${a.toDebugMessage()}, b.di=${b.id}, b.name=${b.name}" }
+```
+
+## Springboot 에서의 로깅 설정
+
+[Springboot](https://spring.io/projects/spring-boot) 에서는 [application properties](https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html) 통해 로깅을 설정할 수 있다.
+`Springboot` 은 기본 `logback` 을 사용하고 `console` 로만 로그를 내보낸다.
+필요시 `logging.file.name`, `logging.file.path` 를 설정하면 파일로 내보낼 수 있다.
+
+아마도 운영시 `Logstash` 등으로 로그를 보내는 것이 좋을 것이다.
+
+`application.yml` 에서 logging level 설정
+
+```yaml
+logging:
+  # log to file
+  #   name: app.log
+  #   path: /var/log
+  level:
+    root: info
+    # Your application package
+    app.package: debug
+    app.package.feature.a: warn
+    app.package.feature.b: info
+    # springframework libraries
+    org.springframework: warn
+    # show jpa sqls and parameter values in log
+    org.hibernate.SQL: debug
+    org.hibernate.type: trace
+    org.hibernate.type.descriptor.sql.BasicBinder: trace
+    org.hibernate.type.descriptor.sql.BasicExtractor: trace
+```
+
+## References
+
+* [Spring Boot Logging Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.logging)
