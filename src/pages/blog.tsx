@@ -4,9 +4,11 @@ import { Meta } from '@/layouts/Meta'
 import { Main } from '@/templates/Main'
 // @ts-ignore
 import { getAllFilesFrontMatter } from '@/lib/mdx'
+// @ts-ignore
+import { getOgDescription } from '@/lib/og-helper'
 
 const Blog = (params: any) => (
-  <Main meta={<Meta title="VReRV - Blog" description="Blog site" />}>
+  <Main meta={<Meta title="VReRV - Blog" description={getOgDescription("기술 블로그", params.posts.map((post:any) => post.tags))} />}>
 
     <div className="p-4" >
     {params.posts.map((post: any) => (
@@ -24,6 +26,7 @@ const Blog = (params: any) => (
 
 export async function getStaticProps() {
   const allPosts = await getAllFilesFrontMatter('blog')
+
   // prevent duplicated listing by language - TODO: add multilanguage support later
   return { props: { posts: allPosts.filter((it: any) => !it.slug.endsWith("_en")) } };
 }

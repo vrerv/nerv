@@ -6,6 +6,8 @@ import { Main } from "@/templates/Main";
 import { MDXComponents, MDXLayoutRenderer } from "../../components/MDXComponents";
 // @ts-ignore
 import { formatSlug, getAllFilesFrontMatter, getFileBySlug, getFiles } from "@/lib/mdx";
+// @ts-ignore
+import { getOgDescription } from '@/lib/og-helper'
 
 type IBlogUrl = {
   slug: string[];
@@ -59,7 +61,7 @@ const Blog = (props: InferGetStaticPropsType<typeof getStaticProps>) => {
   const { mdxSource, toc, frontMatter } = props.post;
   const { authorDetails, prev, next } = props;
   return (
-    <Main meta={<Meta title={"VReRV - Blog - " + frontMatter.title} description={frontMatter.summary} />}>
+    <Main meta={<Meta title={"VReRV - Blog - " + frontMatter.title} description={getOgDescription(frontMatter.summary, frontMatter.tags)} />}>
       <div className="p-4">
 
         <MDXLayoutRenderer layout={frontMatter.layout || 'PostSimple'} mdxSource={mdxSource} toc={toc}
