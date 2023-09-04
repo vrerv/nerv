@@ -77,26 +77,27 @@ logger.info("sampleMethod ${arg.getResultOfVeryLongTask()}") // worst
 에러에 대한 중복 로깅을 막기 위해 에러를 던질때 로깅하지 않는다.
 던져진 에러는 어딘가에서 처리되어야 하기 때문에, 그곳에서 로깅을 하면 된다.
 
-```java
-public class SampleClass {
-  public void sampleMethod(Object arg) {
-    try {
-		// do something
-    } catch (RuntimeException e) {
-      log.error("sampleMethod error", e);
-      throw e;
-    }
-  }
-}
-```
+안좋은 예:
 
 ```kotlin
 fun sampleMethod(arg: Any) {
   try {
-    // do something
+    fail()
   } catch (e: RuntimeException) {
-    logger.error(e) { "sampleMethod error" }
+    logger.error(e) { "sampleMethod error $arg" }
     throw e
+  }
+}
+```
+
+만약 에러에 추가적인 정보를 포함하기 위함이면, 새로운 에러로 감싸서 던지면 된다.
+
+```kotlin
+fun sampleMethod(arg: Any) {
+  try {
+    fail()
+  } catch (e: RuntimeException) {
+    throw RuntimeException("sampleMethod error. arg=$arg", e)
   }
 }
 ```
