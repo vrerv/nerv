@@ -18,4 +18,8 @@ module.exports = withPWA(withBundleAnalyzer({
   // You can remove `basePath` if you don't need it.
   reactStrictMode: true,
   pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
+  i18n: {
+    locales: ['ko', 'en'],
+    defaultLocale: 'ko',
+  }
 }));
