@@ -9,7 +9,7 @@ class MyDocument extends Document {
     return (
       <Html lang={AppConfig.locale}>
         <Head>
-          <link rel="manifest" href="/manifest.json" />
+          <link rel="manifest" href="/manifest.webmanifest" />
           <meta name="theme-color" content="#000000" />
 
           <link rel="icon" type="image/png" sizes="32x32" href="/assets/pwa/favicon-32x32.png" />
