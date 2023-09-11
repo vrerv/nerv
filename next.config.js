@@ -2,8 +2,11 @@
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
+const withPWA = require('next-pwa')({
+  dest: 'public'
+})
 
-module.exports = withBundleAnalyzer({
+module.exports = withPWA(withBundleAnalyzer({
   eslint: {
     dirs: ['.'],
   },
@@ -15,4 +18,4 @@ module.exports = withBundleAnalyzer({
   // You can remove `basePath` if you don't need it.
   reactStrictMode: true,
   pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
-});
+}));
