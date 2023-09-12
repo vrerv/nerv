@@ -7,7 +7,7 @@
 const Youtube = ({src}) => {
   return (
 
-    <iframe src={src} style={{width: "100%", "aspect-ratio": "16/9"}}
+    <iframe src={src} style={{width: "100%", aspectRatio: "16/9"}}
             title="YouTube video player" frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen></iframe>
