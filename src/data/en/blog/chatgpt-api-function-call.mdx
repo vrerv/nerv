@@ -1,0 +1,211 @@
+---
+title: OpenAI's Chat Completion API adds function call functionality
+date: '2023-07-22'
+tags: ['chatgpt', 'openai', 'llm', 'gpt-4', 'python']
+draft: false
+summary: Describes how to leverage the function call feature of the OpenAI ChatAPI to allow an AI model to call a function and utilise the function's response to generate a final response.
+authors: ['default']
+---
+
+OpenAI has recently added a 'function calling' feature to its GTP API.
+
+When you query an AI model in the OpenAI ChatAPI, you can provide an additional list of functions that the AI model can utilise to generate a response,
+When generating a response to a user's query, the AI model can select an appropriate function from the list of functions provided by the user and receive additional function responses from the user to generate the final response.
+
+In other words, the existing AI model itself can be extended by providing additional information, or by automating the result of ChatGPT's response to take some action.
+For example, you can use it to
+
+* Generate a response from a user's request message that results from a web search (by calling a function).
+* Retrieve flight schedules from an airline site, suggest the cheapest flight, and take an action such as booking that flight.
+
+This feature is supported by two newly released models: GPT-4-0613 and GPT-3.5-TURBO-0613.
+
+## How to use
+
+If the user provides a list of function definitions in JSON format, the AI model can request a function call before responding to a user query.
+The `function_call` parameter controls whether the function is called or not.
+
+* auto - the AI model will automatically decide whether to call the function.
+* specific function name - requests that the AI model use that function
+* none - do not use
+
+When the AI provides a response to a function call, the response is appended to the `function_call` property of the response message.
+When sending a Chat message to provide a response to a function, set the `role` to `function` and send it.
+
+When using the Chat API with function calls, the process is as follows
+
+1. the user's query and `functions` provide a list of functions that the AI model can call. 2. the AI model calls the functions.
+2. the AI model decides whether to call the function.
+3. If the AI model uses the function, it returns a function call request response with the function name and call parameters to the user.
+4. When the user receives the function call response, call the function to generate the response.
+5. the user creates a new query by adding the function call response to the existing query and calls the CHAT API again.
+6. The AI model receives the new query and uses the function response to generate the final response.
+
+<Mermaid chart={`graph TD
+    style B fill:#f9f
+    style C fill:#f9f
+    style G fill:#f9f
+    style H fill:#f9f
+
+    A[User calls Chat API with a list of functions] --> B{{"AI model decides to use \na function in the list for the query"}}
+    B -->|Use a function| C["AI Model returns \na function call request response \nwith function name and call parameters"]
+    B -->|Do not use a function| G[Generate the final response]
+    C --> D[User calls a function]
+    D --> E["Create a new query by \nadding the function call response value \nto an existing query"]
+    E --> F[Call Chat API Again]
+    F --> H["AI model takes the new query \nand utilises the function response \nto generate the final response"]
+    G --> I[Return the final response]
+    H --> I[Get the final response]
+`}>
+</Mermaid>
+
+
+```graph TD
+    style B fill:#f9f
+    style C fill:#f9f
+    style G fill:#f9f
+    style H fill:#f9f
+
+    A[user calls Chat API and provides a list of functions] --> B{{AI model decides whether to call a function}}
+    B -->|Decides to use the function| C[Returns a function call request response with function name and call parameters]
+    B -->|Do not use the function| G[Generate the final response]
+    C --> D[User calls a function to generate a response]
+    D --> E[Create a new query by adding the function call response value to an existing query]
+    E --> F[call the Chat API again]
+    F --> H[AI model takes the new query and utilises the function response to generate the final response]
+    G --> I[return the final response]
+    H --> I[Finalised response]
+```
+
+Below is an example of calling a function to get the weather provided by OpenAI. The print statement is added.
+
+```python
+import openai
+import json
+
+
+# Example of a dummy function that always returns the same weather, in production it would be
+# This could be code that calls a backend API or an external API.
+def get_current_weather(location, unit="fahrenheit"):
+    """Get the current weather in a given location"""
+    weather_info = {
+        "location": location,
+        "temperature": "72",
+        "unit": unit,
+        "forecast": ["sunny", "windy"],
+    }
+    return json.dumps(weather_info)
+
+
+def run_conversation():
+    # Step 1: Send a list of dialogues and available functions to GPT
+    messages = [{"role": "user", "content": "What's the weather like in Boston?"}]
+    functions = [
+        {
+            "name": "get_current_weather",
+            "description": "Get the current weather in a given location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "The city and state, e.g. San Francisco, CA",
+                    },
+                    "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
+                },
+                "required": ["location"],
+            },
+        }
+    ]
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo-0613",
+        messages=messages,
+        functions=functions,
+        function_call="auto", # 'auto' is the default, but set for clarity
+    )
+    response_message = response["choices"][0]["message"]
+
+    # Step 2: Make sure GPT wants to call the function
+    if response_message.get("function_call"):
+        # Step 3: Call the function
+        # Note: JSON responses may not always be valid, so be sure to handle errors.
+        print("Function call response message:", response_message)
+        available_functions = {
+            "get_current_weather": get_current_weather,
+        } # In this example, we only have one function, but you can have multiple.
+        function_name = response_message["function_call"]["name"]
+        fuction_to_call = available_functions[function_name]
+        function_args = json.loads(response_message["function_call"]["arguments"])
+        function_response = fuction_to_call(
+            location=function_args.get("location"),
+            unit=function_args.get("unit"),
+        )
+
+        # Step 4: Add the response from the function call to the message and send it to GPT
+        messages.append(response_message) # expand the dialogue of the GPT response
+        messages.append(
+            { "role".
+                "role": "function",
+                "name": function_name,
+                "content": function_response,
+            }
+        ) # extend the dialogue with a function response
+        second_response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo-0613",
+            messages=messages,
+        ) # Get a new response from GPT that confirms the added function response.
+        return second_response
+
+
+print("Final response: ", run_conversation())
+```
+
+
+Save the above example as `chatgpt-function-call-example.py` and install and execute the openai library as shown below.
+Set the API key in the OPENAI_API_KEY environment variable and execute the example.
+
+```bash
+pip install openai
+export OPENAI_API_KEY=YOUR_API_KEY
+
+python chatgpt-function-call-example.py
+```
+
+The result of the execution:
+
+```json
+% python chat-api-function-call.py
+함수 호출 응답 메세지: {
+  "role": "assistant",
+  "content": null,
+  "function_call": {
+    "name": "get_current_weather",
+    "arguments": "{\n  \"location\": \"Boston\"\n}"
+  }
+}
+최종 응답:  {
+  "id": "chatcmpl-7f2K8wMqviU1ALq9D2q81c28tVxin",
+  "object": "chat.completion",
+  "created": 1690014736,
+  "model": "gpt-3.5-turbo-0613",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The current weather in Boston is sunny and windy with a temperature of 72 degrees."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 68,
+    "completion_tokens": 17,
+    "total_tokens": 85
+  }
+}
+```
+
+## References
+
+* For more detailed usage, see OpenAI's official documentation: [Function Calling Guide](https://platform.openai.com/docs/guides/gpt/function-calling)
