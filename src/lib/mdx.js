@@ -22,10 +22,10 @@ import rehypePrismPlus from 'rehype-prism-plus'
 import rehypePresetMinify from 'rehype-preset-minify'
 
 const root = process.cwd()
-const dataDir = 'src/data'
+const dataDir = 'src/data/'
 
-export function getFiles(type) {
-  const prefixPaths = path.join(root, dataDir, type)
+export function getFiles(type, locale = '') {
+  const prefixPaths = path.join(root, dataDir + locale, type)
   const files = getAllFilesRecursively(prefixPaths)
   // Only want to return blog/path and ignore root, replace is needed to work on Windows
   return files.map((file) => file.slice(prefixPaths.length + 1).replace(/\\/g, '/'))
@@ -41,9 +41,9 @@ export function dateSortDesc(a, b) {
   return 0
 }
 
-export async function getFileBySlug(type, slug) {
-  const mdxPath = path.join(root, dataDir, type, `${slug}.mdx`)
-  const mdPath = path.join(root, dataDir, type, `${slug}.md`)
+export async function getFileBySlug(type, slug, locale = '') {
+  const mdxPath = path.join(root, dataDir + locale, type, `${slug}.mdx`)
+  const mdPath = path.join(root, dataDir + locale, type, `${slug}.md`)
   const source = fs.existsSync(mdxPath)
     ? fs.readFileSync(mdxPath, 'utf8')
     : fs.readFileSync(mdPath, 'utf8')
@@ -108,8 +108,8 @@ export async function getFileBySlug(type, slug) {
   }
 }
 
-export async function getAllFilesFrontMatter(folder) {
-  const prefixPaths = path.join(root, dataDir, folder)
+export async function getAllFilesFrontMatter(folder, locale = '') {
+  const prefixPaths = path.join(root, dataDir + locale, folder)
 
   const files = getAllFilesRecursively(prefixPaths)
 

@@ -1,0 +1,59 @@
+---
+title: Hello Blog
+date: '2023-06-22'
+tags: ['hello', 'nextjs', 'mdx', 'blog', 'mermaid']
+draft: false
+summary: ''
+authors: ['default']
+---
+
+# Test page for the mdx blog post
+
+## Images
+
+<Image src="/assets/images/blue-beach.png" alt="Beach" priority="false" width="1024" height="1024" />
+
+## H2 title
+### H3 title
+#### H4 title
+##### H5 title
+
+* list 1
+* list 2
+
+Some code:
+```js
+const test = "hello world";
+```
+
+Some code with line numbers and highlight:
+```js {1,3-4} showLineNumbers
+function fancyAlert(arg) {
+  if (arg) {
+    $.facebox({ div: '#foo' })
+  }
+}
+```
+
+**bold text** and *italic text*
+
+> quote
+
+[link](https://vrerv.com)
+
+## Mermaid
+
+
+```
+<Mermaid chart={`flowchart LR
+   A --> B
+   A --> C`}>
+</Mermaid>
+```
+
+<Mermaid chart={`flowchart LR
+   A --> B
+   A --> C`}>
+</Mermaid>
+
+## citation

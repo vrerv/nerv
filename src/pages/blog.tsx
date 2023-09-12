@@ -24,11 +24,12 @@ const Blog = (params: any) => (
 );
 
 
-export async function getStaticProps() {
-  const allPosts = await getAllFilesFrontMatter('blog')
+export async function getStaticProps({ locale }: { locale: any }) {
+
+  const allPosts = await getAllFilesFrontMatter('blog', '/' + locale)
 
   // prevent duplicated listing by language - TODO: add multilanguage support later
-  return { props: { posts: allPosts.filter((it: any) => !it.slug.endsWith("_en")) } };
+  return { props: { posts: allPosts , locale: locale} };
 }
 
 export default Blog;

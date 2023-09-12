@@ -17,26 +17,31 @@ type IBlogUrl = {
   authorDetails: any[];
 };
 
-export const getStaticPaths: GetStaticPaths<IBlogUrl> = async () => {
-  const posts = getFiles('blog')
+export const getStaticPaths: GetStaticPaths<IBlogUrl> = async ({locales}) => {
+
+  const paths = (locales || []).flatMap((locale) => {
+
+    const posts = getFiles('blog', locale)
+    return posts.map((p: any) => ({
+      params: { slug: formatSlug(p).split('/') }, locale: locale,
+    }))
+  })
+
   return {
-    paths: posts.map((p: any) => ({
-      params: { slug: formatSlug(p).split('/') },
-    })),
+    paths: paths,
     fallback: false,
-  };
+  }
 };
 
 export const getStaticProps: GetStaticProps<IBlogUrl, IBlogUrl> = async ({
-                                                                           params,
+                                                                           params, locale,
                                                                          }) => {
 
-  console.log("params", params)
-  const allPosts = await getAllFilesFrontMatter('blog')
+  const allPosts = await getAllFilesFrontMatter('blog', locale)
   const postIndex = allPosts.findIndex((post: any) => formatSlug(post.slug) === params?.slug.join('/'))
   const prev = allPosts[postIndex + 1] || null
   const next = allPosts[postIndex - 1] || null
-  const post = await getFileBySlug('blog', params?.slug.join('/'))
+  const post = await getFileBySlug('blog', params?.slug.join('/'), locale)
   const authorList = post.frontMatter.authors || ['default']
   const authorPromise = authorList.map(async (author: any) => {
     const authorResults = await getFileBySlug('authors', [author])
