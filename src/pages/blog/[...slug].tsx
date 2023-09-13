@@ -16,6 +16,7 @@ type IBlogUrl = {
   prev: any;
   next: any;
   authorDetails: any[];
+  locale: any;
 };
 
 export const getStaticPaths: GetStaticPaths<IBlogUrl> = async ({locales}) => {
@@ -59,6 +60,7 @@ export const getStaticProps: GetStaticProps<IBlogUrl, IBlogUrl> = async ({
       authorDetails: authorDetails,
       prev: prev,
       next: next,
+      locale: locale,
     },
   };
 };
@@ -72,6 +74,7 @@ const Blog = (props: InferGetStaticPropsType<typeof getStaticProps>) => {
       <div className="p-4">
 
         <MDXLayoutRenderer layout={frontMatter.layout || 'PostSimple'} mdxSource={mdxSource} toc={toc}
+                           locale={props.locale}
                            frontMatter={frontMatter}
                            authorDetails={authorDetails}
                            prev={prev}
