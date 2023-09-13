@@ -59,24 +59,6 @@ When using the Chat API with function calls, the process is as follows
 `}>
 </Mermaid>
 
-
-```graph TD
-    style B fill:#f9f
-    style C fill:#f9f
-    style G fill:#f9f
-    style H fill:#f9f
-
-    A[user calls Chat API and provides a list of functions] --> B{{AI model decides whether to call a function}}
-    B -->|Decides to use the function| C[Returns a function call request response with function name and call parameters]
-    B -->|Do not use the function| G[Generate the final response]
-    C --> D[User calls a function to generate a response]
-    D --> E[Create a new query by adding the function call response value to an existing query]
-    E --> F[call the Chat API again]
-    F --> H[AI model takes the new query and utilises the function response to generate the final response]
-    G --> I[return the final response]
-    H --> I[Finalised response]
-```
-
 Below is an example of calling a function to get the weather provided by OpenAI. The print statement is added.
 
 ```python
