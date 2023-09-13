@@ -1,5 +1,6 @@
 import { Meta } from '@/layouts/Meta'
 import { Main } from '@/templates/Main'
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
 
 //import beachImg from '@/public/assets/images/blue-beach.png'
 
@@ -67,3 +68,11 @@ const Hello = () => {
 }
 
 export default Hello
+
+export async function getStaticProps({ locale }: { locale: any }) {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale, ['common',])),
+    },
+  }
+}

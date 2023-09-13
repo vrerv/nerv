@@ -7,6 +7,7 @@ import { ThemeProvider } from 'next-themes';
 import { Mermaid } from '@/components/Mermaid';
 import { GoogleAnalyticsScripts } from "@/components/GoogleAnalyticsScripts";
 import React from "react";
+import { appWithTranslation } from 'next-i18next'
 
 const MyApp = ({ Component, pageProps }: AppProps) => (
 
@@ -16,4 +17,4 @@ const MyApp = ({ Component, pageProps }: AppProps) => (
   </ThemeProvider>
 );
 
-export default MyApp;
+export default appWithTranslation(MyApp);

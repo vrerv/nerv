@@ -6,6 +6,7 @@ import { AppConfig } from '@/utils/AppConfig';
 import { useRouter } from "next/router";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { useTranslation } from 'next-i18next';
 
 type IMainProps = {
   meta: ReactNode;
@@ -14,6 +15,7 @@ type IMainProps = {
 
 const Main = (props: IMainProps) => {
 
+  const { t } = useTranslation('common')
   const router = useRouter()
   const theme = useTheme()
   const [logoImage, setLogoImage] = useState("/assets/images/vrerv-logo.svg")
@@ -53,10 +55,10 @@ const Main = (props: IMainProps) => {
                          onClick={toggleTheme} />
                 </li>
                 <li className="flex-grow flex-shrink"><Link href="/hello"
-                                                            className="block px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">안녕하세요</Link>
+                                                            className="block px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">{t('hello')}</Link>
                 </li>
                 <li className="flex-grow flex-shrink"><Link href="/blog"
-                                                            className="px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">블로그</Link>
+                                                            className="px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">{t('blog')}</Link>
                 </li>
                 <li className="flex-grow flex-shrink"><Link href="https://github.com/vrerv"
                                                             className="block px-4 py-2 hover:bg-gray-200 no-underline"><i
@@ -85,6 +87,9 @@ const Main = (props: IMainProps) => {
          */}
                 <br />
                 <a href="https://vrerv.instatus.com/">status</a>{' '}
+                {router.locales?.filter((locale) => locale !== router.locale).map((locale) => (
+                  <><Link href={router.asPath} locale={locale}>({locale.toUpperCase()})</Link>{' '}</>
+                ))}
               </footer>
             </div>
           </div>

@@ -8,6 +8,7 @@ import { MDXComponents, MDXLayoutRenderer } from "../../components/MDXComponents
 import { formatSlug, getAllFilesFrontMatter, getFileBySlug, getFiles } from "@/lib/mdx";
 // @ts-ignore
 import { getOgDescription } from '@/lib/og-helper'
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 
 type IBlogUrl = {
   slug: string[];
@@ -52,6 +53,7 @@ export const getStaticProps: GetStaticProps<IBlogUrl, IBlogUrl> = async ({
   console.log("post", post)
   return {
     props: {
+      ...(await serverSideTranslations(locale!!, ['common',])),
       slug: params!.slug,
       post: post,
       authorDetails: authorDetails,

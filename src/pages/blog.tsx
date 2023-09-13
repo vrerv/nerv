@@ -6,6 +6,7 @@ import { Main } from '@/templates/Main'
 import { getAllFilesFrontMatter } from '@/lib/mdx'
 // @ts-ignore
 import { getOgDescription } from '@/lib/og-helper'
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 
 const Blog = (params: any) => (
   <Main meta={<Meta title="VReRV - Blog" description={getOgDescription("기술 블로그", params.posts.map((post:any) => post.tags))} />}>
@@ -28,8 +29,10 @@ export async function getStaticProps({ locale }: { locale: any }) {
 
   const allPosts = await getAllFilesFrontMatter('blog', '/' + locale)
 
-  // prevent duplicated listing by language - TODO: add multilanguage support later
-  return { props: { posts: allPosts , locale: locale} };
+  return { props: {
+    ...(await serverSideTranslations(locale, ['common',])),
+      posts: allPosts , locale: locale
+  } };
 }
 
 export default Blog;

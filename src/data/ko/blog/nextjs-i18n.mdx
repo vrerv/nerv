@@ -1,0 +1,170 @@
+---
+title: Next.js 에서 다국어(i18n) 지원 하기
+date: '2023-09-13'
+tags: ['javascript', 'Next.js', 'i18n', 'next-i18next', 'internationalization', '다국어', '국제화']
+draft: false
+summary: 'Next.js 에서 다국어(국제화, i18n) 지원을 위한 설정과 방법, next-i18next 라이브러리 사용법을 알아본다.'
+authors: ['default']
+---
+
+## 개요
+
+* `Next.js` 에서 다국어(국제화, `i18n`) 지원을 위한 설정과 방법, `next-i18next` 라이브러리 사용법을 알아본다.
+* 페이지에 다국어를 지원하는 방법은 두가지가 있다.
+    * routing 방식 - 페이지 전체가 언어마다 완전히 다른 페이지로 작성되어야 한다면, 서로 다른 라우팅으로 각 언어마다 페이지를 따로 작성한다. 블로그 글 같은 경우에 적용할 수 있다.
+    * text 번역 제공 방식 - 페이지 대부분이 동일한데, 텍스트만 다른 언어로 제공하고 싶다면, 텍스트를 번역하는 방식을 사용한다.
+
+## 방법
+
+### Routing 처리
+
+`Next.js` 는 기본적으로 다국어 라우팅을 지원한다. 공식 문서를 따라 설정하면 된다.
+
+`next.config.js` 에 다음과 같이 설정한다.
+
+```js
+module.exports = {
+  i18n: {
+    // 앱에서 제공하는 모든 언어를 나열
+    locales: ['ko', 'en',],
+    // 기본 언어 설정
+    defaultLocale: 'ko',
+  },
+}
+```
+
+* `domains` 를 설정하지 않으면 서브경로 전략으로 언어별 라우팅을 제공한다.
+* 따라서 `/hello` 페이지는 `locale` 에 따라 `/en/hello` 와 `/ko/hello` 로 각각 라우팅된다.
+* 기본언어는 서브경로 없이 바로 접근가능하다. 즉 `defaultLocale` 이 `ko` 이면 `/ko/hello` 는 `/hello` 로 접근 가능하다.
+* 사용자의 언어는 `Accept-Language` 헤더를 기반으로 결정된다.
+* 언어마다 라우팅을 테스트하기 위해서는 `/en/hello` 와 같은 경로로 접속하면 된다.
+
+#### Static Site Generation (SSG) 사용시 적용
+
+[`getStaticPaths`](https://nextjs.org/docs/pages/building-your-application/data-fetching/get-static-paths) 에서 페이지마다의 locale 을 지정해준다.
+
+동적 라우팅인 경우에는 아래와 같이 모든 `locale` 에 대한 `path` 를 지정해 준다.
+
+```js
+export const getStaticPaths = ({ locales }) => {
+  return {
+    paths: [
+      // if no `locale` is provided only the defaultLocale will be generated
+      { params: { slug: 'post-1' }, locale: 'en' },
+      { params: { slug: 'post-1' }, locale: 'ko' },
+    ],
+    fallback: true,
+  }
+}
+````
+
+동적 라우팅이 아닌 경우에는 `getStaticProps` 가 모든 지원되는 `locale` 에 대해 호출된다.
+
+
+#### 지원하는 다른 언어 링크 제공
+
+```js
+const router = useRouter()
+
+{router.locales?.filter((locale) => locale !== router.locale)
+  .map((locale) => (
+    <>
+      <Link href={router.asPath} locale={locale}>
+        ({locale.toUpperCase()})
+      </Link>
+      {' '}
+    </>
+  ))}
+```
+
+### Text 번역 제공하기
+
+`next-i18next` 라이브러리를 설치한다. 여기서는 서버사이드(`SSG` 또는 `SSR`)에서 제공하는 방법만 설명한다.
+클라이언트사이드에서도 가능하지만, 여기서는 생략하고 필요하면 공식 문서를 참고한다.
+
+```bash
+npm install next-i18next
+```
+
+설정하고 사용하기 위해서 다음을 수행한다.
+
+#### 설정파일 설정
+
+`next-i18next.config.js` 를 `next.config.js` 와 같은 위치에 생성한다.
+
+```js
+/** @type {import('next-i18next').UserConfig} */
+module.exports = {
+  i18n: {
+    defaultLocale: 'ko',
+    locales: ['ko', 'en'],
+  },
+}
+```
+
+`next.config.js` 에 `next-i18next` 의 `i18n` 프로퍼티 설정을 동일하게 추가한다.
+이부분은 `Next.js` 가 제공하는 라우팅 설정과 동일하게 사용하기 위해서이다.
+
+```js
+const { i18n } = require('./next-i18next.config');
+
+module.exports = {
+  i18n,
+}
+```
+
+#### 번역 파일 제공
+
+`public/locales` 디렉토리를 생성하고, 각 언어별로 번역 파일을 생성한다.
+
+즉 `public/locales/ko/common.json` 과 같은 형태로 생성한다.
+
+```json
+{
+  "messagekey": "메시지"
+}
+```
+
+#### 앱 설정
+
+`_app.js` 에서 `appWithTranslation` 으로 `App` 을 감싼다.
+
+```js
+import { appWithTranslation } from 'next-i18next'
+
+const MyApp; // 앱 정의 생략 ...
+
+export default appWithTranslation(MyApp)
+```
+
+#### 각 페이지에서 서버 번역 소스 가져오기
+
+```js
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
+
+export async function getStaticProps({ locale }: { locale: any }) {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale, ['common',])),
+      // 다른 페이지 프로퍼티들 ...
+    },
+  }
+}
+```
+
+#### 번역 사용하기
+
+```js
+import { useTranslation } from 'next-i18next'
+
+export const SomeComponent = () => {
+  const { t } = useTranslation('common')
+
+  return (<p>{t('messagekey')}</p>)
+}
+```
+
+## References
+
+* [Internationalization (i18n) Routing](https://nextjs.org/docs/pages/building-your-application/routing/internationalization)
+* [next-i18next](https://github.com/i18next/next-i18next)

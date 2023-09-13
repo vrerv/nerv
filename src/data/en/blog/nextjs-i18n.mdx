@@ -1,0 +1,170 @@
+---
+title: Adding multilingual(i18n) support in Next.js
+date: '2023-09-13'
+tags: ['javascript', 'Next.js', 'i18n', 'next-i18next', 'internationalization', 'multilingual', 'internationalisation']
+draft: false
+summary: Learn how to set up multilingual (internationalization, i18n) support in Next.js and how to use the next-i18next library.
+authors: ['default']
+---
+
+## Overview
+
+* Learn how to set up multilingual (internationalization, `i18n`) support in `Next.js` and how to use the `next-i18next` library.
+* There are two ways to support multiple languages on a page
+  * Routing - If the entire page needs to be written as a completely different page for each language, create separate pages for each language with different routing. This can be used for things like blog posts.
+  * providing text translations - if the majority of the page is the same, but you only want to provide the text in different languages, use the text translation method.
+
+## Method
+
+### Handling Routing
+
+Next.js supports multilingual routing by default. Follow the official documentation to set it up
+
+In `next.config.js`, set the following options
+
+```js
+module.exports = {
+  i18n: {
+    // list all the languages your app offers
+    locales: ['en', 'en',],
+    // Set the default language
+    defaultLocale: 'en',
+  },
+}
+```
+
+* If `domains` is not set, the sub-path strategy provides language-specific routing.
+* So the `/hello` page is routed to `/en/hello` and `/ko/hello` depending on `locale`.
+* The default language is directly accessible without a sub-path, i.e. if `defaultLocale` is `en`, then `/en/hello` is accessible as `/hello`.
+* The user's language is determined based on the `Accept-Language` header.
+* To test routing for different languages, you can connect to a path like `/en/hello`.
+
+#### When using Static Site Generation (SSG)
+
+Specify the locale for each page in [`getStaticPaths`](https://nextjs.org/docs/pages/building-your-application/data-fetching/get-static-paths).
+
+For dynamic routing, specify a `path` for every `locale` as shown below.
+
+```js
+export const getStaticPaths = ({ locales }) => {
+  return {
+    paths: [
+      // if no `locale` is provided only the defaultLocale will be generated
+      { params: { slug: 'post-1' }, locale: 'en' },
+      { params: { slug: 'post-1' }, locale: 'ko' },
+    ],
+    fallback: true,
+  }
+}
+````
+
+For non-dynamic routing, `getStaticProps` is called for every supported `locale`.
+
+
+#### provides links to other supported languages
+
+```js
+const router = useRouter()
+
+{router.locales?.filter((locale) => locale !== router.locale)
+  .map((locale) => (
+    <>
+      <Link href={router.asPath} locale={locale}>
+        ({locale.toUpperCase()})
+      </Link>
+      {' '}
+    </>
+  ))}
+```
+
+### Provide text translation
+
+Install the `next-i18next` library. This section only describes how to provide it from the server side (`SSG` or `SSR`).
+It is also possible to do this on the client side, but we will omit it here and refer to the official documentation if necessary.
+
+```bash
+npm install next-i18next
+```
+
+To set up and use it, do the following
+
+#### Set up a configuration file
+
+Create `next-i18next.config.js` in the same location as `next.config.js`.
+
+```js
+/** @type {import('next-i18next').UserConfig} */
+module.exports = {
+  i18n: {
+    defaultLocale: 'en',
+    locales: ['ko', 'en'],
+  },
+}
+```
+
+In `next.config.js`, add the same settings for the `i18n` property of `next-i18next`.
+This is to use the same routing settings as provided by `Next.js`.
+
+```js
+const { i18n } = require('./next-i18next.config');
+
+module.exports = {
+  i18n,
+}
+```
+
+#### Provide a translation file
+
+Create a `public/locales` directory and create a translation file for each language.
+
+That is, create something like `public/locales/en/common.json`.
+
+```json
+{
+  "messagekey": "Hello, world!"
+}
+```
+
+#### App settings
+
+In `_app.js`, wrap `App` with `appWithTranslation`.
+
+```js
+import { appWithTranslation } from 'next-i18next'
+
+const MyApp; // omit the app definition ...
+
+export default appWithTranslation(MyApp)
+```
+
+#### Get the server translation source from each page
+
+```js
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
+
+export async function getStaticProps({ locale }: { locale: any }) {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale, ['common',])),
+      // other page properties ...
+    },
+  }
+}
+```
+
+#### Using the translation
+
+```js
+import { useTranslation } from 'next-i18next'
+
+export const SomeComponent = () => {
+  const { t } = useTranslation('common')
+
+  return (<p>{t('messagekey')}</p>)
+}
+```
+
+## References
+
+* [Internationalization (i18n) Routing](https://nextjs.org/docs/pages/building-your-application/routing/internationalization)
+* [next-i18next](https://github.com/i18next/next-i18next)
