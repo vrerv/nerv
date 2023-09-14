@@ -1,0 +1,77 @@
+---
+title: 'Using the OpenAI API Library 3 - Embeddings-based Search'
+date: '2023-09-14'
+tags: ['openai', 'api', 'gpt-4', 'chatgpt', 'chatapi', 'chat-api', 'embedding', 'cookbook']
+draft: false
+summary: "In order to query a large amount of data that the model does not know, it is possible to provide all of that data and make relevant queries, but the size of the data that can be queried to the model is very limited, so we describe how to extract the data that is primarily relevant to the query through embedding and provide that data to the model to elicit the model's answer to the query."
+authors: ['default']
+---
+
+## Overview.
+
+* Summarize key points
+  of the notebook [Question answering using embeddings-based search](https://github.com/openai/openai-cookbook/blob/main/examples/Question_answering_using_embeddings.ipynb)
+  in the [OpenAI Cookbook](https://github.com/openai/openai-cookbook)
+* In order to query a large amount of data that the model does not know about, it is possible to provide all of that data and ask relevant questions,
+  Since the size of the data that can be queried to the model is very limited, we describe how to use embeddings to extract the data that is primarily relevant to the query and provide that data to the model to derive the model's answer to the query.
+* For more information about embeddings, see the previous post [Using the OpenAI API Library 2 - Embeddings](/blog/using-openai-api-library/using-openai-api-library-2-embedding).
+
+[Figure 1 - Querying about big data]
+<Mermaid chart={`graph TD
+  U1[user] ~~~ D1[(thick book)]
+  U1 -- Query --> Q1 -- "query exceeded max tokens" --x M[AI model]
+  D1 -- Total --> Q1["total + query"]
+
+  D1 -- "Divide by paragraph" --> DP1["paragraph1, paragraph2, paragraph3..."]
+
+  DP1 -- "embedding similarity search results" --> Q2["relevant paragraphs + query"]
+  U1 -- query --> Q2 -- OK --> M
+
+  subgraph "Bad"
+    Q1
+  end
+  subgraph "Good"
+    DP1
+    Q2
+  end
+
+  linkStyle 1 stroke-width:4px,fill:none,stroke:red;
+  linkStyle 2 stroke-width:4px,fill:none,stroke:red;
+  linkStyle 3 stroke-width:4px,fill:none,stroke:red;
+  linkStyle default stroke-width:4px,fill:none,stroke:green;
+`}>
+</Mermaid>
+
+## Theory
+
+- This is the method you can use if you want to ask questions about the data that the GPT model doesn't know about.
+- There are two ways to do this
+  - Fine-tuning - a specific task, a specific style.
+  - Providing data in a message - data about facts
+- Since we're going to be answering questions about facts in the data, we'll use providing data in a message.
+- However, the problem with providing data in a message is that there is a maximum size limit.
+  The maximum data that can be included in a message is approximately `gpt-3.5-turbo` (about 5 pages), `gpt-4` (about 10 pages) - check the maximum message size via `tiktoken library` and divide the data accordingly.
+- There are many ways to search text, but we will use embedding-based search. Embedding-based is particularly advantageous for question/answer search,
+  because questions and answers often contain different lexical content. Of course, you can use a mix of methods to improve the quality of your search.
+- Embedding is the conversion of words, sentences, etc. into multidimensional vectors. By measuring the distance between the embedded vectors, we can get an idea of the relevance of the embedded words or sentences.
+
+## Run
+
+- Data preparation
+  - Collect data to be retrieved - web crawl, etc.
+  - Break it into chunks for embedding into appropriate semantic units
+  - Call the [OpenAI Embeddings API](https://platform.openai.com/docs/guides/embeddings) to get an embedding for each chunk of text.
+  - Store the text and embedding values. Such as `CSV` or vector database storage.
+- Searching for data embeddings to include in a message
+  - Get the embedding values for the question entered by the user.
+  - Get a ranking by comparing the similarity of the embedding of the question and the data.
+- Final query
+  - Add the list of embedding search results in order of highest ranking to the message with the user's question within the maximum number of tokens.
+  - Send the message with the data related to the user's query to the [OpenAI Chat Completion API](https://platform.openai.com/docs/guides/chat) to get the answer related to that fact.
+
+## Conclusion
+
+- The above method can be used to query data that the model doesn't know about and get good results.
+- However, in some cases, the data did not provide enough answers due to incorrect data inference. The problem is not that the data provided is wrong (embedding-based search),
+  incorrect model inference,
+  This can be solved by specifying a model with higher inference.

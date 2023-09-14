@@ -1,0 +1,77 @@
+---
+title: 'OpenAI API Library 사용하기 3 - Embeddings-based Search'
+date: '2023-09-14'
+tags: ['openai', 'api', 'gpt-4', 'chatgpt', 'chatapi', 'chat-api', 'embedding', 'cookbook']
+draft: false
+summary: '모델이 알지 못하는 방대한 데이터에 질의하기 위해서 해당 데이터를 모두 제공하고 관련 질의를 할 수 있겠지만, 모델에 질의할 수 있는 데이터의 크기가 매우 제한되므로, 임베딩을 통해 일차적으로 질의에 관련된 데이터를 추출하고 그 데이터를 모델에 제공하여 질의에 대한 모델의 답변을 이끌어 내는 방법을 설명한다.'
+authors: ['default']
+---
+
+## 개요
+
+* [OpenAI Cookbook](https://github.com/openai/openai-cookbook) 의
+  노트북 [Question answering using embeddings-based search](https://github.com/openai/openai-cookbook/blob/main/examples/Question_answering_using_embeddings.ipynb)
+  의 핵심 내용만 요약하여 설명한다.
+* 모델이 알지 못하는 방대한 데이터에 질의하기 위해서 해당 데이터를 모두 제공하고 관련 질의를 할 수 있겠지만,
+  모델에 질의할 수 있는 데이터의 크기가 매우 제한되므로, 임베딩을 통해 일차적으로 질의에 관련된 데이터를 추출하고 그 데이터를 모델에 제공하여 질의에 대한 모델의 답변을 이끌어 내는 방법을 설명한다.
+* 임베딩에 대해서는 이전 포스팅 [OpenAI API Library 사용하기 2 - Embeddings](/blog/using-openai-api-library/using-openai-api-library-2-embedding) 를 참고한다.
+
+[그림 1 - 큰 데이터 대한 질의]
+<Mermaid chart={`graph TD
+  U1[사용자] ~~~ D1[(두꺼운 책)]
+  U1 -- 질의 --> Q1 -- 질의 토큰 초과 --x M[AI 모델]
+  D1 -- 전체 --> Q1[전체 + 질의]
+
+  D1 -- 단락 단위로 나눔 --> DP1["단락1, 단락2, 단락3..."]
+
+  DP1 -- 임베딩 유사도 검색 결과 --> Q2[연관성 높은 단락 + 질의]
+  U1 -- 질의 --> Q2 -- OK --> M
+
+  subgraph "Bad"
+    Q1
+  end
+  subgraph "Good"
+    DP1
+    Q2
+  end
+
+  linkStyle 1 stroke-width:4px,fill:none,stroke:red;
+  linkStyle 2 stroke-width:4px,fill:none,stroke:red;
+  linkStyle 3 stroke-width:4px,fill:none,stroke:red;
+  linkStyle default stroke-width:4px,fill:none,stroke:green;
+`}>
+</Mermaid>
+
+## 이론
+
+- GPT 모델이 알지 못하는 데이터에 대한 질문을 하고 싶을때, 사용할 수 있는 방법이다.
+- 두가지 방법이 있을 수 있다.
+  - 파인튜닝 - 특정 태스크, 어떤 스타일
+  - 질의 데이터에 포함 - 사실에 관한 데이터
+- 여기서는 데이터의 사실과 관련된 질답을 할 것이므로 질의 데이터에 포함하는 방법을 사용한다.
+- 그러나 질의 데이터에 포함할때 문제는 최대 크기의 제한이 따른다.
+  메세지에 포함 할 수 있는 최대 데이터는 모델별로 대략 `gpt-3.5-turbo` (5 페이지), `gpt-4` (10페이지) - `tiktoken library` 를 통해 최대 질의 데이터의 크기를 확인하여 데이터를 나눠야 할 필요가 있다.
+- 텍스트 검색에 다양한 방법이 있지만, 여기서는 임베딩 기반 검색을 사용한다. 임베딩 기반은 특히 질문/답변 검색에 유리하며,
+  대체로 질문과 답변은 서로 다른 어휘적 내용을 포함하는 경우가 많기 때문이다. 물론 검색의 질을 높이기 위해서는 여러 방법들을 혼합하여 사용할 수 있다.
+- 인베딩이란 단어, 문장등을 다차원 벡터로 변환하는 것을 뜻한다. 인베딩된 벡터간의 거리를 측정하면 인베딩된 단어 또는 문장의 관련성 정도를 알 수 있다.
+
+## 실행
+
+- 데이터 준비
+  - 검색할 데이터를 수집 - 웹크롤링 등
+  - 적절한 의미론적 단위로 임베딩할 수 있게 덩어리로 나눔
+  - 나뉜 각 텍스트에 대한 임베딩을 얻기 위해 [OpenAI Embeddings API](https://platform.openai.com/docs/guides/embeddings) 를 호출한다.
+  - 텍스트, 임베딩값을 저장한다. `CSV` 또는 벡터 데이터베이스 저장 등
+- 질의에 포함할 데이터 임베딩 기반 검색
+  - 사용자가 입력한 질문에 대한 임베딩값을 얻는다.
+  - 질문과 데이터의 임베딩의 유사한 정도를 비교하여 랭킹을 얻는다.
+- 최종 질의
+  - 높은 랭크순으로 임베딩 검색 결과목록을 최대 토큰수 이내에서 사용자의 질문과 함께 메세지에 추가한다.
+  - 사용자의 질의와 관련된 데이터를 포함한 메세지를 [OpenAI Chat Completion API](https://platform.openai.com/docs/guides/chat) 에 질의하여 해당 사실과 관련된 답변을 얻는다.
+
+## 결론
+
+- 위 방법을 사용하면 모델이 알지 못하는 데이터에 대해 질의하여 결과를 잘 얻을 수 있다.
+- 다만, 어떤 경우 데이터 추론이 잘못되어 데이터가 답변이 부족한 경우가 있었다. 이때의 문제는 제공된 데이터가 잘못(임베딩 기반 검색)이 아니라,
+  모델 추론이 부정확한 것으로,
+  더 추론이 높은 모델을 지정하여 해결할 수 있었다.
