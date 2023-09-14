@@ -3,7 +3,7 @@ title: 'OpenAI API Library 사용하기 2 - Token, Embedding'
 date: '2023-08-17'
 tags: ['openai', 'api', 'gpt-4', 'tiktoken', 'embedding']
 draft: false
-summary: ''
+summary: '여기서는 OpenAI API 사용시 기본이되는 Token 과 Embedding 에 대하여 알아본다. 토큰은 텍스트를 작은 단위로 나눠 ML 에서 입력으로 사용하기 위한 단위다. 임베딩은 부동 소수점 숫자의 벡터(목록)이다. 두 벡터 사이의 거리는 관련성을 나타낸다.'
 authors: ['default']
 ---
 
@@ -25,7 +25,7 @@ import Youtube from "./Youtube"
 ## Embedding
 
 인베딩은 어떤 값(토큰, 단어, 문장등)을 연속된 숫자로 맵핑하는 것이다. 학습을 통하여 개별 변수들의 값의 연관성을 추상화된 보다 낮은 차원의 벡터로 표현한 값이다.
-임베딩은 부동 소수점 숫자의 벡터(목록)이다. 두 벡터 사이의 거리는 관련성을 나타낸다.
+임베딩은 부동 소수점 숫자의 목록이다. 두 벡터 사이의 거리는 관련성을 나타낸다.
 거리가 작으면 관련성이 높고 거리가 크면 관련성이 낮음을 나타낸다.
 
 임베딩은 일반적으로 다음과 같은 용도로 사용된다:

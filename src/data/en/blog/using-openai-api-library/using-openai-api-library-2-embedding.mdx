@@ -1,0 +1,107 @@
+---
+title: 'Using the OpenAI API Library 2 - Token, Embedding'
+date: '2023-08-17'
+tags: ['openai', 'api', 'gpt-4', 'tiktoken', 'embedding']
+draft: false
+summary: "We'll introduce tokens and embeddings, which are the basics of using the OpenAI API. Tokens are units for dividing text into smaller units to be used as input in ML. An embedding is a vector (list) of floating point numbers. The distance between two vectors indicates their relevance."
+authors: ['default']
+---
+
+import Youtube from "./Youtube"
+
+## Overview
+
+In this section, you'll learn about tokens and embeddings, which are the basis of using the OpenAI API.
+
+## Token
+
+* A token is a unit for dividing text into smaller units to be used as input in ML.
+* Tokens are converted to numbers through embeddings.
+* Tokens are used as billing units or input limits for models, so counting tokens is necessary when using the OpenAI API.
+* To see how text is broken down into tokens, you can check out [OpenAI's Tokenizer](https://platform.openai.com/tokenizer).
+  Alternatively, you can use the `tiktoken` library to determine tokens.
+* [OpenAI's Token Description](https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them)
+
+## Embedding
+
+Embedding is the mapping of a value (token, word, sentence, etc.) to a sequence of numbers. It is a lower dimensional vector representation that abstracts the association of values of individual variables through learning.
+An embedding is a list of floating-point numbers. The distance between two vectors represents their relevance.
+A small distance indicates high relevance and a large distance indicates low relevance.
+
+Embeddings are commonly used for the following purposes
+
+* Search (where results are ranked according to their relevance to a query string).
+* Clustering (where text strings are grouped by similarity)
+* Recommendation (where items with related text strings are recommended)
+* Anomaly detection (the ability to identify outliers that have little relevance)
+* Diversity measurement (where the distribution of similarities is analyzed)
+* Classification (where text strings are categorized based on the most similar label)
+
+### Embedding Long Inputs
+
+The [OpenAI Cookbook: Embedding Long Inputs](https://github.com/openai/openai-cookbook/blob/main/examples/Embedding_long_inputs.ipynb) notebook will show you how to embed content that exceeds the token.
+
+When embedding using OpenAI's Embedding API, there is a maximum token length that can be embedded per model.
+So, when doing the actual embedding, you need to be aware of the maximum length, and if the input exceeds the maximum, you can handle it in the following ways.
+
+- Summarize to an appropriate size.
+- Divide the whole by the maximum size, and average them to form a single embedding value.
+
+#### Averaging Embeddings
+
+- Take a chunk and average it ([numpy.average](https://numpy.org/doc/stable/reference/generated/numpy.average.html)) with weights being the length of the chunk (i.e., longer chunks have higher semantic weight).
+- Divide by 2-norm ([numpy.linalg.norm](https://numpy.org/doc/stable/reference/generated/numpy.linalg.norm.html)) to give the vector values from 0 to 1.
+
+```python
+chunk_embeddings = np.average(chunk_embeddings, axis=0, weights=chunk_lens)
+        chunk_embeddings = chunk_embeddings / np.linalg.norm(chunk_embeddings)  # normalizes length to 1
+        chunk_embeddings = chunk_embeddings.tolist()
+```
+
+A simplified one-dimensional representation of embeddings is as follows.
+
+* If we embed a value, it is embedded as shown in Table 1.
+* Now, if we were to judge the embedding of Book as just one page, it would be 5, which is more human-like.
+* However, by averaging the individual embedding values of all the pages, we can get an embedding value that is more in line with the content of the book, which is more in line with the content of a computer.
+
+[Table 1 - Simplified embedding]
+| value                          | embedding value |
+|--------------------------------|-----------------|
+| Computer                       | 1               |
+| Book page 1                    | 5               |
+| Book page 2                    | 2               |
+| Book page 3                    | 3               |
+| Human                          | 6               |
+
+[Figure 1  - Simplified embedding]
+```text
+                                    Book's Average Embedding Value
+
+                                    |
+                                    |
+                                    |
+              1        2        3   |                 5        6
+--------------^--------^--------^---v-----------------^--------^-----------   Embedding Values
+              |        |        |   3.3               |        |
+              |        |        |                     |        |
+         +----+------+ |        |      +------+       |    +---+-------+
+         | Computer  | |        |      | page |       |    | Human     |
+         +-----------+ |        |      |      +-------+    +-----------+
+                       |        |      |  1   |
+                       |        |      +------+
+                       |        |
+                       |        |      +------+
+                       |        |      | page |
+                       +--------+------+      |
+                                |      |  2   |
+                                |      +------+
+                                |
+                                |      +------+
+                                |      | page |
+                                +------+      |
+                                       |  3   |
+                                       +------+
+```
+
+[Youtube 1 - Follow along]
+<Youtube src="https://www.youtube.com/embed/iw3aYYkN3lc" />
