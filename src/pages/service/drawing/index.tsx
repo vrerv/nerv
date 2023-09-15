@@ -9,7 +9,7 @@ const Drawing = (_: any) => {
   const background = "#ffffff05";
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
-  const [color, setColor] = useState("#000000");
+  const [color, setColor] = useState("Black");
   const [dimensions, setDimensions] = useState({
     width: 0,
     height: 0
