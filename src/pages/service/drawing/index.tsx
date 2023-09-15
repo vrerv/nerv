@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState
+} from "react";
 import TouchButton from "@/components/drawing/TouchButton";
 import ImageCanvas from "@/components/drawing/ImageCanvas";
-import LayeredContainer from "@/components/drawing/LayeredContainer";
 import FileInputButton from "@/components/drawing/FileInputButton";
 import ColorSelector from "@/components/drawing/ColorSelector";
+import TabLayout from "@/components/drawing/TabLayout";
 
 const Drawing = (_: any) => {
   const background = "#ffffff05";
@@ -89,80 +93,57 @@ const Drawing = (_: any) => {
 
   const bgRef = useRef(null);
 
-  const handleUploadImage = (e) => {
+  const handleUploadImage = (e: Event) => {
+    // @ts-ignore
     bgRef.current.handleImageUpload(e);
   }
 
   return (
     <>
       <style jsx>{`
-        .drawing {
-          display: flex;
-          flex-direction: row;  /* Default to row (controls on the right) */
-          justify-content: space-between;
-          gap: 20px;
-        }
         
         canvas {
           border: 1px solid #ccc;
         }
-
-        .controls {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: space-evenly;
-          padding: 10px;
-        }
-
         /* Media query for screen orientation */
         @media (orientation: portrait) {
-          .drawing {
-            flex-direction: column;  /* Change to column (controls on the top) */
-            align-items: center;  /* Center the canvas and controls */
-          }
 
           canvas {
             //margin-bottom: 20px;  /* Separate canvas from controls */
           }
-
-          .controls {
-            flex-direction: row;  /* Change to row */
-            width: 100%;
-          }
         }
       `}</style>
-      <div className="drawing">
-
-        <LayeredContainer
-          width={dimensions.width}
-          height={dimensions.height}>
-            <div style={{ background: "#ffffff", width: dimensions.width, height: dimensions.height }}></div>
-            <ImageCanvas ref={bgRef} dimensions={dimensions} />
-            <canvas
-              ref={canvasRef}
-              style={{ background: background }}
-              width={dimensions.width}
-              height={dimensions.height}
-              onMouseDown={handleStart}
-              onMouseUp={handleEnd}
-              onMouseMove={draw}
-              onTouchStart={handleStart}
-              onTouchEnd={handleEnd}
-              onTouchMove={draw}
-            ></canvas>
-        </LayeredContainer>
-        <div className="controls">
+      <TabLayout control={
+        ({}) => <>
           <FileInputButton
             type="file"
             accept="image/*"
-            onFileChange={(e) => { handleUploadImage(e); }}
+            onFileChange={(e: Event) => { handleUploadImage(e); }}
           />
           <ColorSelector selectedColor={color} setSelectedColor={setColor} />
           <TouchButton onClick={clearCanvas}>Clear</TouchButton>
           <TouchButton onClick={toggleFullscreen}>Full</TouchButton>
-        </div>
-      </div>
+        </>
+      } >
+        <div style={{
+          background: "#ffffff",
+          width: dimensions.width,
+          height: dimensions.height
+        }} />
+        <ImageCanvas ref={bgRef} dimensions={dimensions} />
+        <canvas
+          ref={canvasRef}
+          style={{ background: background }}
+          width={dimensions.width}
+          height={dimensions.height}
+          onMouseDown={handleStart}
+          onMouseUp={handleEnd}
+          onMouseMove={draw}
+          onTouchStart={handleStart}
+          onTouchEnd={handleEnd}
+          onTouchMove={draw}
+        ></canvas>
+      </TabLayout>
     </>
   );
 };

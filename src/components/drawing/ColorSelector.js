@@ -32,10 +32,12 @@ const ColorSelector = ({selectedColor, setSelectedColor}) => {
   const [gridStyle, setGridStyle] = useState({});
 
   useEffect(() => {
-    handleResize();
 
     function handleResize() {
-      const { innerWidth, innerHeight } = window;
+
+      if (window === undefined) return;
+
+      const [innerWidth, innerHeight] = [document.documentElement.clientWidth, document.documentElement.clientHeight]
       const ratio = innerWidth / innerHeight;
       const columns = Math.ceil(Math.sqrt(colors.length * ratio));
       const rows = Math.ceil(colors.length / columns);
@@ -47,6 +49,8 @@ const ColorSelector = ({selectedColor, setSelectedColor}) => {
         gridTemplateRows: `repeat(${rows}, 1fr)`,
       });
     }
+
+    handleResize()
 
     window.addEventListener("resize", handleResize);
 
