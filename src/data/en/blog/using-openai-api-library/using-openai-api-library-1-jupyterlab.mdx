@@ -1,0 +1,62 @@
+---
+title: 'Using the OpenAI API Library 1 - Installing JupyterLab'
+date: '2023-08-17'
+tags: ['openai', 'api', 'gpt-4', 'jupyter', 'notebook', 'jupyter notebook', 'jupyterlab', 'python', 'miniconda', 'conda']
+draft: false
+summary: 'To prepare and learn how to use the openai API, install the Miniconda and JupyterLab tools and run a simple openai-cookbook notebook.'
+authors: ['default']
+---
+
+import Youtube from "./Youtube"
+
+## Overview
+
+In this tutorial, we will install the necessary tools and run a simple openai-cookbook notebook to learn how to use the openai API.
+
+### Preparation
+
+* To use the OpenAI API, get an OpenAI API key from the [OpenAI site](https://platform.openai.com/account/api-keys).
+  You need to create an account and enter your credit card information.
+* Add `OPENAI_API_KEY` to the OS environment variable. To add it in Windows OS, go to windows menu > Settings > System > About > "Advanced System Settings" popup, click Environment Variables button,
+  Click the add button on System Variables, enter `OPENAI_API_KEY` as the variable name and your API key as the variable value.
+
+## Using Jupyter Notebook on PC
+
+### Preparation
+
+* `JupyterLab` is the next generation web-based interactive development environment that replaces `Jupyter Notebook`.
+* `Miniconda` - a minimalized version of a package manager that allows you to manage virtual environments and install packages in `Python` (other languages besides `Python`?!)
+
+### Miniconda
+
+Commands for creating virtual environments when using `Miniconda`, allowing you to run multiple versions of `Python` in separate environments by creating different environments.
+
+* `conda create -n "virtual-env-name" python=3.8` - creates a virtual environment with a specific name with a specific version of `Python`.
+* `conda info -e` - get a list of virtual environments
+* `conda activate "virtual-env-name"` - activates the virtual environment with the specified name
+* `conda deactivate` - deactivates(exit) a virtual environment
+* `conda remove -n "virtual-env-name" --all` - remove a virtual environment with the specified name
+
+### INstalling and running JupyterLab
+
+Here is the installation sequence
+
+1. install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) (include `Python` in the installation file)
+  * On Windows, after completing the installation with the installation file, "Anaconda Powershell Prompt (miniconda3)" is created in the menu. Press it to run it.
+  * Check if the OPENAI_API_KEY environment variable is set correctly with the command `echo $Env:OPENAI_API_KEY`
+2. `conda create -n openai python=3.8` - Create a virtual environment with the name "openai" in python 3.8 version.
+3. `conda activate openai` - Activate the virtual environment created
+4. `pip install jupyterlab` - Install JupyterLab
+5. `pip install tenacity tiktoken openai "openai[datalib]"` - Install the OpenAI API related libraries
+6. `jupyter lab .` - Run `JupyterLab` with the current directory (`.`) as the root of the notebook, and automatically open the browser to display the `JupyterLab` webpage.
+
+### Explore the OpenAI API Cookbook
+
+* [OpenAI API Cookbook](https://github.com/openai/openai-cookbook)
+
+Run `JupyterLab` locally by `cloning` with `git`.
+
+Find the `examples/Embedding_long_inputs.ipynb` notebook and run it.
+
+[Youtube1 - Follow along]
+<Youtube src="https://www.youtube.com/embed/iw3aYYkN3lc" />
