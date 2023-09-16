@@ -1,0 +1,81 @@
+---
+title: Discard requests with certain characters in the request body
+date: '2023-07-04'
+tags: ['nginx', 'lua']
+draft: false
+summary: "Describes how to use the lua module in Nginx to drop requests if certain characters are present in the request body."
+authors: ['default']
+---
+
+## Why?
+
+Normally you can drop it with a path pattern or something, but there are some special cases where you need to inspect the request body and abort the request.
+One case I've seen is where the server is JSON-RPC, so all calls have the same endpoint, and the JSON content of the body determines whether it should be passed to the backend server or not.
+
+## Method
+
+Nginx can be configured with the [lua module](https://github.com/openresty/lua-nginx-module#body_filter_by_lua) to filter like this
+
+https://github.com/openresty/lua-nginx-module#body_filter_by_lua
+
+```nginx {2-7}
+location / {
+      body_filter_by_lua_block {
+          local data = ngx.arg[1]
+          if string.find(data, "1111") then
+              ngx.exit(404)
+          end
+      }
+      # Your normal configuration goes here
+  }
+```
+
+Build nginx with the lua module included. (lua module depends on ndk modules, so include them together)
+
+```bash
+git clone git@github.com:nginxinc/docker-nginx.git
+cd modules
+docker build --build-arg ENABLED_MODULES="ndk lua" -t nginx-with-lua .
+```
+
+Load the lua module at the top of the nginx configuration (/etc/nginx/nginx.conf).
+
+```nginx
+
+load_module modules/ndk_http_module.so;
+load_module modules/ngx_http_lua_module.so;
+load_module modules/ngx_stream_lua_module.so;
+```
+
+This is an example of configuring a lua block to drop a specific string ("1111") in the http request body.
+
+```nginx {21-26} showLinenumbers
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+
+    server_name www.vrerv.com;
+
+    ssl_certificate /etc/nginx/ssl/vrerv.com.crt;
+    ssl_certificate_key /etc/nginx/ssl/vrerv.com.key;
+
+    location / {
+        proxy_pass http://localnode:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        body_filter_by_lua_block {
+            local data = ngx.arg[1]
+            if string.find(data, "1111") then
+                ngx.exit(404)
+            end
+        }
+    }
+}
+```
