@@ -22,7 +22,7 @@ authors: ['default']
   U1 -- Query --> Q1 -- "query exceeded max tokens" --x M[AI model]
   D1 -- Total --> Q1["total + query"]
 
-  D1 -- "Divide by paragraph" --> DP1["paragraph1, paragraph2, paragraph3..."]
+  D1 -- "Embedding by paragraph" --> DP1["paragraph1, paragraph2, paragraph3..."]
 
   DP1 -- "embedding similarity search results" --> Q2["relevant paragraphs + query"]
   U1 -- query --> Q2 -- OK --> M
