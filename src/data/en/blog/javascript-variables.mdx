@@ -1,0 +1,65 @@
+---
+title: Using variables in Javascript - a very brief explanation
+date: '2023-08-24'
+tags: ['javascript', 'var', 'let', 'const', 'hoisting', 'scope']
+draft: false
+summary: "Be sure to declare and use variables with let and const, which were added in ES6. When reading code that uses var, be aware of variable hoisting and variable scoping."
+authors: ['default']
+---
+
+## Overview
+
+Let's see how to use variables in `Javascript`.
+
+[Figure 1 - Variable declaration keywords]
+
+<Mermaid chart={`
+flowchart LR
+  let["let (mutable)"]
+  const["const (immutable)"]
+  subgraph ES6["ES6 (ECMAScript 2015)"]
+    let
+    const
+  end
+  var --> let
+  var --> const
+`}>
+</Mermaid>
+
+* Since [`ES6`](https://www.w3schools.com/js/js_es6.asp), [`var`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/var) has been improved to [`let`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let) and [`const`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/const).
+* `var` - a variable that can be declared as a function or a global scope, which is the way variables were declared before `ES6`.
+* `let`, `const` - variables that can be declared as block scoped, which was added in `ES6`. In the case of `const`, the value cannot be changed after declaration and initialisation.
+
+## Hoisting
+
+This is how all declarations (variables, functions, classes) are moved to the top of the pre-execution scope and behave as if they were declared there.
+
+Variable hoisting behaviour:
+
+- `var` - is automatically initialised to `undefined` when hosted (i.e. there is no `Temporal Dead Zone`).
+- The `let` and `const` are hoisted, but they are not automatically initialised, so there is no effect of hoisting due to the `Temporal Dead Zone`. (i.e. don't bother)
+
+In the case of `let` and `const`, the declaration is moved to the top by hoisting, but there is a `Temporal Dead Zone` where the variable cannot be referenced until the statement where the `let` and `const` were originally declared (where it is initialised), and a `ReferenceError` is thrown if the variable is referenced.
+
+```javascript
+console.log(a); var a; a = 42; // undefined
+console.log(b); let b; b = 42; //ReferenceError: b is not defined
+console.log(c); const c = 42; //ReferenceError: c is not defined
+```
+
+`let`, `const` are scoped and applied on a block basis
+
+```javascript
+let a = 10;
+{ // new block scope
+  //console.log(a); // ReferenceError: Cannot access 'a' before initialization
+  let a = 20;
+  console.log(a); // 20
+}
+console.log(a); // 10
+```
+
+## Conclusion
+
+* Use `const`, and only use `let` if you need to change the value in the middle.
+* When reading code that uses `var`, be aware of variable hosting and variable scoping
