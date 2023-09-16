@@ -1,0 +1,172 @@
+---
+title: Java/Kotlin Backend Server Logging
+date: '2023-08-28'
+tags: ['java', 'kotlin', 'backend', 'logging', 'springframework', 'springboot', 'slf4j', 'logback']
+draft: false
+summary: "Let's see how to develop a Springboot-based backend server with Java/Kotlin, how to do logging, and what to pay attention to when outputting the logs. Set up Slf4j and Logback for logging, and be careful not to perform any computation when calling the logging method. Do not log when throwing an error. Use toString() to put the object's information in the log message. In Springboot, logging can be set via application properties."
+authors: ['default']
+---
+
+## Overview
+
+When developing a backend server in Java/Kotlin, think about logging and how to handle logs, especially in case of errors.
+
+- General way to do logging in Java/Kotlin Backend Server
+- Logger, Logging Level, Log Message
+
+## Common ways to do logging
+
+Use the [`Slf4j`](https://www.slf4j.org/) api to log, and [`Logback`](https://logback.qos.ch/) to save the logs.
+
+In general, logging on the Java/Kotlin Backend Server is as follows.
+
+- Declare a `Logger` using the [`@Slf4j`](https://projectlombok.org/features/log) annotation in [`Lombok`](https://projectlombok.org/).
+- Log to `Logger` where needed.
+
+```java
+@Slf4j
+public class SampleClass {
+	public void sampleMethod(Object arg) {
+		log.info("sampleMethod {}", arg);
+	}
+}
+```
+
+
+Below is an example of logging in `Kotlin` using [`kotlin-logging`](https://github.com/oshai/kotlin-logging).
+
+```kotlin
+
+class SampleClass {
+	companion object: KLogging()
+	fun sampleMethod(arg: Any) {
+		logger.info { "sampleMethod $arg" }
+	}
+}
+```
+
+### Do not perform any computation when calling the logging method.
+
+Inside the logging method, depending on the log level, actual logging may not take place, so precomputation is a waste of resources.
+
+The following is an example. In the case below, if the log level is set to `WARN`, no logs will be output, but all operations will be performed except in the case of **good**.
+
+```java
+public class SampleClass {
+  public void sampleMethod(Object arg) {
+    log.info("sampleMethod {}", arg); // good
+    if (log.isInfoEnabled()) log.info("sampleMethod " + arg); // not bad, but redundant
+    log.info("sampleMethod {}", arg.toString()); // bad
+    log.info("sampleMethod " + arg); // bad
+    log.info("sampleMethod " + arg.getResultOfVeryLongTask()); // worst
+  }
+}
+```
+
+In Kotlin, if you call the logging method with a lambda expression like below, no computation is performed.
+
+```kotlin
+logger.info { "sampleMethod $arg" } // good
+if (logger.isInfoEnabled) logger.info("sampleMethod $arg") // not bad, but redundant
+logger.info("sampleMethod $arg") // bad
+logger.info("sampleMethod ${arg.getResultOfVeryLongTask()}") // worst
+```
+
+### Do not log when throwing errors.
+
+To prevent duplicate logging of errors, we do not log when an error is thrown.
+Duplicate logs can be confusing for log analysis and monitoring.
+A thrown error needs to be handled somewhere, so log it there.
+
+Bad example:
+
+```kotlin
+fun sampleMethod(arg: Any) {
+  try {
+    fail()
+  } catch (e: RuntimeException) {
+    logger.error(e) { "sampleMethod error $arg" }
+    throw e
+  }
+}
+```
+
+If you want to include additional information in the error, you can wrap it in a new error and throw it.
+
+```kotlin
+fun sampleMethod(arg: Any) {
+  try {
+    fail()
+  } catch (e: RuntimeException) {
+    throw RuntimeException("sampleMethod error. arg=$arg", e)
+  }
+}
+```
+
+### To put the object's information in a log message, use toString().
+
+This is what [`toString()`] (https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#toString--) is for.
+
+The Good:
+```kotlin
+data class SampleClass(val id: Long, val name: String) // data class automatically generates toString method
+class SampleClass2(val id: Long, val name: String) {
+  override fun toString(): String {
+    return "SampleClass2(id=$id, name=$name)"
+  }
+}
+
+val a = SampleClass(1, "a")
+val b = SampleClass2(2, "b")
+
+logger.info { "sampleMethod is calling. a=$a, b=$b" }
+```
+
+The Bad:
+```kotlin
+data class SampleClass(val id: Long, val name: String) {
+	fun toDebugMessage(): String {
+		return "SampleClass(id=$id, name=$name)"
+	}
+}
+class SampleClass2(val id: Long, val name: String)
+
+val a = SampleClass(1, "a")
+val b = SampleClass2(2, "b")
+
+logger.info { "sampleMethod is calling. a=${a.toDebugMessage()}, b.di=${b.id}, b.name=${b.name}" }
+```
+
+## Setting up logging in Springboot
+
+In [Springboot](https://spring.io/projects/spring-boot), logging can be configured via [application properties](https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html).
+Springboot uses the default `logback` and only exports logs to `console`.
+If you want, you can set `logging.file.name` and `logging.file.path` to export to a file.
+
+It is probably better to send logs to `Logstash` etc in production.
+
+Set the logging level in `application.yml`.
+
+```yaml
+logging:
+  # log to file
+  #   name: app.log
+  #   path: /var/log
+  level:
+    root: info
+    # Your application package
+    app.package: debug
+    app.package.feature.a: warn
+    app.package.feature.b: info
+    # springframework libraries
+    org.springframework: warn
+    # show jpa sqls and parameter values in log
+    org.hibernate.SQL: debug
+    org.hibernate.type: trace
+    org.hibernate.type.descriptor.sql.BasicBinder: trace
+    org.hibernate.type.descriptor.sql.BasicExtractor: trace
+```
+
+## References
+
+* [Spring Boot Logging Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.logging)
