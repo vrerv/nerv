@@ -103,7 +103,7 @@ module.exports = {
 ```
 
 `next.config.js` 에 `next-i18next` 의 `i18n` 프로퍼티 설정을 동일하게 추가한다.
-이부분은 `Next.js` 가 제공하는 라우팅 설정과 동일하게 사용하기 위해서이다.
+기존에 `next.config.js` 에 추가했던 `i18n` 설정은 `next-i18next` 설정으로 대체되어 중복이 제거된다.
 
 ```js
 const { i18n } = require('./next-i18next.config');
@@ -154,7 +154,9 @@ export async function getStaticProps({ locale }: { locale: any }) {
 
 #### 번역 사용하기
 
-```js
+하드코딩된 text 를 [`t`](https://react.i18next.com/latest/usetranslation-hook) 함수를 사용하여 메세지키로 가져오도록 수정한다.
+
+```js {1,4,6}
 import { useTranslation } from 'next-i18next'
 
 export const SomeComponent = () => {

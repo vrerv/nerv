@@ -103,7 +103,7 @@ module.exports = {
 ```
 
 In `next.config.js`, add the same settings for the `i18n` property of `next-i18next`.
-This is to use the same routing settings as provided by `Next.js`.
+The `i18n` setting previously added to `next.config.js` is replaced by the `next-i18next` setting to eliminate duplication.
 
 ```js
 const { i18n } = require('./next-i18next.config');
@@ -154,7 +154,9 @@ export async function getStaticProps({ locale }: { locale: any }) {
 
 #### Using the translation
 
-```js
+Modify the hardcoded Text to be imported into the message key using the [`t`](https://react.i18next.com/latest/usetranslation-hook) function.
+
+```js {1,4,6}
 import { useTranslation } from 'next-i18next'
 
 export const SomeComponent = () => {
