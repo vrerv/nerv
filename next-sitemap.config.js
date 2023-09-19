@@ -2,6 +2,7 @@
 module.exports = {
   siteUrl: 'https://www.vrerv.com',
   generateRobotsTxt: true,
+  exclude: ['/service/*'],
   robotsTxtOptions: {
     // To add Daum WebMaster Tool
     transformRobotsTxt: async (_, txt) => {

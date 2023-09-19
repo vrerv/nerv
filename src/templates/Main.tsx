@@ -50,7 +50,7 @@ const Main = (props: IMainProps) => {
               <ul className="flex h-16 items-center sm:space-x-2">
                 <li className="flex-grow flex-shrink pl-4">
                   <Image src={logoImage}
-                         alt="VReRV" width={24} height={24}
+                         alt={AppConfig.title} width={24} height={24}
                          className="cursor-pointer"
                          onClick={toggleTheme} />
                 </li>
@@ -60,9 +60,9 @@ const Main = (props: IMainProps) => {
                 <li className="flex-grow flex-shrink"><Link href="/blog"
                                                             className="px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">{t('blog')}</Link>
                 </li>
-                <li className="flex-grow flex-shrink"><Link href="https://github.com/vrerv"
+                <li className="flex-grow flex-shrink"><Link href="/membership"
                                                             className="block px-4 py-2 hover:bg-gray-200 no-underline"><i
-                  className="fab fa-github mr-2"></i>GitHub</Link></li>
+                  className="fab fa-github mr-2"></i>{t('membership')}</Link></li>
                 {/*
                       <li className="flex-grow flex-shrink"><a href="#services" className="px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">도전</a></li>
                       <li className="flex-grow flex-shrink"><a href="#contact" className="px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">문의하기</a></li>
@@ -77,16 +77,8 @@ const Main = (props: IMainProps) => {
             <div className="bg-bg-50 dark:bg-bg-800 flex justify-center w-full md:w-2/3 lg:w-1/2">
               <footer className="py-2 text-center text-sm">
                 © Copyright {new Date().getFullYear()} {AppConfig.title}.{' '}
-                Made with{' '}
-                <a href="https://creativedesignsguru.com">CreativeDesignsGuru</a>.
-                {/*
-         * PLEASE READ THIS SECTION
-         * I'm an indie maker with limited resources and funds, I'll really appreciate if you could have a link to my website.
-         * The link doesn't need to appear on every pages, one link on one page is enough.
-         * For example, in the `About` page. Thank you for your support, it'll mean a lot to me.
-         */}
-                <br />
-                <a href="https://vrerv.instatus.com/">status</a>{' '}
+                <a href="https://github.com/vrerv">Github{' '}</a>
+                <a href="https://vrerv.instatus.com/">(s)</a>{' '}
                 {router.locales?.filter((locale) => locale !== router.locale).map((locale) => (
                   <span key={locale}><Link href={router.asPath} locale={locale}>({locale.toUpperCase()})</Link>{' '}</span>
                 ))}

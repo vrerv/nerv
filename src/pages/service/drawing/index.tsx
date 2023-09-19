@@ -1,12 +1,15 @@
 import React, {
-  useEffect,
   useRef,
   useState
 } from "react";
-import TouchButton from "@/components/drawing/TouchButton";
-import ImageCanvas from "@/components/drawing/ImageCanvas";
-import FileInputButton from "@/components/drawing/FileInputButton";
-import ColorSelector from "@/components/drawing/ColorSelector";
+// @ts-ignore
+import TouchButton from '@/components/drawing/TouchButton';
+// @ts-ignore
+import ImageCanvas from '@/components/drawing/ImageCanvas';
+// @ts-ignore
+import FileInputButton from '@/components/drawing/FileInputButton';
+// @ts-ignore
+import ColorSelector from '@/components/drawing/ColorSelector';
 import TabLayout from "@/components/drawing/TabLayout";
 
 const Drawing = (_: any) => {
@@ -18,25 +21,6 @@ const Drawing = (_: any) => {
     width: 0,
     height: 0
   });
-
-  useEffect(() => {
-    handleResize();
-
-    function handleResize() {
-      console.log("window.innerWidth", window.innerWidth, document.documentElement.clientWidth, "window.innerHeight", window.innerHeight);
-      const landscape = window.innerWidth > window.innerHeight;
-      setDimensions({
-        width: document.documentElement.clientWidth - (landscape ? 100 : 5),
-        height: document.documentElement.clientHeight - (landscape ? 5 : 100)
-      });
-    }
-
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
 
   const handleStart = (e:any) => {
     setDrawing(true);
@@ -114,16 +98,19 @@ const Drawing = (_: any) => {
         }
       `}</style>
       <TabLayout control={
-        ({}) => <>
-          <FileInputButton
-            type="file"
-            accept="image/*"
-            onFileChange={(e: Event) => { handleUploadImage(e); }}
-          />
-          <ColorSelector selectedColor={color} setSelectedColor={setColor} />
-          <TouchButton onClick={clearCanvas}>Clear</TouchButton>
-          <TouchButton onClick={toggleFullscreen}>Full</TouchButton>
-        </>
+        ({ contentDimensions }) => {
+
+          setDimensions(contentDimensions)
+          return <>
+            <FileInputButton
+              type="file"
+              accept="image/*"
+              onFileChange={(e: Event) => { handleUploadImage(e); }}
+            />
+            <ColorSelector selectedColor={color} setSelectedColor={setColor} />
+            <TouchButton onClick={clearCanvas}>Clear</TouchButton>
+            <TouchButton onClick={toggleFullscreen}>Full</TouchButton>
+          </>}
       } >
         <div style={{
           background: "#ffffff",

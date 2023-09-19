@@ -1,28 +1,30 @@
-import TabLayout from "@/components/drawing/TabLayout"
-import { useState } from "react";
+import React, { useState } from "react";
+import TabLayout from "@/components/drawing/TabLayout";
+import { useRouter } from "next/router";
 
-
-const IndexPage = () => {
+const MainPage = () => {
 
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+  const router = useRouter();
 
   return <>
     <h1>Mental Care</h1>
-
     <TabLayout control={
       () => <>
-        <button onClick={() => setSelectedTabIndex(0) }>도전하기</button>
-        <button onClick={() => setSelectedTabIndex(1) }>도움받기</button>
-        <button onClick={() => setSelectedTabIndex(2) }>도와주기</button>
+        <button onClick={() => {
+          router.push('/service/mentalcare/login')
+        } }>로그인</button>
+        <button onClick={() => {
+          setSelectedTabIndex(selectedTabIndex + 1)
+        } }>시작하기</button>
       </>
     } >
       <>
-        {selectedTabIndex === 0 && <div>tab1</div>}
-        {selectedTabIndex === 1 && <div>tab2</div>}
-        {selectedTabIndex === 2 && <div>tab3</div>}
+        {selectedTabIndex === 0 && <div>랜딩페이지: 당신의 멘탈을 책임집니다.</div>}
+        {selectedTabIndex === 1 && <div>당신의 건강을 위한 도전 목록을 정하세요</div>}
       </>
     </TabLayout>
   </>
 }
 
-export default IndexPage
+export default MainPage

@@ -5,10 +5,20 @@ import React, {
   useState
 } from "react";
 
-import LayeredContainer from "@/components/drawing/LayeredContainer";
+// @ts-ignore
+import LayeredContainer from '@/components/drawing/LayeredContainer';
 
-const TabLayout = ({ children, control }: { children: ReactElement[] | ReactElement, control: FunctionComponent<any> }) => {
+interface TabLayoutControlProps {
+  tabHeight: number;
+  contentDimensions: {
+    width: number;
+    height: number;
+  };
+}
 
+const TabLayout = ({ children, control }: { children: ReactElement[] | ReactElement, control: FunctionComponent<TabLayoutControlProps> }) => {
+
+  const TAB_HEIGHT = 100;
   const [dimensions, setDimensions] = useState({
     width: 0,
     height: 0
@@ -20,8 +30,8 @@ const TabLayout = ({ children, control }: { children: ReactElement[] | ReactElem
     function handleResize() {
       const landscape = window.innerWidth > window.innerHeight;
       setDimensions({
-        width: document.documentElement.clientWidth - (landscape ? 100 : 5),
-        height: document.documentElement.clientHeight - (landscape ? 5 : 100)
+        width: document.documentElement.clientWidth - (landscape ? TAB_HEIGHT : 5),
+        height: document.documentElement.clientHeight - (landscape ? 5 : TAB_HEIGHT)
       });
     }
 
@@ -67,11 +77,12 @@ const TabLayout = ({ children, control }: { children: ReactElement[] | ReactElem
       <LayeredContainer
         width={dimensions.width}
         height={dimensions.height}>
-        {children}
+        {dimensions.width > 0 && children}
       </LayeredContainer>
       <div className="controls">
         { // @ts-ignore
-          control().props.children }
+          dimensions.width > 0 && control({ tabHeight: TAB_HEIGHT, contentDimensions: dimensions }).props.children
+        }
       </div>
     </div>
   </>
