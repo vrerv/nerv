@@ -1,0 +1,45 @@
+---
+title: Java/Kotlin Backend Server Logging
+date: '2023-08-19'
+tags: ['java', 'kotlin', 'backend', 'logging', 'springframework', 'error handling', 'exception', 'runtimeexception', 'checked exception', 'domain error']
+draft: true
+summary: ''
+authors: ['default']
+---
+
+## 개요
+
+Java/Kotlin 으로 백엔드 서버를 개발할때, 에러 처리를 어떻게 하는지 알아보자
+에러/예외는 항상 예측하지 못한 상태에서 발생된다.
+
+## 에러의 종류
+
+### 기술적인 에러 분류
+
+Java 에서는 두가지 종류의 예외가 있다.
+
+* RuntimeException - Unchecked Exception 으로 명시적으로 처리하지 않아도 된다. 메쏘드 시그니쳐에 표시할 필요 없다.
+* Checked Exception - 명시적으로 처리해야 하는 예외이다. 메쏘드 시그니쳐에 표시해야 하고 메쏘드 호출자는 반드시 처리해야 한다.
+
+Kotlin 에서는 Checked Exception 이 없다. 모든 예외는 Unchecked Exception 이다.
+
+### 일반적인 에러 분류및 처리
+
+* 예상하지 못한 에러 - RuntimeException 이 대표적인 예, 예상하지 못한 에러는 로깅하여, 점진적으로 개선해야 한다.
+* 일반적인 에러 - IOException 이 대표적인 예, 네트워크나 데이터페이스 접근, 파일 접근시 상황에 따라 항상 발생가능성을 염두에 두고 처리해야 한다, 이 예외는 대체로 재시도후 로깅처리한다.
+* 도메인 에러 - 예상된 에러이므로, 각 에러에 대해 어떻게 처리할지 이미 설계 단계에서 정의되어야 한다. 이 예외는 대체로 적절한 처리 루틴이 이미 있으므로, 그것에 맞게 처리하고 대체로 로깅될 필요 없다.
+    - 이런 에러를 에러로 처리하는 것 자체가 문제, 실제는 이런 에러는 도메인 로직의 일부분으로 에러라고 볼수 없다. 모든 소프트웨어는 에러가 발생할 필요가 없도록 구성되어 만들어져야 한다. 완벽한 소프트웨어를 만드는 현식적인 여러 문제로 몇몇 도메인 예외를 두고 추후 소프트웨어를 개선할 수 있다.
+
+## 에러 처리의 예
+
+### 예상하지 못한 에러
+
+* findById() 를 통해 데이터를 가져오는데, 데이터가 없는 경우
+
+### 일반적인 에러
+
+* 데이터베이스 접근시, 네트워크 에러
+
+### 도메인 에러
+
+*
