@@ -88,7 +88,7 @@ const Main = (props: IMainProps) => {
                 <br />
                 <a href="https://vrerv.instatus.com/">status</a>{' '}
                 {router.locales?.filter((locale) => locale !== router.locale).map((locale) => (
-                  <><Link href={router.asPath} locale={locale}>({locale.toUpperCase()})</Link>{' '}</>
+                  <span key={locale}><Link href={router.asPath} locale={locale}>({locale.toUpperCase()})</Link>{' '}</span>
                 ))}
               </footer>
             </div>
