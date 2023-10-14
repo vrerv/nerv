@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const ColorSelector = ({selectedColor, setSelectedColor}) => {
+const ColorSelector = ({className, selectedColor, setSelectedColor}) => {
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -62,9 +62,6 @@ const ColorSelector = ({selectedColor, setSelectedColor}) => {
   return (
     <>
       <style jsx>{`
-        .color-selector {
-          position: relative;
-        }
         .dropdown-button {
           cursor: pointer;
         }
@@ -89,7 +86,7 @@ const ColorSelector = ({selectedColor, setSelectedColor}) => {
           opacity: 0.7;
         }
       `}</style>
-      <div className="color-selector" style={{ backgroundColor: selectedColor }}>
+      <div className={className} style={{ backgroundColor: selectedColor }}>
         <button onClick={toggleDropdown} className="dropdown-button">
           {selectedColor}
         </button>

@@ -16,7 +16,7 @@ const LayeredContainer = ({ children, width, height }) => {
     <div className="layered-container" style={{width: width, height: height}}>
       {React.Children.map(children, (child, index) => {
         return (
-          <div className="layered-item" style={{ zIndex: index }}>
+          <div className="layered-item w-full h-full" style={{ zIndex: index }}>
             {child}
           </div>
         );

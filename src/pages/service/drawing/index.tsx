@@ -102,14 +102,14 @@ const Drawing = (_: any) => {
 
           setDimensions(contentDimensions)
           return <>
-            <FileInputButton
+            <FileInputButton className={'p-4'}
               type="file"
               accept="image/*"
               onFileChange={(e: Event) => { handleUploadImage(e); }}
             />
-            <ColorSelector selectedColor={color} setSelectedColor={setColor} />
-            <TouchButton onClick={clearCanvas}>Clear</TouchButton>
-            <TouchButton onClick={toggleFullscreen}>Full</TouchButton>
+            <ColorSelector className={'p-4'} selectedColor={color} setSelectedColor={setColor} />
+            <TouchButton className={'p-4'} onClick={clearCanvas}>Clear</TouchButton>
+            <TouchButton className={'p-4'} onClick={toggleFullscreen}>Full</TouchButton>
           </>}
       } >
         <div style={{

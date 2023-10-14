@@ -28,7 +28,7 @@ const TabLayout = ({ children, control }: { children: ReactElement[] | ReactElem
     handleResize();
 
     function handleResize() {
-      const landscape = window.innerWidth > window.innerHeight;
+      const landscape = window.innerWidth >= window.innerHeight;
       setDimensions({
         width: document.documentElement.clientWidth - (landscape ? TAB_HEIGHT : 5),
         height: document.documentElement.clientHeight - (landscape ? 5 : TAB_HEIGHT)
@@ -47,15 +47,18 @@ const TabLayout = ({ children, control }: { children: ReactElement[] | ReactElem
         .tab-layout {
           display: flex;
           flex-direction: row;  /* Default to row (controls on the right) */
-          justify-content: space-between;
-          gap: 20px;
+          /*justify-content: space-between;*/
+          justify-content: flex-end;
+          width: 100%;
+          height: 100%;
         }
 
         .controls {
           display: flex;
           flex-direction: column;
-          align-items: center;
-          justify-content: space-evenly;
+          align-items: flex-end;
+          justify-content: flex-end;
+          min-height: 100px;
           padding: 10px;
         }
 
@@ -69,6 +72,7 @@ const TabLayout = ({ children, control }: { children: ReactElement[] | ReactElem
           .controls {
             flex-direction: row;  /* Change to row */
             width: 100%;
+            height: 100%;
           }
         }
       `}</style>

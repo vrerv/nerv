@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const TouchButton = ({onClick, children}) => {
+const TouchButton = ({className, onClick, children}) => {
 
   const handleClick = (e) => {
     onClick(e)
@@ -18,6 +18,7 @@ const TouchButton = ({onClick, children}) => {
 
   return (
     <button
+      className={className}
       onClick={handleClick}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
