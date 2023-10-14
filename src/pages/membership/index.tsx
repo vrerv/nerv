@@ -6,12 +6,12 @@ const MainPage = () => {
   const [selectedTabIndex, _] = useState(0);
 
   return <>
-    <h1>Mental Care</h1>
+    <h1>Membership</h1>
     <TabLayout control={
       () => <></>
     } >
       <>
-        {selectedTabIndex === 0 && <div>준비중입니다</div>}
+        {selectedTabIndex === 0 && <div>We are preparing service. Thank you!</div>}
       </>
     </TabLayout>
   </>
