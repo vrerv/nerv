@@ -1,9 +1,9 @@
 ---
-title: rememberSaveable is not enough
-date: '2023-08-31'
+title: Android Compose - 화면 회전에 따른 UI 상태 관리
+date: '2023-10-14'
 tags: ['android', 'compose', 'rememberSaveable', 'movableContentOf', 'state management', 'orientation change', 'orientation']
 draft: false
-summary: ''
+summary: '안드로이드 개발에서 rememberSaveable 를 써더라도 화면 회전에 따른 UI 가 다를 경우, movableContentOf 를 사용해야 된다.'
 authors: ['default']
 ---
 
@@ -25,18 +25,20 @@ authors: ['default']
 
 ## 해결
 
-## rememberSaveable
+## movableContentOf
 
 보통 `rememberSaveable` 은 설정 변경(화면 회전, 화면 크기) 에 의해 사라지는 UI 상태를 저장하기 위해 사용한다.
 그러나 이 `rememberSaveable` 은 콜 사인(호출되는 코드 위치) 에 의해 상태 맵핑을 해주는데, 가로 세로에 따라 레이아웃이 달라진다면, 콜 사인이 달라지게 되고,
 이에 따라 상태 맵핑이 안되어 원복이 안된다. 이럴 경우 가로 세로에 따라 UI 상태가 각각 두개의 버전이 생기는 경우가 생긴다.
 이 점을 방지하기 위해서 `movableContentOf` 를 사용하여 같은 내용의 컨텐츠는 같은 상태를 유지하도록 할 수 있다.
+이에 대해 안드로이드의 이슈 리포트에 관련 이슈([Unnatural behaviour of rememberSaveable with chages in parent composables](https://issuetracker.google.com/issues/268218134))가 등록되어 있었다.
 
 ## 사용 예
 
-가로 세로에 따라 탭뷰가 달라진다. 첫번째 탭뷰에서 HorizontalPager 를 사용한다. 페이저의 각 아이템은 다른 뷰로 데스티네이션 된다.
+가로 세로에 따라 탭뷰가 달라진다. 첫번째 탭뷰에서 `HorizontalPager` 를 사용한다. 페이저의 각 아이템은 다른 뷰로 데스티네이션 된다.
 가로 세로 변경에 따라 유지되어야 하는 상태는 현재 누른 탭의위치, 페이저에서의 스크롤 위치, 현재 이동한 데스티네이션과 그 데스티네이션의 UI 상태가 모두 유지되어야 한다.
 
 ## References
 
 * [Unnatural behaviour of rememberSaveable with chages in parent composables](https://issuetracker.google.com/issues/268218134)
+* [State and Jetpack Compose](https://developer.android.com/jetpack/compose/state)
