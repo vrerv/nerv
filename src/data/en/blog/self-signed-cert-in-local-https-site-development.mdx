@@ -1,0 +1,213 @@
+---
+title: 'Enforcing HTTPS on a local development environment with a self-signed certificate'
+date: '2023-07-01'
+tags: ['nginx', 'virtualhost', 'https', 'ssl', 'self-signed', 'tls', 'docker']
+draft: false
+summary: "This document describes how to build an Nginx Reverse Proxy server with a self-signed certificate to connect to a local server via https."
+authors: ['default']
+---
+
+## Overview
+
+This method can be used when you want to test an HTTPS server using a self-signed certificate in your local development environment.
+
+For example, if the `Next.js` web server is running on `localhost:3000`, you can connect to it at `https://demo.vrerv.com`.
+
+### How to
+
+1. Register the IP for the domain you want to use in your local `hosts` file.
+2. Generate a root certificate.
+3. generate a domain certificate.
+4. install `nginx` and apply the certificate.
+5. set up the `nginx` virtual host.
+6. register the root certificate in the OS truststore.
+7. run `nginx`. (If you're running it with Docker, you'll need to use the --add-host option to specify the IP on which the server in the Docker container will see the local server.)
+
+We'll install `nginx` as a `docker` for ease of installation, but installing it directly locally will give you more freedom from IP issues.
+
+### Demo
+
+You can easily run this as a script using the repository below.
+
+* [local-https demo](https://github.com/vrerv/local-https)
+
+### Example of a local development environment
+
+<Mermaid chart={`
+flowchart LR
+  A["Local Frontend Web"]
+  API1["Local Backend API-1"]
+  API2["Local Backend API-2"]
+  API3["Local Backend API-3"]
+  V0["Nginx Virtual Host web"]
+  V1["Nginx Virtual Host API-1"]
+  V2["Nginx Virtual Host API-2"]
+  V3["Nginx Virtual Host API-3"]
+  D["Docker Nginx"]
+  E["DNS, Hosts File"]
+  F["Browser"]
+
+  F -- https://demo.vrerv.com --> E --> D --> V0 --> A
+  F -- https://api-01.vrerv.com --> E --> D --> V1 --> API1
+  F -- https://api-02.vrerv.com --> E --> D --> V2 --> API2
+  F -- https://api-03.vrerv.com --> E --> D --> V3 --> API3
+`}>
+</Mermaid>
+
+## Directory Structure
+
+Create the following directory structure under the current directory to store related files. When running docker, the directory location will be passed as an argument,
+If you want to change the location, you need to change the option when running docker. If you install nginx on your local OS, you need to set the directory location appropriately.
+
+- ./nginx/ssl - store self signed certificates
+- ./nginx/conf.d - nginx virtual host configuration
+
+## Generate the certificate
+
+You can use the openssl command directly to generate the certificate, but there is a script available for convenience.
+In the end, your domain certificate should be generated under `./nginx/ssl`. (You can generate it elsewhere depending on your nginx virtual host configuration).
+
+```bash
+git clone https://github.com/zablik/ssl_cert_generator.git
+cd ssl_cert_generator
+```
+
+### Generate a root certificate
+
+You only need to create a root certificate once and register it in the certificate trust store, and all domain certificates generated with that root certificate will be treated as trusted.
+
+```bash
+./root_ca.sh
+```
+
+Enroll the rootCA certificate created under `../root` in the OS's trust store by following [Adding root certificate to OS's trust store](#adding-root-certificate-to-oss-trust-store).
+
+### Create a domain certificate with Common Name
+
+```bash
+./domain.sh vrerv.com "*.vrerv.com"
+```
+
+Copy the domain certificate created under `../vrerv.com` to the `./nginx/ssl` directory.
+
+## Edit the hosts file
+
+Register the IPs for the domains you want to use in the hosts file. Set it to `127.0.0.1` as we will be sending everything to the local installation of nginx.
+
+* Linux/Mac OS X - Modify the file in `/etc/hosts`.
+* Windows - modify the file `C:/Windows/System32/drivers/etc/hosts`.
+* Run an app such as nodepad as an administrator.
+* Adjust the filter to see "All Files" instead of the default ".txt" file being selected in the popup after selecting Open File.
+* Open the hosts file. Add the following
+
+* If you only want to see certain servers locally, for example, if you only want to see API-1 of your backend locally, you can comment out the other two backend servers with "#".
+
+```
+127.0.0.1       demo.vrerv.com
+127.0.0.1       api-1.vrerv.com
+127.0.0.1       api-2.vrerv.com
+127.0.0.1       api-3.vrerv.com
+```
+
+## Install Nginx
+
+While it is more convenient to install nginx on the OS itself, the following steps describe how to install it with docker.
+
+* Install Docker first. - On Windows, WSL is also required.
+* Run nginx with docker.
+
+In order to access servers outside the container from inside the docker nginx container, you need to specify "dockerhost" as the IP that docker sees via the `--add-host` option.
+This IP is determined by your network, which is automatically set up when you install docker, but the way to find it is slightly different on Linux/Mac and Windows.
+
+For Linux/Mac OS X, run the following command.
+**The docker command below uses the `pwd` command, which means that your current directory should be located in the ./nginx directory below.
+
+Domain-specific servers are set up in individual files with nginx virtual host.
+
+For example, demo.vrerv.com would be set up like this in the ./nginx/conf.d/demo.vrerv.com.conf file: (file name is up to you)
+
+In the `proxy_pass http://dockerhost:3000;` part of the configuration below, add the `--add-host dockerhost:127.0.0.1` option to match the hostname when installing with docker.
+If you installed nginx on the OS itself instead of docker, set `proxy_pass http://localhost:3000`.
+
+```nginx {5,14,16,17,20} showLinenumbers
+server {
+    listen 80;
+    listen [::]:80;
+
+    server_name demo.vrerv.com;
+
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+
+    server_name demo.vrerv.com;
+
+    ssl_certificate /etc/nginx/ssl/vrerv.com.crt;
+    ssl_certificate_key /etc/nginx/ssl/vrerv.com.key;
+
+    location / {
+        proxy_pass http://dockerhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+### Running nginx
+
+```bash
+docker run --rm --name nginx -d \
+    --add-host dockerhost:`ifconfig en0 | grep inet | grep -v inet6 | awk '{print \$2}'` \
+    -v `pwd`/nginx/conf.d:/etc/nginx/conf.d \
+    -v `pwd`/nginx/ssl:/etc/nginx/ssl \
+    -p 80:80 \
+    -p 443:443 \
+    nginx
+```
+
+On Windows, use the IP obtained by running `ifconfig` in the WSL console (the command window that looks like the name of your Ubuntu or other installed Linux distribution).
+On Windows, run the following to start docker from the WSL console (the command window that looks like the name of your Ubuntu or other installed Linux distribution).
+
+```bash
+docker run --rm --name nginx -d --add-host dockerhost:{ENTER_YOUR_IP_HERE} -v `pwd`/nginx/conf.d:/etc/nginx/conf.d -v `pwd`/nginx/ssl:/etc/nginx/ssl -p 80:80 -p 443:443 nginx
+```
+
+If you call https://demo.vrerv.com, you will see that they are all running on localhost.
+However, the certificate will be in error, so you'll need to go through the certificate registration process below.
+
+## Adding root certificate to OS's trust store
+
+You need to add ./ssl/rootCA.crt to your OS's list of trusted root certificates as follows
+
+* Mac OS X - Launch Keychain and drag and drop the appropriate certificate. Double-click the dropped certificate to set it to "Always Trust".
+* Windows - Double-click ./ssl/rootCA.crt. Click "Install Certificate". Select "Local Computer" and click Next. Select "Save all certificates in the following storage", then under "Browse" select "Trusted Root Certification Authorities", then next. Click "Finish".
+
+### Node.js certificate handling
+
+* Node.js doesn't seem to use the OS-registered root certificate, so you'll probably get certificate errors on server-side calls using SSR. The solution is to register the root certificate in Node's own managed repository, but for simplicity's sake, just set the certificate verification pass option in the .env.
+
+```bash
+# Don't validate certificates - use in development only, comment in production
+NODE_TLS_REJECT_UNAUTHORIZED=0
+```
+
+## Verify running
+
+If you call https://demo.vrerv.com, you can see that they are all running on localhost.
+If the server port changes, you'll need to change the port in the backend virtual host settings for each server in conf.d/. The same goes for changing domains, of course.
+
+## Problem
+
+There are some issues with running Nginx with Docker.
+
+Unfortunately, the IP that sees the host pc inside the docker container may change.
+If it does, you'll need to clear the docker container and restart it. To do this, it is a good idea to run docker with the `--rm` option so that the container is automatically deleted on `docker kill`.

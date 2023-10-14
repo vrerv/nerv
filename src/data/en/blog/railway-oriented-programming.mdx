@@ -1,0 +1,156 @@
+---
+title: Railway Oriented Programming
+date: '2023-08-07'
+tags: ['railway-oriented-programming', 'pattern', 'fp', 'functional programming', 'kotlin']
+draft: false
+summary: 'Railway Oriented Programming 에 대한 소개와 예제'
+authors: ['default']
+---
+
+## What is it?
+
+- One of the patterns for handling errors in programming
+- The basic idea is to think of errors as occurring in a program, and to maintain a two-track structure for the entire program.
+- That is, thinking of successful cases as success tracks and unsuccessful cases as failure tracks.
+- Used in functional programming as a monad, allowing functions to be chained together for better implementation and handling.
+
+## Why use it?
+
+- The `try...catch` method breaks the flow of control, making it difficult to understand the flow of the programme.
+- Explicitly indicates that an error will occur.
+- Can handle both errors and successes, while keeping the flow of the program clear.
+
+## How to use it?
+
+- Use the `Either` monad to handle both success and failure.
+- Not all functions need to be made to return `Either`, but the interface for connecting them should be two-track. Use the appropriate adapters for each connection.
+- Here we use [`Result`](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-result/) from the `kotlin stdlib` instead of the `Either` monad to show a success/failure example.
+
+### Adapters
+
+Existing programs may not return a `Result`, so you need to use the appropriate adapters to make them do so
+
+- Single track functions - for handling successes only
+```
+Result.map { singleTrackFunction(it) }
+  ```
+- Dead-end functions - if there is no return
+```
+Result.onSuccess { deadEndFunction(it) }
+  ```
+- Functions that throw exceptions - if they throw exceptions
+```
+Result.mapCatching { funThrowsException(it) }
+  ```
+- Supervisory functions - for handling both and no conversion, e.g. logging, etc.
+```
+Result.onSuccess { println(it) }
+      .onFailure { println(it) }
+  ```
+
+### Example
+
+The original author used `F#` to show the example, but we'll show it in `Kotlin`.
+
+Functions for applying the adapter
+
+* `validateUserInput` - a function that returns both success and error.
+* `canonicalise` - a function that only returns success
+* `updateDb` - function with no return
+* `sendEmail` - a function that throws an exception
+
+Two programmatic implementations
+
+* `handleUserRequest` - a function that handles both success and failure using `Result`.
+* `handleUserRequestByImperative` - an implementation of `handleUserRequest` above using `try...catch`.
+
+Both methods return the same result, but somehow `handleUserRequestByImperative` seems more concise.
+However, the command-line method becomes more complex when additional exceptions are handled in individual functions.
+It's also harder to tell which errors are explicitly thrown and where the flow stops.
+
+[handleUserRequest function is two-tracked through an adapter].
+
+![Connected Functions](/assets/blog/railway-oriented-programming/connected-functions.png)
+
+#### Example code
+
+Put the following code in your `main.kt` file and run it.
+
+```kotlin
+fun validateUserInput(req: Request): Result<Request> {
+    if (req.input.isEmpty()) {
+        return Result.failure(RuntimeException("input is empty"))
+    }
+    return Result.success(req)
+}
+
+fun canonicalize(req: Request): Request {
+    return req.copy(input = req.input.trim())
+}
+
+fun updateDb(req: Request) {
+    println("updateDb is done")
+}
+
+fun sendEmail(req: Request) {
+    if (req.input.isEmpty()) {
+        throw RuntimeException("Failed to send email")
+    }
+}
+
+data class Request(val input: String)
+
+infix fun <T, R> Result<T>.flatMap(transformer: (T) -> Result<R>): Result<R> {
+    return if (isSuccess) {
+        transformer(this.getOrThrow())
+    } else {
+        this as Result<R>
+    }
+}
+
+// Implemented in a functional way
+fun handleUserRequest(input: Request): String {
+
+    return Result.success(input)
+        .flatMap(::validateUserInput)
+        .map { canonicalize(it) }
+        .onSuccess { updateDb(it) }
+        .mapCatching { sendEmail(it) }
+        .fold(
+            onSuccess = { "OK" },
+            onFailure = {
+                when (it) {
+                    is RuntimeException -> it.message ?: "Failed to handle request"
+                    else -> "Unknown error"
+                }
+            })
+}
+
+// Implemented imperatively
+fun handleUserRequestByImperative(input: Request): String {
+
+    return try {
+        validateUserInput(input).getOrThrow()
+        val req = canonicalize(input)
+        updateDb(req)
+        sendEmail(req)
+        "OK"
+    } catch (e: Throwable) {
+        when(e) {
+            is RuntimeException -> e.message ?: "Failed to handle request"
+            else -> "Unknown error"
+        }
+    }
+}
+
+// Run the two functions
+fun main() {
+    val input = Request(" ")
+    println("A: " + handleUserRequest(input))
+    println("B: " + handleUserRequestByImperative(input))
+}
+```
+
+## References
+
+* [Railway Oriented Programming](https://fsharpforfunandprofit.com/rop/)
