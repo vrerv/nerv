@@ -23,13 +23,19 @@
     "deploy": "touch out/.nojekyll && gh-pages -d out --dotfiles"
   },
   "dependencies": {
+    "@radix-ui/react-label": "^2.0.2",
+    "@radix-ui/react-slot": "^1.0.2",
+    "@radix-ui/react-tabs": "^1.0.4",
     "@tailwindcss/forms": "^0.5.3",
     "@tailwindcss/typography": "^0.5.9",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
     "esbuild": "^0.18.11",
     "github-slugger": "^2.0.0",
     "gray-matter": "^4.0.3",
     "image-size": "^1.0.2",
     "js-yaml": "^4.1.0",
+    "lucide-react": "^0.279.0",
     "mdast-util-to-string": "^3.2.0",
     "mdx-bundler": "^9.2.1",
     "mermaid": "^10.2.3",
@@ -52,6 +58,8 @@
     "remark-gfm": "^3.0.1",
     "remark-math": "^5.1.1",
     "sharp": "^0.32.1",
+    "tailwind-merge": "^1.14.0",
+    "tailwindcss-animate": "^1.0.7",
     "unist-util-visit": "^4.1.2"
   },
   "devDependencies": {
