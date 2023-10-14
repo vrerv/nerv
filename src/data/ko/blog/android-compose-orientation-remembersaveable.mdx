@@ -35,10 +35,57 @@ authors: ['default']
 
 ## 사용 예
 
-가로 세로에 따라 탭뷰가 달라진다. 첫번째 탭뷰에서 `HorizontalPager` 를 사용한다. 페이저의 각 아이템은 다른 뷰로 데스티네이션 된다.
-가로 세로 변경에 따라 유지되어야 하는 상태는 현재 누른 탭의위치, 페이저에서의 스크롤 위치, 현재 이동한 데스티네이션과 그 데스티네이션의 UI 상태가 모두 유지되어야 한다.
+아래는 두개의 타일을 가로/세로 모드에 따라 타일을 가로로 배치할지 세로로 배치할지 결정한다.
+`Tile1` 컴포즈에 `counter` 라는 상태가 있다면, 가로 세로 모드에 따라 `counter` 가 다르게 적용되어 버린다.
+가로에서 한번 클릭하여 1이된 상태는 세로로 돌리면 0으로 초기화된다. 세로에서 다시 두번 클릭하면 2로 되고, 가로로 돌리면 1인 가로에서의 상태로 된다.
+
+```kotlin
+
+@Composable
+fun Tile1() {
+    val counter by rememberSaveable { mutableStateOf(0) }
+    Button(onClick = { counter++ }) {
+        Text("Tile 1: $counter")
+    }
+}
+
+@Composable
+fun MyApplication() {
+    if (Mode.current == Mode.Landscape) {
+        Row {
+           Tile1()
+           Tile2()
+        }
+    } else {
+        Column {
+           Tile1()
+           Tile2()
+        }
+    }
+}
+```
+
+이를 방지하기 위해 `movableContentOf` 를 사용하여 이동 가능한 컴포즈들을 정의한다.
+이에 따라 `Tile1` 과 `Tile2` 는 같은 상태를 공유하게 된다.
+
+```kotlin
+@Composable
+fun MyApplication() {
+    val tiles = remember {
+        movableContentOf {
+            Tile1()
+            Tile2()
+        }
+    }
+    if (Mode.current == Mode.Landscape) {
+        Row { tiles() }
+    } else {
+        Column { tiles() }
+   }
+}
+```
 
 ## References
 
-* [Unnatural behaviour of rememberSaveable with chages in parent composables](https://issuetracker.google.com/issues/268218134)
 * [State and Jetpack Compose](https://developer.android.com/jetpack/compose/state)
+* [Moveable Content](https://cs.android.com/androidx/platform/frameworks/support/+/androidx-main:compose/runtime/design/movable-content.md)

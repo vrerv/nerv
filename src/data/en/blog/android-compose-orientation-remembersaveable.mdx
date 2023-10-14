@@ -1,0 +1,91 @@
+---
+title: Android Compose - Manage UI state based on screen rotation
+date: '2023-10-14'
+tags: ['android', 'compose', 'rememberSaveable', 'movableContentOf', 'state management', 'orientation change', 'orientation']
+draft: false
+summary: "Even if you use rememberSaveable in Android development, you should use movableContentOf if the UI has different layouts depending on the screen rotation.
+authors: ['default']
+---
+
+## Overview
+
+In Android development, there are cases where you need to provide appropriate UI according to screen rotation.
+When the screen is rotated, the aspect ratio changes and the UI needs to change accordingly.
+In Android, when the screen is rotated, the activity is recreated and the screen is redrawn.
+Without special coding, what is currently visible on the screen will be reset, meaning that everything in the UI can be lost by simply rotating the phone.
+Let's look at an example of managing state on screen rotation.
+
+## Problem
+
+In order to provide an appropriate UI for screen rotation in the app, different UIs are applied depending on whether the app is in landscape or portrait view.
+The UI that was initially prototyped considering only portrait mode required landscape mode, so we applied different layouts for landscape and portrait.
+
+For example, in tabbed view, if the tab is at the bottom in landscape, the tab is on the right in portrait.
+In this case, even if you use `rememberSaveable` to save the UI state, you will still have two separated UI states depending on the horizontal and vertical orientation.
+
+## Resolve
+
+## movableContentOf
+
+Normally, a `rememberSaveable` is used to store UI state that is lost when settings are changed (screen rotation, screen size).
+However, this `rememberSaveable` maps the state by call sign (where the code is called), and if the layout changes depending on the width and height, the call sign will change,
+the state is not mapped accordingly and it is not restored. In this case, there will be two versions of the UI state depending on the screen orientation.
+To avoid this, you can use `movableContentOf` to ensure that the same content stays in the same state.
+There is a related issue on Android's issue report ([Unnatural behaviour of rememberSaveable with chages in parent composables](https://issuetracker.google.com/issues/268218134)).
+
+## Example
+
+The following uses two tile Composes which are placed horizontally or vertically based on their landscape/portrait mode.
+If the `Tile1` Compose has a state called `counter`, the `counter` will be applied differently depending on the landscape/portrait mode.
+If the state is 1 when clicked once in landscape, it will be reset to 0 when turned to portrait. A double click in portrait will make it 2, and return it to its horizontal state of 1 when turned to landscape again.
+
+```kotlin
+
+@Composable
+fun Tile1() {
+    val counter by rememberSaveable { mutableStateOf(0) }
+    Button(onClick = { counter++ }) {
+        Text("Tile 1: $counter")
+    }
+}
+
+@Composable
+fun MyApplication() {
+    if (Mode.current == Mode.Landscape) {
+        Row {
+           Tile1()
+           Tile2()
+        }
+    } else {
+        Column {
+           Tile1()
+           Tile2()
+        }
+    }
+}
+```
+
+To avoid this, we use `movableContentOf` to define which compositions can be moved.
+As a result, `Tile1` and `Tile2` share the same state.
+
+```kotlin
+@Composable
+fun MyApplication() {
+    val tiles = remember {
+        movableContentOf {
+            Tile1()
+            Tile2()
+        }
+    }
+    if (Mode.current == Mode.Landscape) {
+        Row { tiles() }
+    } else {
+        Column { tiles() }
+   }
+}
+```
+
+## References
+
+* [State and Jetpack Compose](https://developer.android.com/jetpack/compose/state)
+* [Moveable Content](https://cs.android.com/androidx/platform/frameworks/support/+/androidx-main:compose/runtime/design/movable-content.md)
