@@ -1,0 +1,181 @@
+---
+title: Java/Kotlin Backend 서버 에러 처리
+date: '2023-10-28'
+tags: ['java', 'kotlin', 'backend', 'logging', 'springframework', 'error handling', 'exception', 'runtimeexception', 'checked exception', 'domain error']
+draft: false
+summary: ''
+authors: ['default']
+---
+
+## 개요
+
+`Java/Kotlin` 으로 백엔드 서버를 개발할때, 소프트웨어 엔지니어 입장에서 에러 처리를 어떻게 하는지 알아보자.
+
+## 에러의 종류
+
+### Java 에서 에러 분류
+
+* [RuntimeException](https://docs.oracle.com/javase/8/docs/api/java/lang/RuntimeException.html) - Unchecked Exception 으로 명시적으로 처리하지 않아도 된다. 메쏘드 시그니쳐에 표시할 필요 없다.
+* Checked Exception - 명시적으로 처리해야 하는 예외이다. 메쏘드 시그니쳐에 표시해야 하고 메쏘드 호출자는 반드시 처리해야 한다.
+* [Error](https://docs.oracle.com/javase/8/docs/api/java/lang/Error.html) - 시스템에 문제가 있어서, 개발자가 처리할 수 없는 예외이다. 메쏘드 시그니쳐에 표시할 필요 없다.
+
+[`Kotlin` 에서는 Checked Exception 이 없다](https://kotlinlang.org/docs/exceptions.html#checked-exceptions). 모든 예외는 Unchecked Exception 이다.
+
+### 에러 처리를 위한 분류
+
+* **예상하지 못한 에러** - 설계/개발 단계에서 예상하지 못한 에러이다. 사용자의 잘못된 사용, 의도하지 않은 작동, 알지못한 지식에 의한 구현등이 있을 수 있다.
+* **대응하지 못한 에러** - [NullPointerException](https://docs.oracle.com/javase/8/docs/api/java/lang/NullPointerException.html),
+  [IndexOutOfBoundsException](https://docs.oracle.com/javase/8/docs/api/java/lang/IndexOutOfBoundsException.html) 등이 있다. 이런 에러는 개발자가 적절한 대응과 정확한 프로그래밍을 하지 못했을 때 발생한다.
+  예상하지 못한 에러는 실제 어떤 대응을 설계/개발단계에서 명확히하지 못해 선대응을 하기 어려운 경우이지만, 대응하지 못한 에러의 경우, 개발 조직에서 선제적 대응이 가능하다.
+  어떤 예외 상황이 무시된 경우로, 선제적으로 개발 조직에서 처리되어야 한다.
+* **불가피한 에러** - [IOException](https://docs.oracle.com/javase/8/docs/api/java/io/IOException.html) 이 대표적인 예, 네트워크나 데이터페이스 접근, 파일 접근시 상황에 따라 항상 발생가능성을 염두에 두고 처리해야 한다. 이 에러는 개발단계에서 처리해야 한다.
+* **도메인 에러** - 예상된 에러이므로, 각 에러에 대해 어떻게 처리할지 이미 설계 단계에서 정의되어야 한다. 이 예외는 적절한 처리 루틴이 이미 있으므로, 그것에 맞게 처리하고 로깅될 필요 없다.
+  - 도메인 에러는 자원 제약과 비지니스 문제 정의에 의해 소프트웨어의 제약을 정의하고 적절한 사용자 응답을 제공하는데 중점을 둔다.
+  - 예를 들어, 사용자가 로그인을 시도했는데, 비밀번호가 틀린 경우, 이는 도메인 에러이다. 이 경우, 로그인 실패를 알리는 메시지를 보내고, 로그인 화면으로 돌아가게 한다.
+    이는 아이디 암호 입력 기반의 인증에서 사용자가 항상 자신의 인증을 기억하고 올바르게 입력하도록 기대할 수 없기 때문에 설계에서 적절한 예외에 대한 처리를 제공하는 것이다.
+
+## 에러 처리
+
+* 개발 조직에서 견고한 소프트웨어를 만들기 위한 교육과 코드 리뷰가 필요하다.
+* 개발 단계에서 자동화된 테스트, 빌드시 코드 Lint, 자동 코드 포맷팅을 통해 개발자 실수와 잘못된 코드를 방지할 수 있다.
+* `Java/Kotlin` 에서 [Exception](https://docs.oracle.com/javase/8/docs/api/java/lang/Exception.html) 이 발생하면, 다음과 같이 처리한다.
+    - 기본적으로 호출자가 처리하지 못할 경우, 상위 호출자로 던져야 한다.
+    - 에러를 던질때는 부가적인 로깅을 하지 않는다. 중복 에러 로깅 방지
+    - 에러가 던져질때는 호출자에서 처리할 수 있는 추가 정보를 제공해야 된다면, 새로운 `Exception` 으로 wrapping 하여 던진다.
+    - [`Error`](https://docs.oracle.com/javase/8/docs/api/java/lang/Error.html) 가 아닌이상, 또는 `Error` 일 경우라도,
+      catch 되지 않은 최종 `Exception` 은 전체 시스템 핸들러에서 최종적을 catch 하여 로깅되어야 한다.
+
+### 예상하지 못한 에러
+
+* 예상하지 못한 에러의 처리는 모니터링을 통해, 도메인 에러로 재정의하거나, 인프라 및 소프트웨어 구동 환경을 개선하는 것으로 변경되어야 한다.
+* 시스템의 범위에서 처리되지 않은 에러 처리 컴포넌트를 만들고 로깅과 모니터링을 통해 개선해야 한다.
+* 당연히 개발 단계에서 처리할 수 없는 에러 이다.
+
+#### 아예 무시하는 경우
+
+```kotlin
+fun someService(input: String) {
+	try {
+		otherService.networkCall("Hello $input")
+	} catch (e: IOException) {}
+}
+```
+
+위와 같은 코드은 실제 개발에서 종종 발견되는 코드이다.
+당연히 위와 같은 코드는 없어야 된다. 위와 같은 경우는 에러가 발생되도록 하고, 모니터링을 통해 문제를 분석후 개선되어야 할 것이다.
+
+### 대응하지 못한 에러
+
+* 플랫폼, 개발 언어 마다 올바른 개발 방법이 가이드되어 있다. 또한 최후에 코드 리뷰를 통해 발견되어 적절한 의사결정과정을 통해 처리되어야 한다.
+* 이 분류의 에러는 아래와 같은 상황에서 방어 코드와 올바른 프로그래밍 기술로 우선 처리되어야 한다.
+    - 프로그래밍 분기에서 무시된 분기 (if-else 절에서 else 가 빠진 경우, switch 문에서 default 가 빠진 경우, kotlin 에서 ?. 사용후 null 처리를 하지 않은 경우)
+    - 함수에서 input 값의 유효성 체크 - 모든 함수에서 필요하다
+    - nullable 한 객체의 처리
+    - 멀티 쓰레드 처리의 동시성 문제
+    - 동적 타입 변환에서 발생하는 에러
+    - list 등에서 empty 에 대한 처리
+    - 문법적 오류에서 걸러지지 않는 언어와 프레임워크에서 의도하지 않은 사용에 대한 처리
+
+#### Example 1 - 모든 분기 처리하지 않음
+
+```kotlin
+fun someService(input: String?) {
+	input?.run { otherService.hello("Hello $input") }
+}
+```
+
+위의 경우, 다음의 문제가 있다.
+- 모든 분기에 대해 처리하지 않음. 위의 경우 input 이 null 이 아닌 경우만 처리하고, null 인 경우에는 암묵적으로 무시되었다.
+
+```kotlin
+fun someService(input: String?) {
+	input?.run { otherService.hello("Hello $input") } ?: throw IllegalArgumentException("input is null")
+}
+```
+
+처리는 되었지만, 사실 더 자세히 보면, 애초에 input 이 null 일 필요가 없다면, non-null 로 정의하는 것이 더 좋다.
+또는 [require](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/require.html) 를 사용할 수 있다.
+
+```kotlin
+fun someService(input: String) {
+	otherService.hello("Hello $input")
+}
+```
+
+`Java` 의 경우 [org.springframework.util.Asset](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/util/Assert.html) 를 사용할 수 있다.
+
+```java
+public void someService(String input) {
+	Assert.notNull(input, "input must not be null");
+	otherService.hello("Hello " + input);
+}
+```
+
+#### Example 2 - 처리되지 않은 에러에 대한 전체 핸들러
+
+처리되지 않은 에러는 최종적으로 사용자에 전달되기 전에 잡아서 로깅 처리를 하여 모니터링 될 수 있도록 한다.
+해당 에러는 대응을 위해 최대한 많은 정보를 포함하여 로깅하도록 한다.
+
+```java
+@ControllerAdvice
+public class GlobalControllerAdvice {
+
+	@ExceptionHandler(Exception.class)
+	@ResponseStatus(HttpStatus.SERVER_ERROR)
+	public ResponseEntity<ErrorResponse> handleException(HttpServletRequest request, Exception e) {
+		log.error("unexpected error. request={}", debug(request), e);
+	}
+
+	private String debug(HttpServletRequest request) {
+		// ...
+	}
+}
+```
+
+전체 코드는 아래에서 참고 할 수 있다.
+[GlobalErrorHandlingControllerAdvice](https://github.com/sh1nj1/springboot-template/blob/main/app/src/main/java/com/vrerv/springboottemplate/server/common/infra/error/GlobalErrorHandlingControllerAdvice.java)
+
+ErrorResponse 에 는 다음과 같은 내용을 추가로 제공할 수 있다.
+* trackingId - 응답을 받는 측과 서버쪽에서 로깅된 에러를 연결할 수 있는 id
+* code - 에러 코드
+* message - 사용자에게 표시할 에러 메세지
+* debugMessage - 개발자가 디버깅에 사용할 수 있는 메세지, production 에서는 제공하지 않는다. 서버에서는 매순간 로깅에 포함시킨다.
+
+
+#### Example 3 - IllegalStateException
+
+id 로 부터 DB 값을 찾는 것은 서버로 부터 전달받은 id 로 조회할 것이다.
+만약, id 로 조회되는 값이 없는 경우, 이는 다음과 같은 경우를 예상해 볼 수 있다.
+- client 에서 id 를 잘못 입력한 경우
+    - client app 의 버그 인경우
+    - 외부 공격인 경우
+- DB 에서 해당 id 를 서비스 로직을 거치지 않고 삭제한 경우
+- 설계에서 잘못되어 삭제된 값을 조회할 수 있는 경우 => 개발 단계에서 발견되었다면 재설계되었을 경우이므로, 개발시 해당 하지 않은 경우
+
+어떤 경우든, 발생하면 안되는 경우이나, 클라이언트 버그나 오사용에 대해 적절한 에러가 필요하다. 이경우 서버에서는 대체로 [`IllegalStateException`](https://docs.oracle.com/javase/8/docs/api/java/lang/IllegalStateException.html)
+이나 [`RuntimeException`](https://docs.oracle.com/javase/8/docs/api/java/lang/RuntimeException.html) 을 던지도록 한다.
+
+```java
+@Service
+public class ItemService {
+
+	public ItemDto getItem(long id) {
+		return itemRepository.findById(id).map(item -> mapper.toDto(item))
+				.orElseThrow(() -> new IllegalStateException("item not found. id=" + id));
+	}
+}
+```
+
+### 불가피한 에러
+
+* 시스템에 실패 가능성을 염두에 두고, 견고한 소프트웨어 개발과 백업/복구, 방어 전략등을 수립해야 한다.
+* 이 분류의 에러도 개발조직에서 코드 리뷰시 발견되어 적절한 의사결정과정을 통해 처리되어야 한다.
+* 개발 단계에서 불가피한 에러 발생에 대한 방어 코드를 넣고, 로깅및 모니터링 되도록 한다.
+* 제공하려는 서비스의 안정성 단계에 따라 비지니스 로직에 적용되어 더 견고한 소프트웨어로 만들 수 있다.
+* [Spring Retry](https://github.com/spring-projects/spring-retry)
+  나 [Circuit Breaker](https://resilience4j.readme.io/docs/circuitbreaker) 등의 라이브러리나 패턴을 사용하여 처리할 수 있다.
+
+### 도메인 에러
+
+* 설계에서 사용자와 최대한의 커뮤니케이션을 통해, 소프트웨어의 기능 제공 경계를 잘 정의하고, 반영해야 한다.
+* 테스팅에서 여러 전략들을 사용하여, 개발 과정에서 추가적인 도메인 에러 발견하고 처리할 수 있도록 해야 한다.
