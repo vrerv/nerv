@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 // @ts-ignore
@@ -13,67 +12,73 @@ import {
 import { Input } from "@/components/ui/input"
 // @ts-ignore
 import { Label } from "@/components/ui/label"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-// @ts-ignore
-} from "@/components/ui/tabs"
+import TabLayout from "@/components/drawing/TabLayout";
+import { useState } from "react";
+import { useRouter } from "next/router";
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
+import { useTranslation } from "next-i18next";
+import { userAtom } from "@/lib/states/states";
+import { useAtom } from "jotai";
+export async function getStaticProps({ locale }: { locale: any }) {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale, ['common',])),
+    },
+  }
+}
 
 export default function TabsDemo() {
+
+  const [selectedTabIndex, _] = useState(0);
+  const router = useRouter();
+  const { t } = useTranslation('common')
+
+  const [_user, _setUser ] = useAtom(userAtom)
+  const handleLogin = () => {
+    _setUser({valid: true, profile: { name: "Soonoh" }, accessToken: "INVALID"})
+    router.push("/membership/main")
+  }
+
   return (
-    <Tabs defaultValue="account" className="w-[400px]">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="account">Account</TabsTrigger>
-        <TabsTrigger value="password">Password</TabsTrigger>
-      </TabsList>
-      <TabsContent value="account">
-        <Card>
-          <CardHeader>
-            <CardTitle>Account</CardTitle>
-            <CardDescription>
-              Make changes to your account here. Click save when you're done.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="space-y-1">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" defaultValue="Pedro Duarte" />
+    <div className={'flex flex-col items-start p-0'}>
+      <TabLayout control={
+        () => <>
+          <div className="p-2"><Button variant={"link"}
+                                       onClick={() => router.back()}>{t('back')}</Button></div>
+          <div className={"flex-grow"} />
+          <div className="p-2"><Button variant={"default"}
+                                       onClick={() => handleLogin()}>{t("login")}</Button>
+          </div>
+        </>
+      } >
+        <>
+          {selectedTabIndex === 0 && <div className={'w-full h-full p-4'}>
+
+            <h1 className="text-2xl">{t('membership')}</h1>
+            <div className="inline-flex items-baseline w-full pt-4">
+              {t('membershipDescription')}
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="username">Username</Label>
-              <Input id="username" defaultValue="@peduarte" />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button>Save changes</Button>
-          </CardFooter>
-        </Card>
-      </TabsContent>
-      <TabsContent value="password">
-        <Card>
-          <CardHeader>
-            <CardTitle>Password</CardTitle>
-            <CardDescription>
-              Change your password here. After saving, you'll be logged out.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="space-y-1">
-              <Label htmlFor="current">Current password</Label>
-              <Input id="current" type="password" />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="new">New password</Label>
-              <Input id="new" type="password" />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button>Save password</Button>
-          </CardFooter>
-        </Card>
-      </TabsContent>
-    </Tabs>
+            <Card>
+              <CardHeader>
+                <CardTitle>Account</CardTitle>
+                <CardDescription>
+                  Make changes to your account here. Click save when you're done.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="space-y-1">
+                  <Label htmlFor="name">Name</Label>
+                  <Input id="name" defaultValue="Pedro Duarte" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="username">Username</Label>
+                  <Input id="username" defaultValue="@peduarte" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>}
+        </>
+      </TabLayout>
+    </div>
   )
 }

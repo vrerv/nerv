@@ -34,6 +34,7 @@
     "github-slugger": "^2.0.0",
     "gray-matter": "^4.0.3",
     "image-size": "^1.0.2",
+    "jotai": "^2.4.3",
     "js-yaml": "^4.1.0",
     "lucide-react": "^0.279.0",
     "mdast-util-to-string": "^3.2.0",
