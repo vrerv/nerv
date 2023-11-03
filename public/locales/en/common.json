@@ -6,5 +6,6 @@
   "signup": "Sign Up",
   "logout": "Logout",
   "membershipDescription": "If you want to use the service while it's in development, you can sign up for a membership to get in early.",
-  "back": "Back"
+  "back": "Back",
+  "home": "Home"
 }

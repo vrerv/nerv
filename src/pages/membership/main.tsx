@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
 import { useAtom } from "jotai";
-import { userAtom } from "@/lib/states/states";
+import { userAtom } from "@/mentalcare/states";
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
 import Link from "next/link";
 export async function getStaticProps({ locale }: { locale: any }) {
@@ -57,7 +57,7 @@ const MainPage = () => {
               Service
               <ul>
                 <li><Link href={'/service/drawing'}>Simple Drawing</Link></li>
-                <li>Mental Care</li>
+                <li><Link href={'/service/mentalcare'}>Mental Care</Link></li>
               </ul>
             </div>
           </div>}

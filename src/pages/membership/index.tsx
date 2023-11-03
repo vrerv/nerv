@@ -9,7 +9,7 @@ const loginEnabled: boolean = true;
 
 import { useTranslation } from "next-i18next";
 import { useAtom } from "jotai";
-import { userAtom } from "@/lib/states/states";
+import { userAtom } from "@/mentalcare/states";
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
@@ -34,10 +34,10 @@ const MainPage = () => {
     <div className={'flex flex-col items-start p-0'}>
       <TabLayout control={
         () => <>
-          <div className="p-2"><Button variant={'link'} onClick={() => router.back()}>Back</Button></div>
+          <div className="p-2"><Button variant={'link'} onClick={() => router.push('/')}>{t('home')}</Button></div>
           <div className={'flex-grow'} />
-          <div className="p-2"><Button variant={'default'} onClick={() => router.push('/membership/auth')} disabled={!loginEnabled}>{t("login")}</Button></div>
-          <div className="p-2"><Button variant={'default'} onClick={() => router.push('/membership/auth')} disabled={!loginEnabled}>{t("signup")}</Button></div>
+          <div className="p-2"><Button variant={'default'} onClick={() => router.push('/membership/auth/login')} disabled={!loginEnabled}>{t("login")}</Button></div>
+          <div className="p-2"><Button variant={'default'} onClick={() => router.push('/membership/auth/signup')} disabled={!loginEnabled}>{t("signup")}</Button></div>
         </>
       } >
         <>

@@ -17,8 +17,9 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
 import { useTranslation } from "next-i18next";
-import { userAtom } from "@/lib/states/states";
+import { userAtom } from "@/mentalcare/states";
 import { useAtom } from "jotai";
+import { GetStaticPaths } from "next";
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
     props: {
@@ -27,15 +28,28 @@ export async function getStaticProps({ locale }: { locale: any }) {
   }
 }
 
+type LoginOrSignup = {
+  slug: string;
+}
+
+export const getStaticPaths: GetStaticPaths<LoginOrSignup> = async ({}) => {
+
+  return {
+    paths: ['login', 'signup'].map((slug) => ({ params: { slug: slug } })),
+    fallback: false,
+  }
+}
+
 export default function TabsDemo() {
 
   const [selectedTabIndex, _] = useState(0);
   const router = useRouter();
+  const slug = router.query.slug === 'login' ? 'login' : 'signup'
   const { t } = useTranslation('common')
 
-  const [_user, _setUser ] = useAtom(userAtom)
+  const [_user, setUser ] = useAtom(userAtom)
   const handleLogin = () => {
-    _setUser({valid: true, profile: { name: "Soonoh" }, accessToken: "INVALID"})
+    setUser({valid: true, profile: { name: "Soonoh" }, accessToken: "INVALID"})
     router.push("/membership/main")
   }
 
@@ -47,7 +61,7 @@ export default function TabsDemo() {
                                        onClick={() => router.back()}>{t('back')}</Button></div>
           <div className={"flex-grow"} />
           <div className="p-2"><Button variant={"default"}
-                                       onClick={() => handleLogin()}>{t("login")}</Button>
+                                       onClick={() => handleLogin()}>{t(slug)}</Button>
           </div>
         </>
       } >
@@ -58,21 +72,21 @@ export default function TabsDemo() {
             <div className="inline-flex items-baseline w-full pt-4">
               {t('membershipDescription')}
             </div>
-            <Card>
+            <Card className="mt-4">
               <CardHeader>
-                <CardTitle>Account</CardTitle>
+                <CardTitle>{t(slug)}</CardTitle>
                 <CardDescription>
-                  Make changes to your account here. Click save when you're done.
+                  TODO: description
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="space-y-1">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" defaultValue="Pedro Duarte" />
+                  <Label htmlFor="name">Email</Label>
+                  <Input id="name" defaultValue="" />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="username">Username</Label>
-                  <Input id="username" defaultValue="@peduarte" />
+                  <Label htmlFor="username">Password</Label>
+                  <Input id="username" defaultValue="" />
                 </div>
               </CardContent>
             </Card>
