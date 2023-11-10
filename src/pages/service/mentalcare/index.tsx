@@ -1,10 +1,19 @@
 import TabLayout from "@/components/drawing/TabLayout"
 import { useState } from "react";
+import { userAtom } from "@/mentalcare/states";
+import { useAtom } from "jotai";
+import { useRouter } from "next/router";
 
 
 const IndexPage = () => {
 
+  const router = useRouter();
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+  const [user] = useAtom(userAtom)
+  if (user.profile?.routines?.length === 0) {
+    router.push("./mentalcare/first")
+    return
+  }
 
   return <>
     <h1>Mental Care</h1>

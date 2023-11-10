@@ -7,5 +7,9 @@
   "logout": "로그아웃",
   "membershipDescription": "개발 중인 서비스 사용을 원하면 멤버쉽에 가입하여 미리 참여 할 수 있습니다.",
   "back": "뒤로가기",
-  "home": "시작페이지"
+  "home": "시작페이지",
+  "email": "이메일",
+  "password": "비밀번호",
+  "services": "서비스",
+  "servicesDescription": "현재 서비스들은 데모이거나 준비중입니다. 감사합니다."
 }

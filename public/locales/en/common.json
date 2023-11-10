@@ -7,5 +7,9 @@
   "logout": "Logout",
   "membershipDescription": "If you want to use the service while it's in development, you can sign up for a membership to get in early.",
   "back": "Back",
-  "home": "Home"
+  "home": "Home",
+  "email": "Email",
+  "password": "Password",
+  "services": "Services",
+  "servicesDescription": "Services are currently demonstration or in development. Thank you."
 }

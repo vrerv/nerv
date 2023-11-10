@@ -18,11 +18,11 @@ const Index = () => {
 
 export default Index;
 
-export async function getServerSideProps() {
+export async function getServerSideProps({locale}: {locale: string;}) {
   // make "HTTP/1.1 307 Temporary Redirect"
   return {
     redirect: {
-      destination: '/hello',
+      destination: `/${locale}/hello`,
       permanent: false,
     },
   }

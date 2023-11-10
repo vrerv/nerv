@@ -8,13 +8,19 @@ import { Mermaid } from '@/components/Mermaid';
 import { GoogleAnalyticsScripts } from "@/components/GoogleAnalyticsScripts";
 import React from "react";
 import { appWithTranslation } from 'next-i18next'
+import { WithAuth} from "@/components/with-auth";
+import { Provider } from "jotai";
 
 const MyApp = ({ Component, pageProps }: AppProps) => (
 
+  <Provider>
+  <WithAuth whiteList={['/', '/_error', '/hello', '/blog', '/blog/[...slug]', '/membership', '/membership/auth/[slug]']} authPath={'/membership/auth/login'} locale={pageProps.locale}>
   <ThemeProvider attribute="class" defaultTheme="system">
     <Component {...pageProps} />
     <GoogleAnalyticsScripts gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS} />
   </ThemeProvider>
+  </WithAuth>
+  </Provider>
 );
 
 export default appWithTranslation(MyApp);
