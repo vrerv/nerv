@@ -19,9 +19,8 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
 import { useTranslation } from "next-i18next";
 import { userAtom } from "@/mentalcare/states";
 import { useAtom } from "jotai";
-import { GetStaticPaths } from "next";
 // @ts-ignore
-import { login, signup } from "@/lib/api/auth";
+import { login, updatePassword, signout } from "@/lib/api/auth";
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
     props: {
@@ -31,29 +30,10 @@ export async function getStaticProps({ locale }: { locale: any }) {
   }
 }
 
-type LoginOrSignup = {
-  slug: string;
-}
-
-export const getStaticPaths: GetStaticPaths<LoginOrSignup> = async ({locales}) => {
-
-  const paths = (locales || []).flatMap((locale) => {
-
-    return ['login', 'signup'].map((slug) => ({ params: { slug: slug }, locale: locale }))
-  });
-
-  return {
-    paths: paths,
-    fallback: false,
-  }
-}
-
 export default function TabsDemo({locale}: {locale: string;}) {
 
   const [selectedTabIndex, _] = useState(0);
   const router = useRouter();
-  const slug = router.query.slug === 'login' ? 'login' : 'signup'
-  const reverseLink = router.query.slug === 'login' ? 'signup' : 'login'
   const { t } = useTranslation('common')
 
   const [_user, setUser ] = useAtom(userAtom)
@@ -62,23 +42,37 @@ export default function TabsDemo({locale}: {locale: string;}) {
   const [request, setRequest] = useState({
     email: '',
     password: '',
+    newPassword: '',
   });
+
+  const handleLogin = async () => {
+
+    const { data, error: errorRes } = await login(request);
+    console.log("data", data, 'errorRes', errorRes);
+    if (errorRes) {
+      setError(errorRes.message);
+      return false;
+    }
+    setUser({valid: true, profile: { name: "", routines: [] }, accessToken: data.accessToken})
+    return true;
+  }
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 
     event.preventDefault();
 
     setError('');
 
-    const fn = slug === 'login' ? login : signup;
-    const { data, error: errorRes } = await fn(request);
-    console.log("data", data, 'errorRes', errorRes);
-    if (errorRes) {
-      setError(errorRes.message);
-      return;
+    if (await handleLogin()) {
+      const { data, error: errorRes } = await updatePassword(request);
+      console.log("data", data, 'errorRes', errorRes);
+      if (errorRes) {
+        setError(errorRes.message);
+        return;
+      }
+      await signout()
+      setUser({valid: false, profile: { name: "", routines: [] }, accessToken: null})
     }
 
-    setUser({valid: true, profile: { name: "", routines: [] }, accessToken: data.accessToken})
-    await router.push("/membership/main", '/membership/main', { locale: locale })
   };
 
   const handleAccountChange = (event: any) => {
@@ -86,6 +80,9 @@ export default function TabsDemo({locale}: {locale: string;}) {
   };
   const handlePasswordChange = (event: any) => {
     setRequest({ ...request, password: event.target.value });
+  };
+  const handleNewPasswordChange = (event: any) => {
+    setRequest({ ...request, newPassword: event.target.value });
   };
 
   return (
@@ -95,13 +92,10 @@ export default function TabsDemo({locale}: {locale: string;}) {
         () => <>
           <div className="p-2"><Button variant={'link'}
                                        type="button"
-                                       onClick={() => router.push('/', '/', { locale: locale })}>{t('home')}</Button></div>
+                                       onClick={() => router.back()}>{t('back')}</Button></div>
           <div className={"flex-grow"} />
           <div className="p-2"><Button variant={'default'}
-                                       type="submit" >{t(slug)}</Button></div>
-          <div className="p-2"><Button variant={'default'}
-                                       type="button"
-                                       onClick={() => router.push(`/membership/auth/${reverseLink}`, `/membership/auth/${reverseLink}`, { locale: locale })} >{t(reverseLink)}</Button></div>
+                                       type="submit" >{t('updatePassword')}</Button></div>
         </>
       } >
         <>
@@ -113,7 +107,7 @@ export default function TabsDemo({locale}: {locale: string;}) {
             </div>
             <Card className="mt-4">
               <CardHeader>
-                <CardTitle>{t(slug)}</CardTitle>
+                <CardTitle>{t('updatePassword')}</CardTitle>
                 <CardDescription>
                   {/* TODO: description */}
                 </CardDescription>
@@ -136,6 +130,16 @@ export default function TabsDemo({locale}: {locale: string;}) {
                            maxLength={32}
                            autoComplete="current-password"
                            onChange={handlePasswordChange} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="new-password">{t('newPassword')}</Label>
+                    <Input id="new-password"
+                           type="password"
+                           required
+                           minLength={8}
+                           maxLength={32}
+                           autoComplete="new-password"
+                           onChange={handleNewPasswordChange} />
                   </div>
                   <span className="text-red-500">{error}</span>
               </CardContent>

@@ -48,9 +48,9 @@ const MainPage = ({locale}: { locale: string; }) => {
         () => <>
           <div className="p-2"><Button variant={'link'} onClick={handleHome}>{t('home')}</Button></div>
           <div className={"flex-grow"} />
-          {/*<div className="p-2"><Button variant={"default"}
-                                       onClick={() => router.push("/membership/profile")}>{t("showProfile")}</Button>
-          </div> */}
+          <div className="p-2"><Button variant={"default"}
+                                       onClick={() => router.push("/membership/auth/update-password")}>{t("updatePassword")}</Button>
+          </div>
           <div className="p-2"><Button variant={"default"}
                                        onClick={() => handleSignout()}>{t("logout")}</Button>
           </div>
