@@ -48,7 +48,7 @@ export default function TabsDemo({locale}: {locale: string;}) {
   const handleLogin = async () => {
 
     const { data, error: errorRes } = await login(request);
-    console.log("data", data, 'errorRes', errorRes);
+    console.log("locale", locale, "data", data, 'errorRes', errorRes);
     if (errorRes) {
       setError(errorRes.message);
       return false;
