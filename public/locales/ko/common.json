@@ -13,5 +13,9 @@
   "services": "서비스",
   "servicesDescription": "현재 서비스들은 데모이거나 준비중입니다. 감사합니다.",
   "updatePassword": "비밀번호 수정",
-  "newPassword": "새 비밀번호"
+  "newPassword": "새 비밀번호",
+  "resetPassword": "비밀번호 재설정",
+  "confirmPassword": "비밀번호 확인",
+  "passwordConfirmFailed": "비밀번호 확인이 일치하지 않습니다",
+  "msgEmailSentForResetPassword": "비밀번호 재설정 이메일을 보냈습니다. 이메일을 확인하세요."
 }

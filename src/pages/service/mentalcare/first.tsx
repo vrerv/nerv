@@ -36,15 +36,13 @@ const MainPage = () => {
   }
 
   return <>
-    <h1>Mental Care</h1>
     <TabLayout control={
       () => <>
-        <button onClick={() => {
-          setSelectedTabIndex(selectedTabIndex + 1)
-        } }>시작하기</button>
+        <div className="p-2"><button onClick={() => setSelectedTabIndex(selectedTabIndex + 1) }>시작하기</button></div>
       </>
     } >
       <>
+        <h1>Mental Care</h1>
         {selectedTabIndex === 0 && <div>랜딩페이지: 당신의 멘탈을 책임집니다.</div>}
         {selectedTabIndex === 1 && <div>
           <h1>루틴 생성 - 1</h1>

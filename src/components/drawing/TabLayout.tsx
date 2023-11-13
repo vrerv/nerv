@@ -16,9 +16,15 @@ interface TabLayoutControlProps {
   };
 }
 
-const TabLayout = ({ children, control }: { children: ReactElement[] | ReactElement, control: FunctionComponent<TabLayoutControlProps> }) => {
+export type TabLayoutProps = {
+  children: ReactElement[] | ReactElement,
+  control: FunctionComponent<TabLayoutControlProps>,
+  actionHeight?: number;
+}
 
-  const TAB_HEIGHT = 120;
+const TabLayout = ({ children, control, actionHeight = 120 }: TabLayoutProps) => {
+
+  const TAB_HEIGHT = actionHeight;
   const [dimensions, setDimensions] = useState({
     width: 0,
     height: 0

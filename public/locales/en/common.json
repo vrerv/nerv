@@ -13,5 +13,9 @@
   "services": "Services",
   "servicesDescription": "Services are currently demonstration or in development. Thank you.",
   "updatePassword": "Update Password",
-  "newPassword": "New password"
+  "newPassword": "New password",
+  "resetPassword": "Reset password",
+  "confirmPassword": "Confirm password",
+  "passwordConfirmFailed": "Password confirmation doesn't match",
+  "msgEmailSentForResetPassword": "We've sent you a password reset email, check your email."
 }

@@ -119,25 +119,29 @@ export default function TabsDemo({locale}: {locale: string;}) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
-                  <div className="space-y-1">
-                    <Label htmlFor="email">{t('email')}</Label>
-                    <Input id="email"
-                           type="email"
-                           required
-                           autoComplete="email"
-                           onChange={handleAccountChange} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="password">{t('password')}</Label>
-                    <Input id="password"
-                           type="password"
-                           required
-                           minLength={8}
-                           maxLength={32}
-                           autoComplete="current-password"
-                           onChange={handlePasswordChange} />
-                  </div>
-                  <span className="text-red-500">{error}</span>
+                <div className="space-y-1">
+                  <Label htmlFor="email">{t("email")}</Label>
+                  <Input id="email"
+                         type="email"
+                         required
+                         autoComplete="email"
+                         onChange={handleAccountChange} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="password">{t("password")}</Label>
+                  <Input id="password"
+                         type="password"
+                         required
+                         minLength={8}
+                         maxLength={32}
+                         autoComplete="current-password"
+                         onChange={handlePasswordChange} />
+                </div>
+                <span className="text-red-500">{error}</span>
+                <div className="p-2"><Button variant={"link"}
+                                             type="button"
+                                             onClick={() => router.push(`/membership/auth/reset-password`, `/membership/auth/reset-password`, { locale: locale })}>{t("resetPassword")}</Button>
+                </div>
               </CardContent>
             </Card>
           </div>}

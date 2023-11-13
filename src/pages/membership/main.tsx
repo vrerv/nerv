@@ -66,7 +66,7 @@ const MainPage = ({locale}: { locale: string; }) => {
               <ul>
                 <li><Link href={'https://books.vrerv.com'}>9 Cut Story Book</Link></li>
                 <li><Link href={'/service/drawing'}>Simple Drawing</Link></li>
-                { /*<li><Link href={'/service/mentalcare'}>Mental Care</Link></li> */}
+                <li><Link href={'/service/mentalcare'}>Mental Care</Link></li>
                 <li><Link href={'/service/magic-is-coming'}>Your MAGIC Is Coming!</Link></li>
               </ul>
             </div>
