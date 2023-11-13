@@ -16,7 +16,7 @@ const Drawing = (_: any) => {
   const background = "#ffffff05";
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
-  const [color, setColor] = useState("Black");
+  const [color, setColor] = useState({name: 'Black', code: '#000000'});
   const [dimensions, setDimensions] = useState({
     width: 0,
     height: 0
@@ -61,7 +61,7 @@ const Drawing = (_: any) => {
 
     ctx.lineWidth = 5;
     ctx.lineCap = "round";
-    ctx.strokeStyle = color;
+    ctx.strokeStyle = color.code;
 
     ctx.lineTo(x, y);
     ctx.stroke();
