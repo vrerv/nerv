@@ -41,6 +41,7 @@ export const Evening = [17, 18, 19, 20, 21, 22] as AvailableHour[];
 export const AllDay = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ,10 ,11 ,12, 13, 14, 15, 16, 17, 18, 19, 20 ,21 ,22 ,23] as AvailableHour[];
 
 export type Challenge = {
+  id: string;
   name: string;
   description: string;
   contentUrl: string;
@@ -78,6 +79,7 @@ export const periodsAtom = atomWithStorage<Period[]>('periods', [
 
 export const challengesAtom = atomWithStorage<Challenge[]>('challenges', [
   {
+    id: 'cold-shower-1',
     name: '아침 찬물 샤워',
     description: '아침에 일어나서 찬물 샤워하기',
     contentUrl: '',
@@ -87,6 +89,7 @@ export const challengesAtom = atomWithStorage<Challenge[]>('challenges', [
     availableHours: Morning
   },
   {
+    id: 'push-up-1',
     name: '아침 팔굽혀펴기 운동',
     description: '팔굽혀 펴기 운동을 합니다',
     contentUrl: '',
@@ -96,6 +99,7 @@ export const challengesAtom = atomWithStorage<Challenge[]>('challenges', [
     availableHours: Morning
   },
   {
+    id: 'drink-water-1',
     name: '물 많이 마시기',
     description: '대략 1.5L 이상의 권장량의 물 마시기',
     contentUrl: '',
@@ -105,6 +109,7 @@ export const challengesAtom = atomWithStorage<Challenge[]>('challenges', [
     availableHours: Morning.concat(Noon).concat(Evening)
   },
   {
+    id: 'remind-todo-1',
     name: '오늘 할일 확인/설정',
     description: '오늘 하루를 계획한다',
     contentUrl: '',
