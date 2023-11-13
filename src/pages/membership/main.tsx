@@ -9,6 +9,13 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import Link from "next/link";
 // @ts-ignore
 import { signout } from "@/lib/api/auth";
+// @ts-ignore
+import { listServices } from "@/lib/api/services";
+
+type Service = {
+  name: string;
+  url: string;
+}
 
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
@@ -26,12 +33,25 @@ const MainPage = ({locale}: { locale: string; }) => {
   console.log("locale", locale)
   // TODO: login 여부 확인후 로그인 되어 있으면 멤버쉽 메인으로 이동
   const [user, _setUser ] = useAtom(userAtom)
+  const [services, setServices] = useState<Service[]>([])
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!user.valid) {
       router.push("/membership/", '/membership', { locale: locale }).then()
       return
     }
+    const fn = async () => {
+      const { data, error } = await listServices();
+      if (data) {
+        console.log('data', data)
+        setServices(data)
+      }
+      if (error) {
+        setError(error.message)
+      }
+    }
+    fn().then();
   }, []);
   const handleSignout = async () => {
     _setUser({valid: false, profile: { name: "", routines: [] }, accessToken: ""})
@@ -64,11 +84,9 @@ const MainPage = ({locale}: { locale: string; }) => {
             </div>
             <div className="flex flex-col items-center w-full pt-4">
               <ul>
-                <li><Link href={'https://books.vrerv.com'}>9 Cut Story Book</Link></li>
-                <li><Link href={'/service/drawing'}>Simple Drawing</Link></li>
-                <li><Link href={'/service/mentalcare'}>Mental Care</Link></li>
-                <li><Link href={'/service/magic-is-coming'}>Your MAGIC Is Coming!</Link></li>
+                {services.map((service) => <li><Link href={service.url}>{service.name}</Link></li>)}
               </ul>
+              {error && <span className="text-red-500">{error}</span>}
             </div>
           </div>}
         </>
