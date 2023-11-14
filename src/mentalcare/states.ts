@@ -77,7 +77,7 @@ export const periodsAtom = atomWithStorage<Period[]>('periods', [
   }
 ])
 
-export const challengesAtom = atomWithStorage<Challenge[]>('challenges', [
+export const DEFAULT_CHALLENGES: Challenge[] = [
   {
     id: 'cold-shower-1',
     name: '아침 찬물 샤워',
@@ -118,4 +118,6 @@ export const challengesAtom = atomWithStorage<Challenge[]>('challenges', [
     playMinutes: 10,
     availableHours: Morning
   },
-])
+];
+
+export const challengesAtom = atomWithStorage<Challenge[]>('challenges', DEFAULT_CHALLENGES)

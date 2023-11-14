@@ -4,6 +4,7 @@ import { useAtom } from "jotai";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import Link from "next/link";
 
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
@@ -79,7 +80,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
               오늘의 도전 목록이 없습니다
             </div>}
             <ul>
-              {challenges.map((challenge) => <li><button>{challenge.name}</button></li>)}
+              {challenges.map((challenge) => <li><Link href={`/service/mentalcare/challenge/${challenge.id}`}>{challenge.name}</Link></li>)}
             </ul>
           </main>
         </div>
