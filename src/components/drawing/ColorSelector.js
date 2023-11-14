@@ -127,7 +127,7 @@ const ColorSelector = ({className, selectedColor, setSelectedColor}) => {
                 className="dropdown-item"
                 style={{ width: gridWidthPx, height: gridWidthPx, backgroundColor: color.code }}
               >
-                {color.name}
+                <span style={{color: invertColor(color.code, true)}}>{color.name}</span>
               </div>
             ))}
           </div>
