@@ -47,7 +47,7 @@ const MainPage = () => {
               {t('membershipDescription')}
             </div>
             <div className="flex flex-col items-center w-full pt-4">
-              <Image src={loveIt} alt={'Join'} />
+              <Image src={loveIt} alt={'Join'} height={400} />
             </div>
           </div>}
         </>
