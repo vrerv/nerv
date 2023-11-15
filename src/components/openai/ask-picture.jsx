@@ -101,7 +101,12 @@ export const AskPicture = ({query, submitName}) => {
         headers: headers,
         body: JSON.stringify(payload)
       })
-        .then(response => response.ok ? response.json() : throw new Error(`Error: ${response.text()}`))
+        .then(response => {
+          if (response.ok) {
+            response.json();
+          }
+          throw new Error(`Error: ${response.text()}`);
+        })
       setResponse(data);
     } catch (err) {
       setError(`${err}`);
