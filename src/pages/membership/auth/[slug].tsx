@@ -1,27 +1,28 @@
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
+  CardTitle
+} from "@/components/ui/card";
 // @ts-ignore
-} from "@/components/ui/card"
+import { Input } from "@/components/ui/input";
 // @ts-ignore
-import { Input } from "@/components/ui/input"
-// @ts-ignore
-import { Label } from "@/components/ui/label"
+import { Label } from "@/components/ui/label";
 import TabLayout from "@/components/drawing/TabLayout";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/router";
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import { userAtom } from "@/mentalcare/states";
 import { useAtom } from "jotai";
 import { GetStaticPaths } from "next";
 // @ts-ignore
-import { login, signup } from "@/lib/api/auth";
+import { login, signInWithOAuth, signup } from "@/lib/api/auth";
+import { GoogleAuthButton } from "@/components/google/google-auth-button";
+
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
     props: {
@@ -88,6 +89,23 @@ export default function TabsDemo({locale}: {locale: string;}) {
     setRequest({ ...request, password: event.target.value });
   };
 
+  const handleGoogleLogin = async () => {
+    const { data, error } = await signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `http://localhost:3000/${locale}/membership`,
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent"
+        }
+      }
+    });
+    console.log("google data", data, error);
+    if (data) {
+      setUser({valid: true, profile: { name: "", routines: [] }, accessToken: data.accessToken})
+    }
+  }
+
   return (
     <div className={'flex flex-col items-start p-0'}>
       <form method="POST" onSubmit={handleSubmit}>
@@ -144,6 +162,7 @@ export default function TabsDemo({locale}: {locale: string;}) {
                 </div>
               </CardContent>
             </Card>
+            <GoogleAuthButton authType={slug} handleGoogleLogin={handleGoogleLogin} className={'mt-2'} />
           </div>}
         </>
       </TabLayout>

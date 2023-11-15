@@ -30,7 +30,7 @@ export const updatePassword = async ({newPassword}) => {
 }
 
 export const sendResetPasswordEmail = async({email, redirectTo}) => {
-  await supabase.auth.resetPasswordForEmail(email, {
+  return await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: redirectTo,
   })
 }
@@ -39,4 +39,8 @@ export const onAuthChange = (listener) => {
   supabase.auth.onAuthStateChange((event, session) => {
     listener(event, session)
   })
+}
+
+export const signInWithOAuth = async (options) => {
+  return await supabase.auth.signInWithOAuth(options);
 }
