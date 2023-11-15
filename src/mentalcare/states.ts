@@ -49,6 +49,7 @@ export type Challenge = {
   openType: OpenType;
   playMinutes: number;
   availableHours: AvailableHour[];
+  prompt?: string | undefined;
 }
 
 export type Period = {
@@ -82,6 +83,7 @@ export const DEFAULT_CHALLENGES: Challenge[] = [
     id: 'cold-shower-1',
     name: '아침 찬물 샤워',
     description: '아침에 일어나서 찬물 샤워하기',
+    prompt: '물로 샤워하는 이미지',
     contentUrl: '',
     ackOptions: ['user', 'supporter'],
     openType: PUBLIC,
@@ -91,6 +93,7 @@ export const DEFAULT_CHALLENGES: Challenge[] = [
   {
     id: 'push-up-1',
     name: '아침 팔굽혀펴기 운동',
+    prompt: '팔굽혀펴기 이미지',
     description: '팔굽혀 펴기 운동을 합니다',
     contentUrl: '',
     ackOptions: ['system', 'user', 'supporter'],
@@ -101,6 +104,7 @@ export const DEFAULT_CHALLENGES: Challenge[] = [
   {
     id: 'drink-water-1',
     name: '물 많이 마시기',
+    prompt: '사람이 어떤 음료를 마신다',
     description: '대략 1.5L 이상의 권장량의 물 마시기',
     contentUrl: '',
     ackOptions: ['user', 'supporter'],
@@ -111,6 +115,7 @@ export const DEFAULT_CHALLENGES: Challenge[] = [
   {
     id: 'remind-todo-1',
     name: '오늘 할일 확인/설정',
+    prompt: undefined,
     description: '오늘 하루를 계획한다',
     contentUrl: '',
     ackOptions: ['system', 'user', 'supporter'],

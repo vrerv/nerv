@@ -2,9 +2,11 @@ import TabLayout from "@/components/drawing/TabLayout"
 import { Challenge, DEFAULT_CHALLENGES, userAtom } from "@/mentalcare/states";
 import { useAtom } from "jotai";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { GetStaticPaths } from "next";
+// @ts-ignore
+import { AskPicture } from '@/components/openai/ask-picture';
 
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
@@ -73,7 +75,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
         () => <>
           <div className="p-2"><button onClick={handleList}>List</button></div>
           <div className={"flex-grow"} />
-          <div className="p-2"><button onClick={handleChallenge}>Challenge</button></div>
+          <div className="p-2"><button onClick={handleChallenge}>History</button></div>
         </>
       } >
         <>
@@ -86,7 +88,18 @@ const IndexPage = ({locale}: { locale: string; }) => {
               <span className={"text-xl justify-end"}>{challenge.name}</span>
             </div>
             <main>
+              <br/>
               {challenge.description}
+              <br/>
+              {challenge.prompt && <>
+                <br/>
+                <span>도전 과제를 카메라로 촬영해주세요</span>
+                <br/>
+                <br/>
+                <AskPicture submitName={'도전 확인'}
+                  query={`사진을 찍은 사람은 어떤 도전을 하고 있으며 그 도전의 설명은 다음과 같다, 사진에서 사용자가 해당 도전을 하고 있는지 "YES" 또는 "NO" 로만 대답 하시오. 도전 설명: ${challenge.prompt}`} />
+                </>
+              }
             </main>
           </div>
         </>
