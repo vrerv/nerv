@@ -5,6 +5,8 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import Link from "next/link";
+import { MentalCareHeader } from "@/mentalcare/components/header";
+import { useSecondsTimer } from "@/mentalcare/hooks/use-seconds-timer";
 
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
@@ -20,7 +22,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
   const router = useRouter();
   const [user, setUser] = useAtom(userAtom)
   const [challenges, setChallenges] = useState<Challenge[]>([])
-  const [now, setNow] = useState(new Date())
+  const now = useSecondsTimer()
 
   const handleHome = () => {
     router.push('/membership')
@@ -47,16 +49,6 @@ const IndexPage = ({locale}: { locale: string; }) => {
     }
   }, [user.profile]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setNow(new Date())
-    }, 1000);
-
-    return () => {
-      window.clearInterval(timer);
-    }
-  }, [])
-
   return <>
     <div className={'flex flex-col items-start p-0'}>
     <TabLayout control={
@@ -68,10 +60,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
     } >
       <>
         <div className={'w-full h-full p-4'}>
-          <div className={"flex w-full justify-between items-end"}>
-            <h1 className={"text-2xl"}>Mental Care</h1>
-            <span className={"h-full align-bottom font-mono"}>{now.toLocaleTimeString(locale)}</span>
-          </div>
+          <MentalCareHeader locale={locale} />
           <div>
             <span className={"text-xl justify-end"}>오늘({now.toLocaleDateString(locale)})의 도전 목록</span>
           </div>
