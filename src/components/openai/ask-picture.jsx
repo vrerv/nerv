@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { Card } from "../ui/card";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 
 const resizeImage = (file, maxWidth = 1024) => {
   return new Promise((resolve, reject) => {
@@ -42,10 +41,20 @@ const resizeImage = (file, maxWidth = 1024) => {
   });
 };
 
+const convertToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+    reader.readAsDataURL(file);
+  });
+};
+
 export const AskPicture = ({query, submitName}) => {
   const [image, setImage] = useState(null);
   const [response, setResponse] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleFileChange = async (event) => {
     try {
@@ -59,16 +68,8 @@ export const AskPicture = ({query, submitName}) => {
     }
   };
 
-  const convertToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = error => reject(error);
-      reader.readAsDataURL(file);
-    });
-  };
-
   const handleSubmit = async () => {
+    setLoading(true)
     try {
       const headers = {
         "Content-Type": "application/json"
@@ -108,16 +109,18 @@ export const AskPicture = ({query, submitName}) => {
           throw new Error(`Error: ${response.text()}`);
         })
       setResponse(data);
+      setLoading(false);
     } catch (err) {
       setError(`${err}`);
+      setLoading(false);
     }
   };
 
   return (
     <div>
-      <input type="file" onChange={handleFileChange} accept={"image/*"} />
+      <Input type="file" onChange={handleFileChange} accept={"image/*"} />
       <Button type={"submit"} className={"mt-2"}
-              onClick={handleSubmit}>{submitName}</Button>
+              onClick={handleSubmit}>{loading ? '로딩중...' : submitName}</Button>
       {response &&
         <div>{response.choices ? response.choices[0].message.content === "YES" ? "검증됨" : "실패" : ""}</div>}
       {error && <div>{error}</div>}
