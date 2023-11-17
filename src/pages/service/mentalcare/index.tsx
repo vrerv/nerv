@@ -118,7 +118,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
         <div className={'w-full h-full p-4'}>
           <MentalCareHeader locale={locale} />
           <div>
-            <span className={"text-xl justify-end"}>오늘({now.toLocaleDateString(locale)})의 도전 목록</span>
+            <span className={"text-xl justify-end"}>오늘({now.toLocaleDateString(locale, {year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short'})})의 도전 목록</span>
           </div>
           <main>
             {routines.length === 0 && <div>
