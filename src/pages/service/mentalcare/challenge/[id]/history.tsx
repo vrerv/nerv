@@ -58,7 +58,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
       console.log('key', key)
       return recordMap[key] || []
     })
-    setRecords(r);
+    setRecords(r.flatMap(ur => ur.records));
   }
 
   useEffect(() => {
@@ -80,7 +80,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
     if (challenge) {
       const key = recordKey(challenge?.id!)
       if (recordMap[key]) {
-        setRecords(recordMap[key]!)
+        setRecords(recordMap[key]!.records)
       }
     }
   }, [challenge, recordMap])
@@ -114,7 +114,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
                 <span className={"text-xl justify-end"}>{challenge.name}</span>
               </div>
               <br/>
-              {records.map(record =>
+              {records?.map(record =>
                 <div className={'font-mono'}>
                   <span>{record.action || '기록'} - {new Date(record.recordedAt).toLocaleString(locale)}</span>{' '}
                   {editMode && <Button type={'button'} variant={'outline'} size={'sm'} onClick={handleRemoveRecord(0 /* TODO */)}>Remove</Button>}

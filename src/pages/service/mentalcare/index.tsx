@@ -1,5 +1,11 @@
 import TabLayout from "@/components/drawing/TabLayout"
-import { Challenge, DEFAULT_CHALLENGES, Routine, userAtom } from "@/mentalcare/states";
+import {
+  Challenge,
+  challengeRecordsAtom,
+  DEFAULT_CHALLENGES, recordKey,
+  Routine,
+  userAtom
+} from "@/mentalcare/states";
 import { useAtom } from "jotai";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
@@ -103,6 +109,13 @@ const IndexPage = ({locale}: { locale: string; }) => {
     setRoutine(routine)
   }
 
+
+  const [recordMap, _setRecordMap] = useAtom(challengeRecordsAtom)
+  const isCompleted = (challengeId: string) => {
+    const key = recordKey(challengeId, now)
+    return recordMap[key]?.completed || false
+  }
+
   return <>
     <div className={'flex flex-col items-start p-0'}>
     <TabLayout control={
@@ -154,7 +167,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
               </>}
               <>
                 {routine?.challenges?.map((challenge) =>
-                <div key={`${routine.id}/${challenge.id}`} className={'flex justify-between text-xl w-full'}>
+                <div key={`${routine.id}/${challenge.id}`} className={'flex justify-between text-xl w-full' + `${isCompleted(challenge.id) ? ' bg-green-500': ''}`}>
                   <Link href={`/service/mentalcare/challenge/${challenge.id}`}>{challenge.name}</Link>
                   {editMode && <Button type={'button'} variant={'outline'} size={'sm'} onClick={handleRemoveChallenge(routine.id, challenge.id)}>Remove</Button>}
                 </div>)}

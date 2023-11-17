@@ -1,6 +1,6 @@
 import TabLayout from "@/components/drawing/TabLayout"
 import {
-  Challenge,
+  Challenge, ChallengeRecord,
   challengeRecordsAtom,
   DEFAULT_CHALLENGES, recordKey,
   userAtom
@@ -58,17 +58,23 @@ const IndexPage = ({locale}: { locale: string; }) => {
   const handleRecord = () => {
     const key = recordKey(challenge?.id!)
 
-    const records = recordMap[key] || []
+    const userData = recordMap[key]!
+    const records = userData?.records || []
     const newRecords = [...records, {
       challengeId: challenge!.id,
       action: 'Record',
-      recordedAt: new Date(),
+      recordedAt: new Date().toString(),
       value: ''
     }]
+    const fn: (records: ChallengeRecord[]) => boolean = eval(challenge?.complete || '(records) => false')
     // @ts-ignore
     setRecordMap({
       ...recordMap,
-      [key]: newRecords
+      [key]: {
+        ...userData,
+        records: newRecords,
+        completed: fn(newRecords) || false
+      }
     })
   }
 

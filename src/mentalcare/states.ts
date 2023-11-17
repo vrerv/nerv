@@ -50,6 +50,7 @@ export type Challenge = {
   playMinutes: number;
   availableHours: AvailableHour[];
   prompt?: string | undefined;
+  complete: string;
 }
 
 export type Period = {
@@ -89,7 +90,8 @@ export const DEFAULT_CHALLENGES: Challenge[] = [
     ackOptions: ['user', 'supporter'],
     openType: PUBLIC,
     playMinutes: 10,
-    availableHours: Morning
+    availableHours: Morning,
+    complete: '(records) => records.length > 0'
   },
   {
     id: 'push-up-1',
@@ -100,7 +102,8 @@ export const DEFAULT_CHALLENGES: Challenge[] = [
     ackOptions: ['system', 'user', 'supporter'],
     openType: PUBLIC,
     playMinutes: 10,
-    availableHours: Morning
+    availableHours: Morning,
+    complete: '(records) => records.length > 0'
   },
   {
     id: 'drink-water-1',
@@ -111,7 +114,8 @@ export const DEFAULT_CHALLENGES: Challenge[] = [
     ackOptions: ['user', 'supporter'],
     openType: PUBLIC,
     playMinutes: 5,
-    availableHours: Morning.concat(Noon).concat(Evening)
+    availableHours: Morning.concat(Noon).concat(Evening),
+    complete: '(records) => records.map(r => Number(r.value)).reduce((a, b) => (a + b)) >= 1800'
   },
   {
     id: 'remind-todo-1',
@@ -122,13 +126,20 @@ export const DEFAULT_CHALLENGES: Challenge[] = [
     ackOptions: ['system', 'user', 'supporter'],
     openType: PUBLIC,
     playMinutes: 10,
-    availableHours: Morning
+    availableHours: Morning,
+    complete: "(records) => JSON.parse(records[records.length - 1]?.value || '').completed === true"
   },
 ];
 
 export const challengesAtom = atomWithStorage<Challenge[]>('challenges', DEFAULT_CHALLENGES)
 
-export const DEFAULT_RECORDs: Record<string, ChallengeRecord[]> = {};
+export const DEFAULT_RECORDs: Record<string, UserChallenge> = {};
+
+export type UserChallenge = {
+  challengeId: string;
+  records: ChallengeRecord[];
+  completed: boolean;
+}
 
 export type ChallengeRecord = {
   challengeId: string;
@@ -136,7 +147,7 @@ export type ChallengeRecord = {
   recordedAt: string;
   value?: string;
 }
-export const challengeRecordsAtom = atomWithStorage<Record<string, ChallengeRecord[]>>('challenge_records', DEFAULT_RECORDs)
+export const challengeRecordsAtom = atomWithStorage<Record<string, UserChallenge>>('challenge_records', DEFAULT_RECORDs)
 
 export const recordKey = (challengeId: string, date: Date = new Date()) => {
   return `${challengeId}/${date.toLocaleDateString('en-CA')}`
