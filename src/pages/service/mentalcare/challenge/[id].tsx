@@ -7,6 +7,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { GetStaticPaths } from "next";
 // @ts-ignore
 import { AskPicture } from '@/components/openai/ask-picture';
+import { MentalCareHeader } from "@/mentalcare/components/header";
 
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
@@ -38,7 +39,6 @@ const IndexPage = ({locale}: { locale: string; }) => {
   const router = useRouter();
   const [user] = useAtom(userAtom)
   const [challenge, setChallenge] = useState<Challenge | null>(null)
-  const [now, setNow] = useState(new Date())
 
   const handleList = () => {
     router.push('/service/mentalcare')
@@ -59,16 +59,6 @@ const IndexPage = ({locale}: { locale: string; }) => {
     }
   }, [user.profile]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setNow(new Date())
-    }, 1000);
-
-    return () => {
-      window.clearInterval(timer);
-    }
-  }, [])
-
   return challenge && <>
     <div className={'flex flex-col items-start p-0'}>
       <TabLayout control={
@@ -80,10 +70,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
       } >
         <>
           <div className={'w-full h-full p-4'}>
-            <div className={"flex w-full justify-between items-end"}>
-              <h1 className={"text-2xl"}>Mental Care</h1>
-              <span className={"h-full align-bottom font-mono"}>{now.toLocaleTimeString(locale)}</span>
-            </div>
+            <MentalCareHeader locale={locale} />
             <div>
               <span className={"text-xl justify-end"}>{challenge.name}</span>
             </div>
