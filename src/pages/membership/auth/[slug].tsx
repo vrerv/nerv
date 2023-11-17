@@ -57,7 +57,7 @@ export default function TabsDemo({locale}: {locale: string;}) {
   const reverseLink = router.query.slug === 'login' ? 'signup' : 'login'
   const { t } = useTranslation('common')
 
-  const [_user, setUser ] = useAtom(userAtom)
+  const [user, setUser ] = useAtom(userAtom)
 
   const [error, setError] = useState('');
   const [request, setRequest] = useState({
@@ -78,7 +78,7 @@ export default function TabsDemo({locale}: {locale: string;}) {
       return;
     }
 
-    setUser({valid: true, profile: { name: "", routines: [] }, accessToken: data.accessToken})
+    setUser({ ...user, valid: true })
     await router.push("/membership/main", '/membership/main', { locale: locale })
   };
 
@@ -102,7 +102,7 @@ export default function TabsDemo({locale}: {locale: string;}) {
     });
     console.log("google data", data, error);
     if (data) {
-      setUser({valid: true, profile: { name: "", routines: [] }, accessToken: data.accessToken})
+      setUser({ ...user, valid: true })
     }
   }
 

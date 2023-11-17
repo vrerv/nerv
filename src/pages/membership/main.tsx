@@ -54,7 +54,7 @@ const MainPage = ({locale}: { locale: string; }) => {
     fn().then();
   }, []);
   const handleSignout = async () => {
-    _setUser({valid: false, profile: { name: "", routines: [] }, accessToken: ""})
+    _setUser({ ...user, valid: false })
     await signout()
     await router.push("/membership/", '/membership', { locale: locale })
   }
