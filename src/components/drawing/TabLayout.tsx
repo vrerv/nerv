@@ -66,6 +66,7 @@ const TabLayout = ({ children, control, actionHeight = 120 }: TabLayoutProps) =>
           justify-content: flex-end;
           min-height: 100px;
           padding: 10px;
+          z-index: 1;
         }
 
         /* Media query for screen orientation */
