@@ -94,14 +94,14 @@ const IndexPage = ({locale}: { locale: string; }) => {
         </>
       } >
         <>
-          <div className={'w-full h-full p-4'}>
+          <div className={'w-full h-full'}>
             <MentalCareHeader locale={locale} />
-            <div>
-              <span className={"text-xl justify-end"}>{challenge.name}</span>
-            </div>
-            <main>
+            <main className={'p-4'}>
+              <div>
+                <span className={"text-xl justify-end"}>{challenge.name}</span>
+              </div>
               <br/>
-              {records.map(record => <>{record.action || '기록'} - {new Date(record.recordedAt).toLocaleString(locale)}</>)}
+              {records.map(record => <div className={'font-mono'}>{record.action || '기록'} - {new Date(record.recordedAt).toLocaleString(locale)}</div>)}
             </main>
           </div>
         </>

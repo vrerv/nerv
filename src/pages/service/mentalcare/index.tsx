@@ -36,12 +36,12 @@ const IndexPage = ({locale}: { locale: string; }) => {
   const handleHome = () => {
     router.push('/membership')
   }
-  const handleReset = () => {
+  const handleDelete = () => {
     setUser({
       ...user,
       profile: {
         name: '',
-        routines: []
+        routines: routines.filter(r => r.id !== routine?.id) || [],
       }
     })
   }
@@ -111,36 +111,33 @@ const IndexPage = ({locale}: { locale: string; }) => {
         <div className={"flex-grow"} />
         <div className="p-2"><button onClick={handleNewRoutine}>New</button></div>
         <div className="p-2"><button onClick={handleEditMode}>{editMode ? 'Done' : 'Edit'}</button></div>
-        <div className="p-2"><button onClick={handleReset}>Reset</button></div>
+        <div className="p-2"><button onClick={handleDelete}>Del</button></div>
       </>
     } >
       <>
-        <div className={'w-full h-full p-4'}>
+        <div className={'w-full h-full'}>
           <MentalCareHeader locale={locale} />
-          <div>
-            <span className={"text-xl justify-end"}>오늘({now.toLocaleDateString(locale, {year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short'})})의 도전 목록</span>
-          </div>
-          <main>
+          <main className={'p-4'}>
             {routines.length === 0 && <div>
               오늘의 도전 목록이 없습니다
             </div>}
             <div className={'w-full mt-2'}>
+              <div className={'text-2xl flex justify-between'}>
+                <span>오늘의 루틴</span>
+              </div>
+              <Select onValueChange={handleSelectRoutine} value={`${routine?.id}`}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a routine" />
+                </SelectTrigger>
+                <SelectContent>
+                  {routines.map((routine) =>
+                    <SelectItem value={`${routine.id}`}><div className={'text-xl'}>{`${routine.name} ${routine.period.name} - ${routine.id}`}</div></SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
               {editMode && <>
-
-                  <div className={'mt-2 mb-2'}>
-                  <Select onValueChange={handleSelectRoutine} value={`${routine?.id}`}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a routine" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {routines.map((routine) =>
-                      <SelectItem value={`${routine.id}`}>루틴: {`${routine.name} ${routine.period.name} - ${routine.id}`}</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  </div>
                 <ul className={'mt-2 mb-2'}>
-                  {DEFAULT_CHALLENGES.filter(ch => !(routines.find(r => r.id == routine?.id))?.challenges?.includes(ch)).map((challenge) => <li key={challenge.id}>
+                  {DEFAULT_CHALLENGES.filter(ch => !routine?.challenges?.find(c => c.id === ch.id)).map((challenge) => <li key={challenge.id}>
                     <div className="flex items-center space-x-2 p-1">
                       <Checkbox id={challenge.id} onCheckedChange={handleChallenge(routine?.id || 0, challenge)} />
                       <label
@@ -153,16 +150,14 @@ const IndexPage = ({locale}: { locale: string; }) => {
                   </li>)}
                 </ul>
               </>}
-              {routines.map((routine) =>
-                <>
-                  {editMode && <div className={'text-2xl mb-2'}>루틴: {`${routine.name} ${routine.period.name} - ${routine.id}`}</div>}
-                  {routine.challenges.map((challenge) =>
-                  <div key={`${routine.id}/${challenge.id}`} className={'flex justify-between text-xl w-full'}>
-                    <Link href={`/service/mentalcare/challenge/${challenge.id}`}>{challenge.name}</Link>
-                    {editMode && <Button type={'button'} variant={'outline'} size={'sm'} onClick={handleRemoveChallenge(routine.id, challenge.id)}>Remove</Button>}
-                  </div>)}
-                </>
-              )}
+              <>
+                <div className={'text-2xl'}>오늘의 도전 목록</div>
+                {routine?.challenges?.map((challenge) =>
+                <div key={`${routine.id}/${challenge.id}`} className={'flex justify-between text-xl w-full'}>
+                  <Link href={`/service/mentalcare/challenge/${challenge.id}`}>{challenge.name}</Link>
+                  {editMode && <Button type={'button'} variant={'outline'} size={'sm'} onClick={handleRemoveChallenge(routine.id, challenge.id)}>Remove</Button>}
+                </div>)}
+              </>
             </div>
           </main>
         </div>

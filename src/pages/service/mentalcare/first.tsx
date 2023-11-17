@@ -12,8 +12,9 @@ import { useRouter } from "next/router";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckedState } from "@radix-ui/react-checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { MentalCareHeader } from "@/mentalcare/components/header";
 
-const MainPage = () => {
+const MainPage = ({locale}: { locale: string; }) => {
 
   const router = useRouter()
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
@@ -75,15 +76,15 @@ const MainPage = () => {
       </>
     } >
       <>
-        <div className={'w-full h-full p-4'}>
-        <h1 className={"text-2xl"}>Mental Care</h1>
+        <div className={'w-full h-full'}>
+          <MentalCareHeader locale={locale} />
+          <main className={'p-4'}>
 
         {selectedTabIndex === 0 && <div>
           당신의 몸과 마음의 건강을 위해 매일의 루틴을 설정하고 시작해보세요.
         </div>}
         {selectedTabIndex === 1 && <div>
           <h2 className={"pb-2"}>루틴 생성 - 주기 설정</h2>
-          <main>
             <RadioGroup>
               <ul>
             {periods.map((period) => <li key={period.name}>
@@ -99,11 +100,9 @@ const MainPage = () => {
             </li>)}
               </ul>
             </RadioGroup>
-          </main>
         </div>}
           {selectedTabIndex === 2 && <div>
             <h2 className={"pb-2"}>루틴 생성 - 도전 설정</h2>
-            <main>
               <ul>
                 {challenges.map((challenge) => <li key={challenge.id}>
                   <div className="flex items-center space-x-2 p-1">
@@ -117,14 +116,12 @@ const MainPage = () => {
                   </div>
                 </li>)}
               </ul>
-            </main>
           </div>}
           {selectedTabIndex === 3 && <div>
             <h2>루틴 생성 - 이름</h2>
-            <main>
               <input name="name" type="text" minLength={1} maxLength={32} />
-            </main>
           </div>}
+          </main>
         </div>
       </>
     </TabLayout>
