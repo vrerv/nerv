@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CheckedState } from "@radix-ui/react-checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MentalCareHeader } from "@/mentalcare/components/header";
+import { Input } from "@/components/ui/input";
 
 const MainPage = ({locale}: { locale: string; }) => {
 
@@ -40,6 +41,13 @@ const MainPage = ({locale}: { locale: string; }) => {
     setRoutine({
       ...routine,
       challenges: newList,
+    })
+  }
+
+  const handleNameChange = (event:any) => {
+    setRoutine({
+      ...routine,
+      name: event.target.value
     })
   }
 
@@ -84,7 +92,15 @@ const MainPage = ({locale}: { locale: string; }) => {
           당신의 몸과 마음의 건강을 위해 매일의 루틴을 설정하고 시작해보세요.
         </div>}
         {selectedTabIndex === 1 && <div>
+
           <h2 className={"pb-2"}>루틴 생성 - 주기 설정</h2>
+          <label
+            htmlFor={'name'}
+            className="leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Name
+          </label>
+          <Input id={'name'} value={routine.name} onChange={handleNameChange} />
             <RadioGroup>
               <ul>
             {periods.map((period) => <li key={period.name}>

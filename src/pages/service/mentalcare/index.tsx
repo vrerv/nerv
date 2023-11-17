@@ -122,9 +122,11 @@ const IndexPage = ({locale}: { locale: string; }) => {
               오늘의 도전 목록이 없습니다
             </div>}
             <div className={'w-full mt-2'}>
-              <div className={'text-2xl flex justify-between'}>
-                <span>오늘의 루틴</span>
+              <div className={'text-2xl flex mb-2'}>
+                <span>오늘의 루틴: &nbsp;</span>
+                {(!editMode) && <div className={'text-2xl'}>{`${routine?.name} ${routine?.period.name}`}</div>}
               </div>
+              {editMode &&
               <Select onValueChange={handleSelectRoutine} value={`${routine?.id}`}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a routine" />
@@ -134,7 +136,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
                     <SelectItem value={`${routine.id}`}><div className={'text-xl'}>{`${routine.name} ${routine.period.name} - ${routine.id}`}</div></SelectItem>
                   )}
                 </SelectContent>
-              </Select>
+              </Select>}
               {editMode && <>
                 <ul className={'mt-2 mb-2'}>
                   {DEFAULT_CHALLENGES.filter(ch => !routine?.challenges?.find(c => c.id === ch.id)).map((challenge) => <li key={challenge.id}>
@@ -151,7 +153,6 @@ const IndexPage = ({locale}: { locale: string; }) => {
                 </ul>
               </>}
               <>
-                <div className={'text-2xl'}>오늘의 도전 목록</div>
                 {routine?.challenges?.map((challenge) =>
                 <div key={`${routine.id}/${challenge.id}`} className={'flex justify-between text-xl w-full'}>
                   <Link href={`/service/mentalcare/challenge/${challenge.id}`}>{challenge.name}</Link>
