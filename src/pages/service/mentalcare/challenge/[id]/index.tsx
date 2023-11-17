@@ -13,6 +13,7 @@ import { GetStaticPaths } from "next";
 // @ts-ignore
 import { AskPicture } from '@/components/openai/ask-picture';
 import { MentalCareHeader } from "@/mentalcare/components/header";
+import { TodoList } from "@/mentalcare/components/todo";
 
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
@@ -112,6 +113,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
                   query={`사진을 찍은 사람은 어떤 도전을 하고 있으며 그 도전의 설명은 다음과 같다, 사진에서 사용자가 해당 도전을 하고 있는지 "YES" 또는 "NO" 로만 대답 하시오. 도전 설명: ${challenge.prompt}`} />
                 </>
               }
+              {challenge.id === 'remind-todo-1' && <TodoList />}
             </main>
           </div>
         </>
