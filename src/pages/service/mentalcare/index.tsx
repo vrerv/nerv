@@ -69,7 +69,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
               오늘의 도전 목록이 없습니다
             </div>}
             <ul>
-              {challenges.map((challenge) => <li><Link href={`/service/mentalcare/challenge/${challenge.id}`}>{challenge.name}</Link></li>)}
+              {challenges.map((challenge) => <li className={'text-xl'}><Link href={`/service/mentalcare/challenge/${challenge.id}`}>{challenge.name}</Link></li>)}
             </ul>
           </main>
         </div>
