@@ -116,7 +116,7 @@ export const DEFAULT_CHALLENGES: Challenge[] = [
     id: 'remind-todo-1',
     name: '오늘 할일 확인/설정',
     prompt: undefined,
-    description: '오늘 하루를 계획한다',
+    description: '오늘 하루를 계획한다.\n오늘 하루에 할일을 적어주세요. 반드시 오늘 할 수 있는 일만 기록해 보세요!',
     contentUrl: '',
     ackOptions: ['system', 'user', 'supporter'],
     openType: PUBLIC,
@@ -126,3 +126,17 @@ export const DEFAULT_CHALLENGES: Challenge[] = [
 ];
 
 export const challengesAtom = atomWithStorage<Challenge[]>('challenges', DEFAULT_CHALLENGES)
+
+export const DEFAULT_RECORDs: Record<string, ChallengeRecord[]> = {};
+
+export type ChallengeRecord = {
+  challengeId: string;
+  action?: string;
+  recordedAt: string;
+  value?: string;
+}
+export const challengeRecordsAtom = atomWithStorage<Record<string, ChallengeRecord[]>>('challenge_records', DEFAULT_RECORDs)
+
+export const recordKey = (challengeId: string, date: Date = new Date()) => {
+  return `${challengeId}/${date.toLocaleDateString('en-CA')}`
+}

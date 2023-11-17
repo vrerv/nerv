@@ -1,6 +1,6 @@
 import TabLayout from "@/components/drawing/TabLayout"
 import {
-  Challenge,
+  Challenge, ChallengeRecord,
   challengeRecordsAtom,
   DEFAULT_CHALLENGES, recordKey,
   userAtom
@@ -46,29 +46,18 @@ const IndexPage = ({locale}: { locale: string; }) => {
   const [challenge, setChallenge] = useState<Challenge | null>(null)
 
   const handleList = () => {
-    router.push('/service/mentalcare')
+    router.push(`/service/mentalcare/challenge/${challenge?.id}`)
   }
-  const handleMoveToHistory = () => {
-    router.push(`/service/mentalcare/challenge/${challenge?.id}/history`)
-  }
+  const handleWeeks = () => {
 
-
-  const [recordMap, setRecordMap] = useAtom(challengeRecordsAtom)
-  const handleRecord = () => {
-    const key = recordKey(challenge?.id!)
-
-    const records = recordMap[key] || []
-    const newRecords = [...records, {
-      challengeId: challenge!.id,
-      action: 'Record',
-      recordedAt: new Date(),
-      value: ''
-    }]
-    // @ts-ignore
-    setRecordMap({
-      ...recordMap,
-      [key]: newRecords
+    const now = new Date();
+    const r = [0, 1, 2, 3, 4, 5, 6].flatMap(backDay => {
+      const date = new Date(now.getTime() - (backDay * 24 * 60 * 60 * 1000))
+      const key = recordKey(challenge!.id, date)
+      console.log('key', key)
+      return recordMap[key] || []
     })
+    setRecords(r);
   }
 
   useEffect(() => {
@@ -83,14 +72,25 @@ const IndexPage = ({locale}: { locale: string; }) => {
     }
   }, [user.profile]);
 
+  const [recordMap, _setRecordMap] = useAtom(challengeRecordsAtom)
+  const [records, setRecords] = useState<ChallengeRecord[]>([])
+
+  useEffect(() => {
+    if (challenge) {
+      const key = recordKey(challenge?.id!)
+      if (recordMap[key]) {
+        setRecords(recordMap[key]!)
+      }
+    }
+  }, [challenge, recordMap])
+
   return challenge && <>
     <div className={'flex flex-col items-start p-0'}>
       <TabLayout control={
         () => <>
-          <div className="p-2"><button onClick={handleList}>List</button></div>
+          <div className="p-2"><button onClick={handleList}>Back</button></div>
           <div className={"flex-grow"} />
-          <div className="p-2"><button onClick={handleRecord}>Record</button></div>
-          <div className="p-2"><button onClick={handleMoveToHistory}>History</button></div>
+          <div className="p-2"><button onClick={handleWeeks}>Weeks</button></div>
         </>
       } >
         <>
@@ -101,17 +101,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
             </div>
             <main>
               <br/>
-              {challenge.description}
-              <br/>
-              {challenge.prompt && <>
-                <br/>
-                <span>도전 과제를 카메라로 촬영해주세요</span>
-                <br/>
-                <br/>
-                <AskPicture submitName={'도전 확인'}
-                  query={`사진을 찍은 사람은 어떤 도전을 하고 있으며 그 도전의 설명은 다음과 같다, 사진에서 사용자가 해당 도전을 하고 있는지 "YES" 또는 "NO" 로만 대답 하시오. 도전 설명: ${challenge.prompt}`} />
-                </>
-              }
+              {records.map(record => <>{record.action || '기록'} - {new Date(record.recordedAt).toLocaleString(locale)}</>)}
             </main>
           </div>
         </>
