@@ -59,6 +59,7 @@ export type Period = {
 }
 
 export type Routine = {
+  id: number;
   name: string;
   period: Period;
   challenges: Challenge[];

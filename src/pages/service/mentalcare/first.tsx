@@ -21,6 +21,7 @@ const MainPage = () => {
   const [challenges] = useAtom(challengesAtom)
 
   const [routine, setRoutine] = useState<Routine>({
+    id: new Date().getTime(),
     name: '',
     period: periods[0]!,
     challenges: [],
