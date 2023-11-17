@@ -55,7 +55,7 @@ const MainPage = () => {
         ...user,
         profile: {
           name: '',
-          routines: [routine],
+          routines: [...(user.profile?.routines || []), routine],
         }
       })
       router.push('/service/mentalcare/')

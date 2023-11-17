@@ -37,6 +37,10 @@ const IndexPage = ({locale}: { locale: string; }) => {
     })
   }
 
+  const handleNewRoutine = () => {
+    router.push('/service/mentalcare/first')
+  }
+
   useEffect(() => {
     // @ts-ignore
     const challenges: Challenge[] = user?.profile?.routines?.filter((it) => it.period.weeks.includes(now.getDay()))
@@ -55,6 +59,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
       () => <>
         <div className="p-2"><button onClick={handleHome}>Home</button></div>
         <div className={"flex-grow"} />
+        <div className="p-2"><button onClick={handleNewRoutine}>New</button></div>
         <div className="p-2"><button onClick={handleReset}>Reset</button></div>
       </>
     } >
