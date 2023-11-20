@@ -127,7 +127,7 @@ export const DEFAULT_CHALLENGES: Challenge[] = [
     openType: PUBLIC,
     playMinutes: 10,
     availableHours: Morning,
-    complete: "(records) => JSON.parse(records[records.length - 1]?.value || '').completed === true"
+    complete: "(records) => { const todos = JSON.parse(records[records.length - 1]?.value || '[]'); return todos.length > 0 && todos.every(todo => todo.done) === true }"
   },
 ];
 

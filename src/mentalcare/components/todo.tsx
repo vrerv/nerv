@@ -16,13 +16,15 @@ export const DEFAULT_TODOs: Todo[] = [];
 
 export const todosAtom = atomWithStorage<Todo[]>('todos', DEFAULT_TODOs)
 
-export const TodoList = () => {
+export const TodoList = ({record}: {record: (value: string) => () => void;}) => {
 
   const [todos, setTodos] = useAtom(todosAtom)
   const [todo, setTodo] = useState<Todo>({ name: '', done: false })
 
   const handleAdd = () => {
-    setTodos([...todos, todo])
+    const newTodos = [...todos, todo]
+    setTodos(newTodos)
+    record(JSON.stringify(newTodos))();
     setTodo({
       name: '',
       done: false
@@ -32,6 +34,7 @@ export const TodoList = () => {
   const handleRemove = (name: string) => () => {
     const newTodos = todos.filter(t => t.name !== name)
     setTodos(newTodos)
+    record(JSON.stringify(newTodos))();
   }
 
   const handleTodoChange = (event:any) => {
@@ -50,6 +53,7 @@ export const TodoList = () => {
       return t
     })
     setTodos(newTodos)
+    record(JSON.stringify(newTodos))();
   }
 
   return <>
