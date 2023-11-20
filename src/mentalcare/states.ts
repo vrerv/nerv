@@ -108,14 +108,14 @@ export const DEFAULT_CHALLENGES: Challenge[] = [
   {
     id: 'drink-water-1',
     name: '물 많이 마시기',
-    prompt: '사람이 어떤 음료를 마신다',
+    prompt: undefined,
     description: '대략 1.5L 이상의 권장량의 물 마시기',
     contentUrl: '',
     ackOptions: ['user', 'supporter'],
     openType: PUBLIC,
     playMinutes: 5,
     availableHours: Morning.concat(Noon).concat(Evening),
-    complete: '(records) => records.map(r => Number(r.value)).reduce((a, b) => (a + b)) >= 1800'
+    complete: '(records) => records.map(r => Number(r.value)).reduce((a, b) => (a + b)) >= 1600'
   },
   {
     id: 'remind-todo-1',

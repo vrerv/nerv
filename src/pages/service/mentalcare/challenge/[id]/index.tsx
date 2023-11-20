@@ -14,6 +14,7 @@ import { GetStaticPaths } from "next";
 import { AskPicture } from '@/components/openai/ask-picture';
 import { MentalCareHeader } from "@/mentalcare/components/header";
 import { TodoList } from "@/mentalcare/components/todo";
+import { Button } from "@/components/ui/button";
 
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
@@ -55,7 +56,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
 
 
   const [recordMap, setRecordMap] = useAtom(challengeRecordsAtom)
-  const handleRecord = () => {
+  const handleRecord = (value: any) => () => {
     const key = recordKey(challenge?.id!)
 
     const userData = recordMap[key]!
@@ -64,9 +65,10 @@ const IndexPage = ({locale}: { locale: string; }) => {
       challengeId: challenge!.id,
       action: 'Record',
       recordedAt: new Date().toString(),
-      value: ''
+      value: value
     }]
     const fn: (records: ChallengeRecord[]) => boolean = eval(challenge?.complete || '(records) => false')
+    console.log("newRecords", newRecords, fn(newRecords));
     // @ts-ignore
     setRecordMap({
       ...recordMap,
@@ -90,13 +92,24 @@ const IndexPage = ({locale}: { locale: string; }) => {
     }
   }, [user.profile]);
 
+  const [records, setRecords] = useState<ChallengeRecord[]>([])
+
+  useEffect(() => {
+    if (challenge) {
+      const key = recordKey(challenge?.id!)
+      if (recordMap[key]) {
+        setRecords(recordMap[key]!.records)
+      }
+    }
+  }, [challenge, recordMap])
+
   return challenge && <>
     <div className={'flex flex-col items-start p-0'}>
       <TabLayout control={
         () => <>
           <div className="p-2"><button onClick={handleList}>List</button></div>
           <div className={"flex-grow"} />
-          <div className="p-2"><button onClick={handleRecord}>Record</button></div>
+          <div className="p-2"><button onClick={handleRecord('')}>Record</button></div>
           <div className="p-2"><button onClick={handleMoveToHistory}>History</button></div>
         </>
       } >
@@ -120,6 +133,15 @@ const IndexPage = ({locale}: { locale: string; }) => {
                 </>
               }
               {challenge.id === 'remind-todo-1' && <TodoList />}
+              {challenge.id === 'drink-water-1' && <>
+                <div className="grid grid-cols-4 gap-4 p-4">
+                  {[1,2,3,4,5,6,7,8].map(it =>
+                    <Button variant={"link"}
+                            onClick={handleRecord('200')}
+                            className={`h-full p-4 bg-blue-${it + 1}00`}
+                            disabled={records.length >= it}>{it}</Button>)}
+                </div>
+              </>}
             </main>
           </div>
         </>
@@ -129,3 +151,4 @@ const IndexPage = ({locale}: { locale: string; }) => {
 }
 
 export default IndexPage
+

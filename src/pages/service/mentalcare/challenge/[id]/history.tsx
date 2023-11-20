@@ -46,21 +46,6 @@ const IndexPage = ({locale}: { locale: string; }) => {
   const [user] = useAtom(userAtom)
   const [challenge, setChallenge] = useState<Challenge | null>(null)
 
-  const handleList = () => {
-    router.push(`/service/mentalcare/challenge/${challenge?.id}`)
-  }
-  const handleWeeks = () => {
-
-    const now = new Date();
-    const r = [0, 1, 2, 3, 4, 5, 6].flatMap(backDay => {
-      const date = new Date(now.getTime() - (backDay * 24 * 60 * 60 * 1000))
-      const key = recordKey(challenge!.id, date)
-      console.log('key', key)
-      return recordMap[key] || []
-    })
-    setRecords(r.flatMap(ur => ur.records));
-  }
-
   useEffect(() => {
     const { id } = router.query
     const challenge = user.profile?.routines?.flatMap(routine => routine.challenges)
@@ -85,6 +70,21 @@ const IndexPage = ({locale}: { locale: string; }) => {
     }
   }, [challenge, recordMap])
 
+
+  const handleList = () => {
+    router.push(`/service/mentalcare/challenge/${challenge?.id}`)
+  }
+  const handleWeeks = () => {
+
+    const now = new Date();
+    const r = [0, 1, 2, 3, 4, 5, 6].flatMap(backDay => {
+      const date = new Date(now.getTime() - (backDay * 24 * 60 * 60 * 1000))
+      const key = recordKey(challenge!.id, date)
+      console.log('key', key)
+      return recordMap[key] || []
+    })
+    setRecords(r.flatMap(ur => ur.records));
+  }
 
   const [editMode, setEditMode] = useState(false)
 
