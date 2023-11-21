@@ -138,7 +138,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
                   {[1,2,3,4,5,6,7,8].map(it =>
                     <Button variant={"link"}
                             onClick={handleRecord('200')}
-                            className={`h-full p-4 bg-blue-${it + 1}00`}
+                            className={`h-full p-4 bg-blue-400`}
                             disabled={records.length >= it}>{it}</Button>)}
                 </div>
               </>}
