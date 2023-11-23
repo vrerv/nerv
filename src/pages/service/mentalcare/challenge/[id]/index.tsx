@@ -15,6 +15,7 @@ import { AskPicture } from '@/components/openai/ask-picture';
 import { MentalCareHeader } from "@/mentalcare/components/header";
 import { TodoList } from "@/mentalcare/components/todo";
 import { Button } from "@/components/ui/button";
+import { DrinkWater } from "@/mentalcare/components/drink-water";
 
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
@@ -133,15 +134,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
                 </>
               }
               {challenge.id === 'remind-todo-1' && <TodoList record={handleRecord} />}
-              {challenge.id === 'drink-water-1' && <>
-                <div className="grid grid-cols-4 gap-4 p-4">
-                  {[1,2,3,4,5,6,7,8].map(it =>
-                    <Button variant={"link"}
-                            onClick={handleRecord('200')}
-                            className={`h-full p-4 bg-blue-400`}
-                            disabled={records.length >= it}>{it}</Button>)}
-                </div>
-              </>}
+              {challenge.id === 'drink-water-1' && <DrinkWater record={handleRecord} records={records} />}
             </main>
           </div>
         </>
