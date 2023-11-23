@@ -14,7 +14,6 @@ import { GetStaticPaths } from "next";
 import { AskPicture } from '@/components/openai/ask-picture';
 import { MentalCareHeader } from "@/mentalcare/components/header";
 import { TodoList } from "@/mentalcare/components/todo";
-import { Button } from "@/components/ui/button";
 import { DrinkWater } from "@/mentalcare/components/drink-water";
 
 export async function getStaticProps({ locale }: { locale: any }) {
