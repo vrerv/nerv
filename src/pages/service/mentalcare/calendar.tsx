@@ -1,8 +1,6 @@
 import TabLayout from "@/components/drawing/TabLayout"
 import {
-  Challenge,
   challengeRecordsAtom,
-  DEFAULT_CHALLENGES, recordKey,
   Routine,
   userAtom
 } from "@/mentalcare/states";
@@ -10,10 +8,8 @@ import { useAtom } from "jotai";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-import Link from "next/link";
 import { MentalCareHeader } from "@/mentalcare/components/header";
 import { useSecondsTimer } from "@/mentalcare/hooks/use-seconds-timer";
-import { CheckedState } from "@radix-ui/react-checkbox";
 import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import * as allLocales from 'date-fns/locale';
@@ -30,41 +26,12 @@ export async function getStaticProps({ locale }: { locale: any }) {
 const IndexPage = ({locale}: { locale: string; }) => {
 
   const router = useRouter();
-  const [user, setUser] = useAtom(userAtom)
+  const [user] = useAtom(userAtom)
   const [routines, setRoutines] = useState<Routine[]>([])
   const now = useSecondsTimer()
 
-  const handleHome = () => {
-    router.push('/membership')
-  }
-  const handleDelete = () => {
-    setUser({
-      ...user,
-      profile: {
-        name: '',
-        routines: routines.filter(r => r.id !== routine?.id) || [],
-      }
-    })
-  }
-
   const handleNewRoutine = () => {
     router.push('/service/mentalcare/first')
-  }
-
-  const [editMode, setEditMode] = useState(false)
-
-  const handleEditMode = () => {
-    setEditMode(!editMode)
-  }
-
-  const handleRemoveChallenge = (routineId: number, challengeId: string) => () => {
-    const routine = routines.find(r => r.id == routineId)!
-    const newChallenges = routine.challenges.filter(ch => ch.code !== challengeId)
-    routine.challenges = newChallenges
-
-    setUser({
-      ...user
-    })
   }
 
   useEffect(() => {
@@ -87,7 +54,10 @@ const IndexPage = ({locale}: { locale: string; }) => {
     router.push('/service/mentalcare')
   }
 
-  const [recordMap, _setRecordMap] = useAtom(challengeRecordsAtom)
+  // TODO: use this map later for fill calendar
+  const [_recordMap, _setRecordMap] = useAtom(challengeRecordsAtom)
+  // @ts-ignore
+  const dateFnsLocale = allLocales[locale]
 
   return <>
     <div className={'flex flex-col items-start p-0'}>
@@ -109,11 +79,11 @@ const IndexPage = ({locale}: { locale: string; }) => {
             <div className={'w-full mt-2'}>
               <div className={'text-2xl flex mb-2'}>
                 <span>루틴: &nbsp;</span>
-                {(!editMode) && <div className={'text-2xl'}>{`${routine?.name} ${routine?.period.name}`}</div>}
+                <div className={'text-2xl'}>{`${routine?.name} ${routine?.period.name}`}</div>
               </div>
               <>
                 <Calendar
-                  locale={allLocales[locale]}
+                  locale={dateFnsLocale}
                   mode="single"
                   className="rounded-md border"
                 />
