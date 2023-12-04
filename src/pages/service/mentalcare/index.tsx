@@ -25,7 +25,12 @@ import {
 } from "@/components/ui/select";
 import { CheckedState } from "@radix-ui/react-checkbox";
 import { CalendarIcon } from "lucide-react";
-import { deleteRoutine, listRoutines, updateRoutine } from "@/mentalcare/lib/api";
+import {
+  deleteRoutine,
+  listChallenges,
+  listRoutines,
+  updateRoutine
+} from "@/mentalcare/lib/api";
 
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
@@ -40,7 +45,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
 
   const router = useRouter();
   const [routines, setRoutines] = useAtom(routinesAtom)
-  const [challenges] = useAtom(challengesAtom)
+  const [challenges, setChallenges] = useAtom(challengesAtom)
   const now = useSecondsTimer()
 
   const fetchRoutines = () =>
@@ -89,7 +94,13 @@ const IndexPage = ({locale}: { locale: string; }) => {
   }
 
   useEffect(() => {
-    fetchRoutines().then()
+
+    listChallenges().then(r => {
+      const { data, error } = r;
+      if (error) throw error
+      setChallenges(data?.map(it => it as Challenge) || [])
+      fetchRoutines().then()
+    })
   }, []);
 
   const [routine, setRoutine] = useState<Routine>()
@@ -177,7 +188,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
               <>
                 {routine?.challenges?.map((challenge) =>
                 <div key={`${routine.id}/${challenge}`} className={'flex justify-between text-xl w-full' + `${isCompleted(challenge) ? ' bg-green-500': ''}`}>
-                  <Link href={`/service/mentalcare/challenge/${challenge}`}>{challenges.find(it => it.code === challenge)!.name}</Link>
+                  <Link href={`/service/mentalcare/challenge/${challenge}`}>{challenges.find(it => it.code === challenge)?.name}</Link>
                   {editMode && <Button type={'button'} variant={'outline'} size={'sm'} onClick={handleRemoveChallenge(routine.id, challenge)}>Remove</Button>}
                 </div>)}
               </>
