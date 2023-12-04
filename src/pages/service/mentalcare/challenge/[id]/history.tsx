@@ -1,21 +1,22 @@
 import TabLayout from "@/components/drawing/TabLayout"
 import {
   Challenge, ChallengeRecord,
-  challengeRecordsAtom,
-  DEFAULT_CHALLENGES, recordKey,
+  challengeRecordsAtom, challengesAtom,
+  recordKey,
   userAtom
 } from "@/mentalcare/states";
 import { useAtom } from "jotai";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-import { GetStaticPaths } from "next";
 // @ts-ignore
 import { AskPicture } from '@/components/openai/ask-picture';
 import { MentalCareHeader } from "@/mentalcare/components/header";
 import { Button } from "@/components/ui/button";
+import { listChallengeRecords } from "@/mentalcare/lib/api";
+import { dateNumber } from "@/mentalcare/lib/date-number";
 
-export async function getStaticProps({ locale }: { locale: any }) {
+export async function getServerSideProps({ locale }: { locale: any }) {
   return {
     props: {
       locale: locale,
@@ -24,62 +25,59 @@ export async function getStaticProps({ locale }: { locale: any }) {
   }
 }
 
-export const getStaticPaths: GetStaticPaths<any> = async ({locales}) => {
-
-  const paths = (locales || []).flatMap((locale) => {
-
-    const pages = DEFAULT_CHALLENGES;
-    return pages.map((p: any) => ({
-      params: { id: p.id }, locale: locale,
-    }))
-  })
-
-  return {
-    paths: paths,
-    fallback: false,
-  }
-};
-
 const IndexPage = ({locale}: { locale: string; }) => {
 
   const router = useRouter();
   const [user] = useAtom(userAtom)
+  const [challenges] = useAtom(challengesAtom)
   const [challenge, setChallenge] = useState<Challenge | null>(null)
 
   useEffect(() => {
     const { id } = router.query
-    const challenge = user.profile?.routines?.flatMap(routine => routine.challenges)
-      .find(ch => ch.id === id)!
+    const challenge = challenges.find(ch => ch.code === id)!
     setChallenge(challenge)
 
     if (user.profile?.routines?.length === 0) {
       router.push("/service/mentalcare/first")
       return
     }
-  }, [user.profile]);
+  }, [challenges]);
 
   const [recordMap, _setRecordMap] = useAtom(challengeRecordsAtom)
   const [records, setRecords] = useState<ChallengeRecord[]>([])
 
   useEffect(() => {
     if (challenge) {
-      const key = recordKey(challenge?.id!)
+      const code = challenge!.code
+      const key = recordKey(code)
       if (recordMap[key]) {
         setRecords(recordMap[key]!.records)
       }
+      listChallengeRecords(code, dateNumber(new Date())).then(r => {
+        const { data, error } = r;
+        if (error) {
+          console.error("failed  to get challenge records", error)
+        }
+        if (data) {
+          // @ts-ignore
+          const firstRow = data!.find(_ => true) as UserChallenge
+          console.log('records', code, data)
+          setRecords(firstRow?.records || [])
+        }
+      })
     }
   }, [challenge, recordMap])
 
 
   const handleList = () => {
-    router.push(`/service/mentalcare/challenge/${challenge?.id}`)
+    router.push(`/service/mentalcare/challenge/${challenge?.code}`)
   }
   const handleWeeks = () => {
 
     const now = new Date();
     const r = [0, 1, 2, 3, 4, 5, 6].flatMap(backDay => {
       const date = new Date(now.getTime() - (backDay * 24 * 60 * 60 * 1000))
-      const key = recordKey(challenge!.id, date)
+      const key = recordKey(challenge!.code, date)
       console.log('key', key)
       return recordMap[key] || []
     })

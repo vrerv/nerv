@@ -44,8 +44,7 @@ const MainPage = ({locale}: { locale: string; }) => {
     const fn = async () => {
       const { data, error } = await listServices();
       if (data) {
-        console.log('data', data)
-        setServices(data)
+        setServices(data?.map(it => it as Service) || [])
       }
       if (error) {
         setError(error.message)

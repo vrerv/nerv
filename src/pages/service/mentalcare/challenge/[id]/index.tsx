@@ -1,22 +1,23 @@
 import TabLayout from "@/components/drawing/TabLayout"
 import {
   Challenge, ChallengeRecord,
-  challengeRecordsAtom,
-  DEFAULT_CHALLENGES, recordKey,
-  userAtom
+  challengeRecordsAtom, challengesAtom,
+  recordKey,
+  userAtom, UserChallenge
 } from "@/mentalcare/states";
 import { useAtom } from "jotai";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-import { GetStaticPaths } from "next";
 // @ts-ignore
 import { AskPicture } from '@/components/openai/ask-picture';
 import { MentalCareHeader } from "@/mentalcare/components/header";
 import { TodoList } from "@/mentalcare/components/todo";
 import { DrinkWater } from "@/mentalcare/components/drink-water";
+import { listChallengeRecords, updateChallengeRecords } from "@/mentalcare/lib/api";
+import { dateNumber } from "@/mentalcare/lib/date-number";
 
-export async function getStaticProps({ locale }: { locale: any }) {
+export async function getServerSideProps({ locale }: { locale: any }) {
   return {
     props: {
       locale: locale,
@@ -24,22 +25,6 @@ export async function getStaticProps({ locale }: { locale: any }) {
     },
   }
 }
-
-export const getStaticPaths: GetStaticPaths<any> = async ({locales}) => {
-
-  const paths = (locales || []).flatMap((locale) => {
-
-    const pages = DEFAULT_CHALLENGES;
-    return pages.map((p: any) => ({
-      params: { id: p.id }, locale: locale,
-    }))
-  })
-
-  return {
-    paths: paths,
-    fallback: false,
-  }
-};
 
 const IndexPage = ({locale}: { locale: string; }) => {
 
@@ -51,24 +36,32 @@ const IndexPage = ({locale}: { locale: string; }) => {
     router.push('/service/mentalcare')
   }
   const handleMoveToHistory = () => {
-    router.push(`/service/mentalcare/challenge/${challenge?.id}/history`)
+    router.push(`/service/mentalcare/challenge/${challenge?.code}/history`)
   }
 
 
   const [recordMap, setRecordMap] = useAtom(challengeRecordsAtom)
-  const handleRecord = (value: any) => () => {
-    const key = recordKey(challenge?.id!)
+  const handleRecord = (value: any) => async () => {
+
+    const challengeCode = challenge!.code
+    const key = recordKey(challengeCode)
 
     const userData = recordMap[key]!
     const records = userData?.records || []
     const newRecords = [...records, {
-      challengeId: challenge!.id,
       action: 'Record',
       recordedAt: new Date().toString(),
       value: value
     }]
-    const fn: (records: ChallengeRecord[]) => boolean = eval(challenge?.complete || '(records) => false')
+    const fn: (records: ChallengeRecord[]) => boolean = eval(challenge?.verification || '(records) => false')
     console.log("newRecords", newRecords, fn(newRecords));
+    await updateChallengeRecords({
+      ...userData,
+      challengeCode: challengeCode,
+      date: dateNumber(new Date()),
+      records: newRecords,
+      completed: fn(newRecords) || false
+    })
     // @ts-ignore
     setRecordMap({
       ...recordMap,
@@ -80,26 +73,40 @@ const IndexPage = ({locale}: { locale: string; }) => {
     })
   }
 
+  const [challenges] = useAtom(challengesAtom)
+
   useEffect(() => {
     const { id } = router.query
-    const challenge = user.profile?.routines?.flatMap(routine => routine.challenges)
-      .find(ch => ch.id === id)!
+    const challenge = challenges.find(ch => ch.code === id)!
     setChallenge(challenge)
 
     if (user.profile?.routines?.length === 0) {
       router.push("/service/mentalcare/first")
       return
     }
-  }, [user.profile]);
+  }, [challenges]);
 
   const [records, setRecords] = useState<ChallengeRecord[]>([])
 
   useEffect(() => {
     if (challenge) {
-      const key = recordKey(challenge?.id!)
+      const code = challenge!.code
+      const key = recordKey(code)
       if (recordMap[key]) {
         setRecords(recordMap[key]!.records)
       }
+      listChallengeRecords(code, dateNumber(new Date())).then(r => {
+        const { data, error } = r;
+        if (error) {
+          console.error("failed  to get challenge records", error)
+        }
+        if (data) {
+          // @ts-ignore
+          const firstRow = data!.find(_ => true) as UserChallenge
+          console.log('records', code, data)
+          setRecords(firstRow?.records || [])
+        }
+      })
     }
   }, [challenge, recordMap])
 
@@ -121,7 +128,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
                 <span className={"text-xl justify-end"}>{challenge.name}</span>
               </div>
               <br/>
-              {challenge.description}
+              <p style={{whiteSpace: 'pre-line'}}>{challenge.description}</p>
               <br/>
               {challenge.prompt && <>
                 <br/>
@@ -132,8 +139,8 @@ const IndexPage = ({locale}: { locale: string; }) => {
                   query={`사진을 찍은 사람은 어떤 도전을 하고 있으며 그 도전의 설명은 다음과 같다, 사진에서 사용자가 해당 도전을 하고 있는지 "YES" 또는 "NO" 로만 대답 하시오. 도전 설명: ${challenge.prompt}`} />
                 </>
               }
-              {challenge.id === 'remind-todo-1' && <TodoList record={handleRecord} />}
-              {challenge.id === 'drink-water-1' && <DrinkWater record={handleRecord} records={records} />}
+              {challenge.code === 'remind-todo-1' && <TodoList record={handleRecord} />}
+              {challenge.code === 'drink-water-1' && <DrinkWater record={handleRecord} records={records} />}
             </main>
           </div>
         </>

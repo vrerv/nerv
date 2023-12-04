@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import TabLayout from "@/components/drawing/TabLayout";
 import {
   Challenge,
@@ -14,13 +14,27 @@ import { CheckedState } from "@radix-ui/react-checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MentalCareHeader } from "@/mentalcare/components/header";
 import { Input } from "@/components/ui/input";
+import { createRoutine, listChallenges, listPeriods } from "@/mentalcare/lib/api";
 
 const MainPage = ({locale}: { locale: string; }) => {
 
   const router = useRouter()
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
-  const [periods] = useAtom(periodsAtom)
-  const [challenges] = useAtom(challengesAtom)
+  const [periods, setPeriods] = useAtom(periodsAtom)
+  const [challenges, setChallenges] = useAtom(challengesAtom)
+
+  useEffect(() => {
+    listPeriods().then(r => {
+      const { data, error } = r;
+      if (error) throw error
+      setPeriods(data?.map(it => it as Period) || [])
+    })
+    listChallenges().then(r => {
+      const { data, error } = r;
+      if (error) throw error
+      setChallenges(data?.map(it => it as Challenge) || [])
+    })
+  }, []);
 
   const [routine, setRoutine] = useState<Routine>({
     id: new Date().getTime(),
@@ -37,7 +51,7 @@ const MainPage = ({locale}: { locale: string; }) => {
   }
 
   const handleChallenge = (challenge: Challenge) => (checked: CheckedState) => {
-    const newList = checked ? [...routine.challenges, challenge] : routine.challenges.filter((it) => it.id !== challenge.id)
+    const newList = checked ? [...routine.challenges, challenge.code] : routine.challenges.filter((it) => it !== challenge.code)
     setRoutine({
       ...routine,
       challenges: newList,
@@ -59,8 +73,9 @@ const MainPage = ({locale}: { locale: string; }) => {
 
   const [user, setUser] = useAtom(userAtom)
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (selectedTabIndex === STEP_END) {
+      await createRoutine(routine)
       setUser({
         ...user,
         profile: {
@@ -120,11 +135,11 @@ const MainPage = ({locale}: { locale: string; }) => {
           {selectedTabIndex === 2 && <div>
             <h2 className={"pb-2"}>루틴 생성 - 도전 설정</h2>
               <ul>
-                {challenges.map((challenge) => <li key={challenge.id}>
+                {challenges.map((challenge) => <li key={challenge.code}>
                   <div className="flex items-center space-x-2 p-1">
-                    <Checkbox id={challenge.id} onCheckedChange={handleChallenge(challenge)} />
+                    <Checkbox id={challenge.code} onCheckedChange={handleChallenge(challenge)} />
                     <label
-                      htmlFor={challenge.id}
+                      htmlFor={challenge.code}
                       className="leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
                       {challenge.name}
