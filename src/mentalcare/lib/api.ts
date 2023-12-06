@@ -1,9 +1,28 @@
 
 import { supabase } from '@/lib/api/base';
 import { Routine, UserChallenge } from "@/mentalcare/states";
+import { dateNumber } from "@/mentalcare/lib/date-number";
 
 export const listChallenges = async () =>  {
   return supabase.from('challenges').select()
+}
+
+export const getRoutineDay = async (date: number) => {
+  return supabase.from('routine_days').select()
+    .eq('date', date)
+    .eq('owner_id', await getUserId())
+    .single()
+}
+
+export const createRoutineDays = async (routine: Routine) => {
+  const date = dateNumber(new Date())
+  // @ts-ignore
+  await supabase.from('routine_days').upsert({
+    date: date,
+    base_routine: routine.id,
+    challenges: routine.challenges,
+    owner_id: await getUserId()
+  })
 }
 
 export const listPeriods = async () => {

@@ -26,11 +26,13 @@ import {
 import { CheckedState } from "@radix-ui/react-checkbox";
 import { CalendarIcon } from "lucide-react";
 import {
-  deleteRoutine,
+  createRoutineDays,
+  deleteRoutine, getRoutineDay,
   listChallenges,
   listRoutines,
   updateRoutine
 } from "@/mentalcare/lib/api";
+import { dateNumber } from "@/mentalcare/lib/date-number";
 
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
@@ -49,7 +51,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
   const now = useSecondsTimer()
 
   const fetchRoutines = () =>
-    listRoutines().then(r => {
+    listRoutines().then(async r => {
       const { data, error } = r;
       if (error) {
         console.log("error on listRoutines", error)
@@ -59,7 +61,13 @@ const IndexPage = ({locale}: { locale: string; }) => {
         const list: Routine[] = (data as unknown as Routine[]).filter((it) => it.period.weeks.includes(now.getDay())) || []
         setRoutines(list)
         if (list) {
-          setRoutine(list[0])
+          const { data, error } = await getRoutineDay(dateNumber(new Date()))
+          if (error) {
+            setRoutine(list[0])
+          } else {
+            // @ts-ignore
+            setRoutine(list.find(it => it.id === data.base_routine))
+          }
         } else {
           router.push("./mentalcare/first")
         }
@@ -104,6 +112,15 @@ const IndexPage = ({locale}: { locale: string; }) => {
   }, []);
 
   const [routine, setRoutine] = useState<Routine>()
+
+  useEffect(() => {
+
+    if (routine) {
+      createRoutineDays(routine).then(_ => {
+        // OK
+      })
+    }
+  }, [routine]);
   const handleChallenge = (routineId: number, challenge: Challenge) => async (checked: CheckedState) => {
     const routine = routines.find(r => r.id === routineId)
     if (routine) {
