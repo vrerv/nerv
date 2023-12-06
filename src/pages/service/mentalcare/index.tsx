@@ -170,7 +170,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
             {routines.length === 0 && <div>
               오늘의 도전 목록이 없습니다
             </div>}
-            {routines.length > 0 &&
+            {routine &&
             <div className={'w-full mt-2'}>
               <div className={'text-2xl flex mb-2'}>
                 <span>오늘의 루틴: &nbsp;</span>
