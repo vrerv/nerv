@@ -34,12 +34,13 @@ const Drawing = (_: any) => {
     ctx.beginPath();
   };
 
+  /*
   const toggleFullscreen = (_:any) => {
     const canvas = document.documentElement
     if (canvas.requestFullscreen) {
       canvas.requestFullscreen();
     }
-  }
+  }*/
 
   const draw = (e: any) => {
     if (!drawing) return;
@@ -82,6 +83,29 @@ const Drawing = (_: any) => {
     bgRef.current.handleImageUpload(e);
   }
 
+  const downloadCanvasAsPng = (canvas: HTMLCanvasElement, filename: string) => {
+    // Convert the canvas to a data URL
+    const imageURL = canvas.toDataURL('image/png');
+
+    // Create an anchor tag for downloading
+    const downloadLink = document.createElement('a');
+    downloadLink.href = imageURL;
+    downloadLink.download = filename;
+
+    // Append the link to the body (required for Firefox)
+    document.body.appendChild(downloadLink);
+
+    // Trigger the download
+    downloadLink.click();
+
+    // Clean up: remove the link from the body
+    document.body.removeChild(downloadLink);
+  }
+
+  const handleDownload = () => {
+    downloadCanvasAsPng(canvasRef.current!, "hi")
+  }
+
   return (
     <>
       <style jsx>{`
@@ -109,7 +133,8 @@ const Drawing = (_: any) => {
             />
             <ColorSelector className={'p-4'} selectedColor={color} setSelectedColor={setColor} />
             <TouchButton className={'p-4'} onClick={clearCanvas}>Clear</TouchButton>
-            <TouchButton className={'p-4'} onClick={toggleFullscreen}>Full</TouchButton>
+            {/*<TouchButton className={'p-4'} onClick={toggleFullscreen}>Full</TouchButton>*/}
+            <TouchButton className={'p-4'} onClick={handleDownload}>Download</TouchButton>
           </>}
       } >
         <div style={{
