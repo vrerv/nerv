@@ -66,9 +66,9 @@ const Drawing = (_: any) => {
     const touches: Touch[] = [];
     for(let i = 0; i < touchList.length; i++) {
       const touch = touchList[i];
-      //if (touch !== null && touch !== undefined && touch.tagName === 'CANVAS') {
+      if (touch !== null && touch !== undefined) {
         touches.push(touch);
-      //}
+      }
     }
     console.log("touches", touches);
     const centreX = rect.width / 2;
@@ -107,6 +107,8 @@ const Drawing = (_: any) => {
         if (color.code !== '#FFFFFF') {
           lineWidth = touch.radiusX * 5;
         }
+      } else {
+        return;
       }
     } else { // If this is a mouse event
       x = e.clientX - rect.left;
