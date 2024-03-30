@@ -11,6 +11,7 @@ import FileInputButton from '@/components/drawing/FileInputButton';
 // @ts-ignore
 import ColorSelector from '@/components/drawing/ColorSelector';
 import TabLayout from "@/components/drawing/TabLayout";
+import Head from "next/head";
 
 const Drawing = (_: any) => {
   const background = "#ffffff05";
@@ -21,6 +22,8 @@ const Drawing = (_: any) => {
     width: 0,
     height: 0
   });
+
+  const EDGE_THRESHOLD = 20;
 
   const handleStart = (e:any) => {
     setDrawing(true);
@@ -42,25 +45,75 @@ const Drawing = (_: any) => {
     }
   }*/
 
+  const getTouch = (touchList: TouchList, rect: any) => {
+    /*
+    clientX: 231.591796875
+    clientY: 189.01303100585938
+    force: 1
+    identifier: 0
+    pageX: 231.591796875
+    pageY: 189.01303100585938
+    radiusX: 0.63720703125
+    radiusY: 0.63720703125
+    rotationAngle: 0
+    screenX: 231.591796875
+    screenY: 271.6796875
+     */
+    console.log("getTouch2", touchList)
+    if (touchList.length === 1) {
+      return touchList[0];
+    }
+    const touches: Touch[] = [];
+    for(let i = 0; i < touchList.length; i++) {
+      const touch = touchList[i];
+      //if (touch !== null && touch !== undefined && touch.tagName === 'CANVAS') {
+        touches.push(touch);
+      //}
+    }
+    console.log("touches", touches);
+    const centreX = rect.width / 2;
+    const centreY = rect.height / 2;
+    return touches.sort((a, b) => a.radiusX - b.radiusX)
+      .sort((a, b) => {
+        // Sort by distance from the centre of the canvas
+        const distA = Math.sqrt((a.clientX - centreX) ** 2 + (a.clientY - centreY) ** 2);
+        const distB = Math.sqrt((b.clientX - centreX) ** 2 + (b.clientY - centreY) ** 2);
+        return distA - distB;
+      })
+      .find(touch => {
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        return !(x < EDGE_THRESHOLD || x > (rect.width - EDGE_THRESHOLD) ||
+          y < EDGE_THRESHOLD || y > (rect.height - EDGE_THRESHOLD))
+      });
+  };
+
   const draw = (e: any) => {
     if (!drawing) return;
+    e.preventDefault(); // Prevent scrolling
 
     const canvas: HTMLCanvasElement = canvasRef.current!
     const ctx = canvas.getContext("2d")!
     const rect = canvas.getBoundingClientRect();
 
     let x, y;
+    let lineWidth = color.code === '#FFFFFF' ? 20 : 5;
     if (e.touches) { // If this is a touch event
-      const touch = e.touches[e.touches.length - 1]
-      x = touch.clientX - rect.left;
-      y = touch.clientY - rect.top;
-      e.preventDefault(); // Prevent scrolling
+
+      const touch = getTouch(e.touches, rect)
+      if (touch) {
+        x = touch.clientX - rect.left;
+        y = touch.clientY - rect.top;
+        if (color.code !== '#FFFFFF') {
+          lineWidth = touch.radiusX * 5;
+        }
+      }
     } else { // If this is a mouse event
       x = e.clientX - rect.left;
       y = e.clientY - rect.top;
     }
 
-    ctx.lineWidth = 5;
+    ctx.lineWidth = lineWidth;
     ctx.lineCap = "round";
     ctx.strokeStyle = color.code;
 
@@ -108,8 +161,15 @@ const Drawing = (_: any) => {
 
   return (
     <>
+      <Head>
+        <meta charSet="UTF-8" key="charset" />
+        <meta
+          name="viewport"
+          content="width=device-width,initial-scale=1,user-scalable=no"
+          key="viewport"
+        />
+      </Head>
       <style jsx>{`
-        
         canvas {
           border: 1px solid #ccc;
         }
@@ -126,15 +186,15 @@ const Drawing = (_: any) => {
 
           setDimensions(contentDimensions)
           return <>
-            <FileInputButton className={'p-4'}
+            <FileInputButton className={'p-4 no-selection'}
               type="file"
               accept="image/*"
               onFileChange={(e: Event) => { handleUploadImage(e); }}
             />
-            <ColorSelector className={'p-4'} selectedColor={color} setSelectedColor={setColor} />
-            <TouchButton className={'p-4'} onClick={clearCanvas}>Clear</TouchButton>
-            {/*<TouchButton className={'p-4'} onClick={toggleFullscreen}>Full</TouchButton>*/}
-            <TouchButton className={'p-4'} onClick={handleDownload}>Download</TouchButton>
+            <ColorSelector className={'p-4 no-selection'} selectedColor={color} setSelectedColor={setColor} />
+            <TouchButton className={'p-4 no-selection'} onClick={clearCanvas}>Clear</TouchButton>
+            {/*<TouchButton className={'p-4 no-selection'} onClick={toggleFullscreen}>Full</TouchButton>*/}
+            <TouchButton className={'p-4 no-selection'} onClick={handleDownload}>Download</TouchButton>
           </>}
       } >
         <div style={{
