@@ -83,7 +83,7 @@ const MainPage = ({locale}: { locale: string; }) => {
             </div>
             <div className="flex flex-col items-center w-full pt-4">
               <ul>
-                {services.map((service) => <li><Link href={service.url}>{service.name}</Link></li>)}
+                {services.map((service) => <li key={service.name}><Link href={service.url}>{service.name}</Link></li>)}
               </ul>
               {error && <span className="text-red-500">{error}</span>}
             </div>
