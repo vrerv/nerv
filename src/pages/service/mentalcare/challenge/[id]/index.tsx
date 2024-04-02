@@ -3,7 +3,7 @@ import {
   Challenge, ChallengeRecord,
   challengeRecordsAtom, challengesAtom,
   recordKey,
-  userAtom, UserChallenge
+  userAtom, UserChallenge, getVerificationFn
 } from "@/mentalcare/states";
 import { useAtom } from "jotai";
 import { useRouter } from "next/router";
@@ -53,14 +53,13 @@ const IndexPage = ({locale}: { locale: string; }) => {
       recordedAt: new Date().toString(),
       value: value
     }]
-    const fn: (records: ChallengeRecord[]) => boolean = eval(challenge?.verification || '(records) => false')
-    console.log("newRecords", newRecords, fn(newRecords));
+    console.log("newRecords", newRecords, getVerificationFn(challenge?.verification)(newRecords));
     await updateChallengeRecords({
       ...userData,
-      challengeCode: challengeCode,
+      challenge_code: challengeCode,
       date: dateNumber(new Date()),
       records: newRecords,
-      completed: fn(newRecords) || false
+      completed: getVerificationFn(challenge?.verification)(newRecords) || false
     })
     // @ts-ignore
     setRecordMap({
@@ -68,7 +67,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
       [key]: {
         ...userData,
         records: newRecords,
-        completed: fn(newRecords) || false
+        completed: getVerificationFn(challenge?.verification)(newRecords) || false
       }
     })
     setRecords(newRecords)
@@ -104,7 +103,6 @@ const IndexPage = ({locale}: { locale: string; }) => {
         if (data) {
           // @ts-ignore
           const firstRow = data!.find(_ => true) as UserChallenge
-          console.log('records', code, data)
           setRecords(firstRow?.records || [])
           setRecordMap({...recordMap, [key]: { completed: firstRow?.completed, records: firstRow?.records || []} as UserChallenge})
         }

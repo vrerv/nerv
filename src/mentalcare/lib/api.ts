@@ -64,7 +64,7 @@ export const listChallengeRecords = async (code: string, date: number) => {
 }
 
 export const updateChallengeRecords = async (input: UserChallenge) => {
-  const { challengeCode, ...data } = {...input, challenge_code: input.challengeCode, owner_id: await getUserId()}
+  const data = {...input, challenge_code: input.challenge_code, owner_id: await getUserId()}
 
   // @ts-ignore
   await supabase.from("challenge_records").upsert(data)

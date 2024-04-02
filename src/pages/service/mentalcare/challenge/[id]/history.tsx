@@ -3,7 +3,7 @@ import {
   Challenge, ChallengeRecord,
   challengeRecordsAtom, challengesAtom,
   recordKey,
-  userAtom, UserChallenge
+  userAtom, UserChallenge, getVerificationFn
 } from "@/mentalcare/states";
 import { useAtom } from "jotai";
 import { useRouter } from "next/router";
@@ -13,7 +13,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { AskPicture } from '@/components/openai/ask-picture';
 import { MentalCareHeader } from "@/mentalcare/components/header";
 import { Button } from "@/components/ui/button";
-import { listChallengeRecords } from "@/mentalcare/lib/api";
+import { listChallengeRecords, updateChallengeRecords } from "@/mentalcare/lib/api";
 import { dateNumber } from "@/mentalcare/lib/date-number";
 
 export async function getServerSideProps({ locale }: { locale: any }) {
@@ -31,6 +31,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
   const [user] = useAtom(userAtom)
   const [challenges] = useAtom(challengesAtom)
   const [challenge, setChallenge] = useState<Challenge | null>(null)
+  const [weeks, setWeeks] = useState<boolean>(false)
 
   useEffect(() => {
     const { id } = router.query
@@ -60,9 +61,10 @@ const IndexPage = ({locale}: { locale: string; }) => {
         }
         if (data) {
           // @ts-ignore
-          const firstRow = data!.find(_ => true) as UserChallenge
+          const uc = data!.find(_ => true) as UserChallenge
           console.log('records', code, data)
-          setRecords(firstRow?.records || [])
+          setRecordMap({...recordMap, [key]: uc})
+          setRecords(uc?.records || [])
         }
       })
     }
@@ -74,6 +76,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
   }
   const handleWeeks = async () => {
 
+    setWeeks(true)
     const now = new Date();
     const r = [0, 1, 2, 3, 4, 5, 6].flatMap(async (backDay) => {
       const date = new Date(now.getTime() - (backDay * 24 * 60 * 60 * 1000))
@@ -86,17 +89,17 @@ const IndexPage = ({locale}: { locale: string; }) => {
           }
           if (data) {
             // @ts-ignore
-            const firstRow = data!.find(_ => true) as UserChallenge
-            const c = { completed: firstRow?.completed, records: firstRow?.records || []} as UserChallenge
-            setRecordMap({...recordMap, [key]: c})
-            return c
+            const uc = data!.find(_ => true) as UserChallenge
+            setRecordMap({...recordMap, [key]: uc})
+            return uc
           }
+          return undefined
         })
       }
-      return recordMap[key] || {}
+      return recordMap[key]
     })
     Promise.all(r).then(r => {
-      setRecords(r.flatMap(ur => ur.records || []));
+      setRecords(r.flatMap(ur => ur?.records || []));
     });
   }
 
@@ -106,8 +109,18 @@ const IndexPage = ({locale}: { locale: string; }) => {
     setEditMode(!editMode)
   }
 
-  const handleRemoveRecord = (_recordId: number) => () => {
+  const handleRemoveRecord = (index: number) => async () => {
     // TODO
+    const uc = recordMap[recordKey(challenge!.code)]!
+    uc.records.splice(index, 1)
+    // push to remote
+    console.log("uc", uc)
+    console.log("completed", getVerificationFn(challenge!.verification)(uc.records))
+    await updateChallengeRecords({
+      ...uc, completed: getVerificationFn(challenge!.verification)(uc.records)
+    })
+
+    setRecords([...uc.records])
   }
 
   return challenge && <>
@@ -116,7 +129,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
         () => <>
           <div className="p-2"><button onClick={handleList}>Back</button></div>
           <div className={"flex-grow"} />
-          <div className="p-2"><button onClick={handleEditMode}>{editMode ? 'Done' : 'Edit'}</button></div>
+          {!weeks && <div className="p-2"><button onClick={handleEditMode}>{editMode ? 'Done' : 'Edit'}</button></div> }
           <div className="p-2"><button onClick={handleWeeks}>Weeks</button></div>
         </>
       } >
@@ -131,7 +144,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
               {records?.map((record, i) =>
                 <div key={i} className={'font-mono'}>
                   <span>{record.action || '기록'} - {new Date(record.recordedAt).toLocaleString(locale)}</span>{' '}
-                  {editMode && <Button type={'button'} variant={'outline'} size={'sm'} onClick={handleRemoveRecord(0 /* TODO */)}>Remove</Button>}
+                  {editMode && <Button type={'button'} variant={'outline'} size={'sm'} onClick={handleRemoveRecord(i)}>Remove</Button>}
                 </div>)}
             </main>
           </div>

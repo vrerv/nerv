@@ -77,10 +77,14 @@ export const DEFAULT_RECORDs: Record<string, UserChallenge> = {};
 
 export type UserChallenge = {
   date: number;
-  challengeCode: string;
+  challenge_code: string;
   records: ChallengeRecord[];
   completed: boolean;
 }
+
+export type verificationFn = (records: ChallengeRecord[]) => boolean
+// @ts-ignore
+export const getVerificationFn: (verification: string | undefined) => verificationFn = (verification: string | undefined) => eval(verification || '(records) => false')
 
 export type ChallengeRecord = {
   action?: string;
