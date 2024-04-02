@@ -59,7 +59,7 @@ const Drawing = (_: any) => {
     screenX: 231.591796875
     screenY: 271.6796875
      */
-    console.log("getTouch2", touchList)
+    console.log("getTouch", touchList)
     if (touchList.length === 1) {
       return touchList[0];
     }
@@ -139,7 +139,7 @@ const Drawing = (_: any) => {
 
   const handleUploadImage = (e: Event) => {
     // @ts-ignore
-    bgRef.current.handleImageUpload(e);
+    bgRef.current.handleImageUpload(e.target.files);
   }
 
   const downloadCanvasAsPng = (canvas: HTMLCanvasElement, filename: string) => {
@@ -163,6 +163,47 @@ const Drawing = (_: any) => {
 
   const handleDownload = () => {
     downloadCanvasAsPng(canvasRef.current!, "hi")
+  }
+
+  const [loading, setLoading] = useState(false);
+  const loadAiImage = async () => {
+    setLoading(true)
+    try {
+      const headers = {
+        "Content-Type": "application/json"
+      };
+
+      const animals = ["rabbit", "fox", "cat", "elephant", "dog", "bird", "bear", "lion", "tiger", "penguin", "panda", "koala", "monkey", "squirrel", "deer", "wolf", "zebra", "giraffe", "hippo", "rhino", "kangaroo", "crocodile", "snake", "turtle", "frog", "fish", "shark", "whale", "dolphin", "octopus", "crab", "lobster"];
+      const payload = {
+        "item": animals[Math.floor(Math.random() * animals.length)],
+        "size": "512x512"
+      };
+
+      console.log("XXX get")
+      const response = await fetch("/api/gen-image/", {
+        method: 'post',
+        headers: headers,
+        body: JSON.stringify(payload)
+      })
+
+      if (response.ok) {
+        const body = await response.json()
+        console.log("XXX response, ", body)
+        // @ts-ignore
+        console.log("XXX url", body.data[0].url)
+        // @ts-ignore
+        bgRef.current.setImage([body.data[0].url]);
+
+        //setResponse(data);
+        setLoading(false);
+        return;
+      }
+      throw new Error(`Error: ${response.text()}`);
+    } catch (err) {
+      //setError(`${err}`);
+      console.log("error", err)
+      setLoading(false);
+    }
   }
 
   return (
@@ -200,6 +241,7 @@ const Drawing = (_: any) => {
             <TouchButton className={'p-4 no-selection'} onClick={clearCanvas}>Clear</TouchButton>
             {/*<TouchButton className={'p-4 no-selection'} onClick={toggleFullscreen}>Full</TouchButton>*/}
             <TouchButton className={'p-4 no-selection'} onClick={handleDownload}>Download</TouchButton>
+            <TouchButton className={'p-4 no-selection'} onClick={loadAiImage} disabled={loading}>AI</TouchButton>
           </>}
       } >
         <div style={{

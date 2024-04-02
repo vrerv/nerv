@@ -16,6 +16,7 @@ const ImageCanvas = forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     clear: clearCanvas,
     handleImageUpload: handleImageUpload,
+    setImage: setImage,
   }));
 
   const drawImage = () => {
@@ -53,8 +54,8 @@ const ImageCanvas = forwardRef((props, ref) => {
     drawImage();
   }, [image]);
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+  const handleImageUpload = (files) => {
+    const file = files[0];
     const reader = new FileReader();
 
     reader.onloadend = () => {
