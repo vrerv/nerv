@@ -46,7 +46,7 @@ export const createRoutine = async (input: Routine) => {
 }
 
 export const deleteRoutine = async (id: number) => {
-  await supabase.from("routines").delete().eq('id', id)
+  return supabase.from("routines").delete().eq('id', id)
 }
 
 export const updateRoutine = async (input: Routine) => {

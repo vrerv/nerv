@@ -78,8 +78,15 @@ const IndexPage = ({locale}: { locale: string; }) => {
     router.push('/membership')
   }
   const handleDelete = async () => {
-    await deleteRoutine(routine!.id)
-    setRoutines(routines.filter(r => r.id !== routine?.id) || [])
+    try {
+      const { error } = await deleteRoutine(routine!.id)
+      if (error?.code === "23503") {
+        // show fk error
+      }
+      setRoutines(routines.filter(r => r.id !== routine?.id) || [])
+    } catch (e) {
+      console.log("e", e)
+    }
   }
 
   const handleNewRoutine = () => {
