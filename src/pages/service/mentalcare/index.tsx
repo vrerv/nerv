@@ -5,7 +5,7 @@ import {
   challengesAtom,
   recordKey,
   Routine,
-  routinesAtom
+  routinesAtom, userAtom
 } from "@/mentalcare/states";
 import { useAtom } from "jotai";
 import { useRouter } from "next/router";
@@ -46,6 +46,7 @@ export async function getStaticProps({ locale }: { locale: any }) {
 const IndexPage = ({locale}: { locale: string; }) => {
 
   const router = useRouter();
+  const [user, setUser] = useAtom(userAtom)
   const [routines, setRoutines] = useAtom(routinesAtom)
   const [challenges, setChallenges] = useAtom(challengesAtom)
   const now = useSecondsTimer()
@@ -60,6 +61,14 @@ const IndexPage = ({locale}: { locale: string; }) => {
       if (data) {
         const list: Routine[] = (data as unknown as Routine[]).filter((it) => it.period.weeks.includes(now.getDay())) || []
         setRoutines(list)
+        // TODO: routines 에 이미 있느넫, user.profile.routines 부분이 중복되는 부분이 있음
+        setUser({
+          ...user,
+          profile: {
+            name: '',
+            routines: [...list],
+          }
+        })
         if (list) {
           const { data, error } = await getRoutineDay(dateNumber(new Date()))
           if (error) {
