@@ -90,7 +90,11 @@ const Drawing = (_: any) => {
 
   const draw = (e: any) => {
     if (!drawing) return;
-    e.preventDefault(); // Prevent scrolling
+    if (e.cancelable) {
+      e.preventDefault(); // Prevent scrolling
+    } else {
+      e.stopPropagation();
+    }
 
     const canvas: HTMLCanvasElement = canvasRef.current!
     const ctx = canvas.getContext("2d")!
