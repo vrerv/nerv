@@ -1,15 +1,12 @@
-import React, {
-  useRef,
-  useState
-} from "react";
+import React, { useRef, useState } from "react";
 // @ts-ignore
-import TouchButton from '@/components/drawing/TouchButton';
+import TouchButton from "@/components/drawing/TouchButton";
 // @ts-ignore
-import ImageCanvas from '@/components/drawing/ImageCanvas';
+import ImageCanvas from "@/components/drawing/ImageCanvas";
 // @ts-ignore
-import FileInputButton from '@/components/drawing/FileInputButton';
+import FileInputButton from "@/components/drawing/FileInputButton";
 // @ts-ignore
-import ColorSelector from '@/components/drawing/ColorSelector';
+import ColorSelector from "@/components/drawing/ColorSelector";
 import TabLayout from "@/components/drawing/TabLayout";
 import Head from "next/head";
 
@@ -206,6 +203,12 @@ const Drawing = (_: any) => {
     }
   }
 
+  const handleNoBg = () => {
+    // TODO: need to reset file input
+    // @ts-ignore
+    bgRef?.current?.clear();
+  }
+
   return (
     <>
       <Head>
@@ -240,8 +243,9 @@ const Drawing = (_: any) => {
             <ColorSelector className={'p-4 no-selection'} selectedColor={color} setSelectedColor={setColor} />
             <TouchButton className={'p-4 no-selection'} onClick={clearCanvas}>Clear</TouchButton>
             {/*<TouchButton className={'p-4 no-selection'} onClick={toggleFullscreen}>Full</TouchButton>*/}
-            <TouchButton className={'p-4 no-selection'} onClick={handleDownload}>Download</TouchButton>
-            <TouchButton className={'p-4 no-selection'} onClick={loadAiImage} disabled={loading}>AI</TouchButton>
+            <TouchButton className={'p-4 no-selection'} onClick={handleDownload}>Image</TouchButton>
+            <TouchButton className={'p-4 no-selection'} onClick={loadAiImage} disabled={loading}>{loading ? '...' : 'AI'}</TouchButton>
+            <TouchButton className={'p-4 no-selection'} onClick={handleNoBg}>X</TouchButton>
           </>}
       } >
         <div style={{

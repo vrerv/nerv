@@ -10,7 +10,6 @@ const ImageCanvas = forwardRef((props, ref) => {
   // ... your existing state variables and functions
   const dimensions = props.dimensions
   const [image, setImage] = useState(null);
-  const canvasRef = useRef(null);
   const bgCanvasRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
@@ -45,7 +44,7 @@ const ImageCanvas = forwardRef((props, ref) => {
   };
 
   const clearCanvas = () => {
-    const canvas = canvasRef.current;
+    const canvas = bgCanvasRef.current;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
