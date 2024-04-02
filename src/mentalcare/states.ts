@@ -18,6 +18,7 @@ export const EMPTY_USER = {
   valid: false,
 };
 
+// @ts-ignore
 export const userAtom = atomWithStorage<LoginUser>(
   'user',
   typeof window === 'undefined'
