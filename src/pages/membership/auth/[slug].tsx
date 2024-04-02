@@ -22,6 +22,7 @@ import { GetStaticPaths } from "next";
 // @ts-ignore
 import { login, signInWithOAuth, signup } from "@/lib/api/auth";
 import { GoogleAuthButton } from "@/components/google/google-auth-button";
+// @ts-ignore
 import getURL from "@/lib/utils/urlHelper";
 
 export async function getStaticProps({ locale }: { locale: any }) {
