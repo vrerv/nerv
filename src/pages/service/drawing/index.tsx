@@ -183,10 +183,9 @@ const Drawing = (_: any) => {
           }
         }
       `}</style>
-      <TabLayout control={
-        ({ contentDimensions }) => {
+      <TabLayout dimensions={dimensions} setDimensions={setDimensions} control={
+        () => {
 
-          setDimensions(contentDimensions)
           return <>
             <FileInputButton className={'p-4 no-selection'}
               type="file"

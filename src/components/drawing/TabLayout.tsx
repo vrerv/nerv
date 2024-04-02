@@ -1,8 +1,7 @@
 import React, {
   FunctionComponent,
   ReactElement,
-  useEffect,
-  useState
+  useEffect, useState
 } from "react";
 
 // @ts-ignore
@@ -16,26 +15,36 @@ interface TabLayoutControlProps {
   };
 }
 
+export type Dimension = {
+  width: number;
+  height: number;
+}
+
 export type TabLayoutProps = {
   children: ReactElement[] | ReactElement,
+  dimensions?: Dimension,
+  setDimensions?: (dimension: Dimension) => void,
   control: FunctionComponent<TabLayoutControlProps>,
   actionHeight?: number;
 }
 
-const TabLayout = ({ children, control, actionHeight = 120 }: TabLayoutProps) => {
+const TabLayout = ({ children, dimensions, setDimensions, control, actionHeight = 120 }: TabLayoutProps) => {
 
   const TAB_HEIGHT = actionHeight;
-  const [dimensions, setDimensions] = useState({
-    width: 0,
-    height: 0
-  });
+  const [localDimensions, setLocalDimensions] = useState<Dimension>(dimensions || { width: 0, height: 0 });
+
+  useEffect(() => {
+    if (setDimensions) {
+      setDimensions(localDimensions)
+    }
+  }, [localDimensions]);
 
   useEffect(() => {
     handleResize();
 
     function handleResize() {
       const landscape = window.innerWidth >= window.innerHeight;
-      setDimensions({
+      setLocalDimensions({
         width: document.documentElement.clientWidth - (landscape ? TAB_HEIGHT : 5),
         height: document.documentElement.clientHeight - (landscape ? 5 : TAB_HEIGHT)
       });
@@ -85,13 +94,13 @@ const TabLayout = ({ children, control, actionHeight = 120 }: TabLayoutProps) =>
 
     <div className="tab-layout">
       <LayeredContainer
-        width={dimensions.width}
-        height={dimensions.height}>
-        {dimensions.width > 0 && children}
+        width={localDimensions.width}
+        height={localDimensions.height}>
+        {localDimensions.width > 0 && children}
       </LayeredContainer>
       <div className="controls">
         { // @ts-ignore
-          dimensions.width > 0 && control({ tabHeight: TAB_HEIGHT, contentDimensions: dimensions }).props.children
+          localDimensions.width > 0 && control({ tabHeight: TAB_HEIGHT, contentDimensions: dimensions }).props.children
         }
       </div>
     </div>
