@@ -22,6 +22,7 @@ import { GetStaticPaths } from "next";
 // @ts-ignore
 import { login, signInWithOAuth, signup } from "@/lib/api/auth";
 import { GoogleAuthButton } from "@/components/google/google-auth-button";
+import getURL from "@/lib/utils/urlHelper";
 
 export async function getStaticProps({ locale }: { locale: any }) {
   return {
@@ -93,7 +94,7 @@ export default function TabsDemo({locale}: {locale: string;}) {
     const { data, error } = await signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `http://localhost:3000/${locale}/membership`,
+        redirectTo: `${getURL()}/${locale}/membership`,
         queryParams: {
           access_type: "offline",
           prompt: "consent"
