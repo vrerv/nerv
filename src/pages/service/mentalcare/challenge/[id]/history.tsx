@@ -3,7 +3,7 @@ import {
   Challenge, ChallengeRecord,
   challengeRecordsAtom, challengesAtom,
   recordKey,
-  userAtom
+  userAtom, UserChallenge
 } from "@/mentalcare/states";
 import { useAtom } from "jotai";
 import { useRouter } from "next/router";
@@ -43,7 +43,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
     }
   }, [challenges]);
 
-  const [recordMap, _setRecordMap] = useAtom(challengeRecordsAtom)
+  const [recordMap, setRecordMap] = useAtom(challengeRecordsAtom)
   const [records, setRecords] = useState<ChallengeRecord[]>([])
 
   useEffect(() => {
@@ -66,22 +66,38 @@ const IndexPage = ({locale}: { locale: string; }) => {
         }
       })
     }
-  }, [challenge, recordMap])
+  }, [challenge])
 
 
   const handleList = () => {
     router.push(`/service/mentalcare/challenge/${challenge?.code}`)
   }
-  const handleWeeks = () => {
+  const handleWeeks = async () => {
 
     const now = new Date();
-    const r = [0, 1, 2, 3, 4, 5, 6].flatMap(backDay => {
+    const r = [0, 1, 2, 3, 4, 5, 6].flatMap(async (backDay) => {
       const date = new Date(now.getTime() - (backDay * 24 * 60 * 60 * 1000))
       const key = recordKey(challenge!.code, date)
-      console.log('key', key)
-      return recordMap[key] || []
+      if (!recordMap[key]) {
+        return await listChallengeRecords(challenge!.code, dateNumber(date)).then(r => {
+          const { data, error } = r;
+          if (error) {
+            console.error("failed  to get challenge records", error)
+          }
+          if (data) {
+            // @ts-ignore
+            const firstRow = data!.find(_ => true) as UserChallenge
+            const c = { completed: firstRow?.completed, records: firstRow?.records || []} as UserChallenge
+            setRecordMap({...recordMap, [key]: c})
+            return c
+          }
+        })
+      }
+      return recordMap[key] || {}
     })
-    setRecords(r.flatMap(ur => ur.records));
+    Promise.all(r).then(r => {
+      setRecords(r.flatMap(ur => ur.records || []));
+    });
   }
 
   const [editMode, setEditMode] = useState(false)
@@ -112,8 +128,8 @@ const IndexPage = ({locale}: { locale: string; }) => {
                 <span className={"text-xl justify-end"}>{challenge.name}</span>
               </div>
               <br/>
-              {records?.map(record =>
-                <div className={'font-mono'}>
+              {records?.map((record, i) =>
+                <div key={i} className={'font-mono'}>
                   <span>{record.action || '기록'} - {new Date(record.recordedAt).toLocaleString(locale)}</span>{' '}
                   {editMode && <Button type={'button'} variant={'outline'} size={'sm'} onClick={handleRemoveRecord(0 /* TODO */)}>Remove</Button>}
                 </div>)}

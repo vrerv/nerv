@@ -71,6 +71,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
         completed: fn(newRecords) || false
       }
     })
+    setRecords(newRecords)
   }
 
   const [challenges] = useAtom(challengesAtom)
@@ -105,10 +106,11 @@ const IndexPage = ({locale}: { locale: string; }) => {
           const firstRow = data!.find(_ => true) as UserChallenge
           console.log('records', code, data)
           setRecords(firstRow?.records || [])
+          setRecordMap({...recordMap, [key]: { completed: firstRow?.completed, records: firstRow?.records || []} as UserChallenge})
         }
       })
     }
-  }, [challenge, recordMap])
+  }, [challenge])
 
   return challenge && <>
     <div className={'flex flex-col items-start p-0'}>
