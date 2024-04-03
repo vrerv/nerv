@@ -9,6 +9,7 @@ import FileInputButton from "@/components/drawing/FileInputButton";
 import ColorSelector from "@/components/drawing/ColorSelector";
 import TabLayout from "@/components/drawing/TabLayout";
 import Head from "next/head";
+import { dateNumber } from "@/mentalcare/lib/date-number";
 
 const Drawing = (_: any) => {
   const background = "#ffffff05";
@@ -106,7 +107,7 @@ const Drawing = (_: any) => {
         x = touch.clientX - rect.left;
         y = touch.clientY - rect.top;
         if (color.code !== '#FFFFFF') {
-          lineWidth = touch.radiusX * 5;
+          lineWidth = Math.min(touch.radiusX, 1) * 5;
         }
       } else {
         return;
@@ -159,7 +160,7 @@ const Drawing = (_: any) => {
   }
 
   const handleDownload = () => {
-    downloadCanvasAsPng(canvasRef.current!, "hi")
+    downloadCanvasAsPng(canvasRef.current!, "drawing-" + dateNumber(new Date()) + ".png");
   }
 
   const [loading, setLoading] = useState(false);
@@ -189,7 +190,7 @@ const Drawing = (_: any) => {
         // @ts-ignore
         console.log("XXX url", body.data[0].url)
         // @ts-ignore
-        bgRef.current.setImage([body.data[0].url]);
+        await bgRef.current.setImage([body.data[0].url]);
 
         //setResponse(data);
         setLoading(false);
@@ -243,9 +244,9 @@ const Drawing = (_: any) => {
             <ColorSelector className={'p-4 no-selection'} selectedColor={color} setSelectedColor={setColor} />
             <TouchButton className={'p-4 no-selection'} onClick={clearCanvas}>Clear</TouchButton>
             {/*<TouchButton className={'p-4 no-selection'} onClick={toggleFullscreen}>Full</TouchButton>*/}
-            <TouchButton className={'p-4 no-selection'} onClick={handleDownload}>Image</TouchButton>
+            <TouchButton className={'p-4 no-selection'} onClick={handleDownload}>Get</TouchButton>
             <TouchButton className={'p-4 no-selection'} onClick={loadAiImage} disabled={loading}>{loading ? '...' : 'AI'}</TouchButton>
-            <TouchButton className={'p-4 no-selection'} onClick={handleNoBg}>X</TouchButton>
+            <TouchButton className={'p-4 no-selection'} onClick={handleNoBg}>OX</TouchButton>
           </>}
       } >
         <div style={{

@@ -1,10 +1,4 @@
-import React, {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState
-} from "react";
+import React, { forwardRef, useImperativeHandle, useRef, useState } from "react";
 
 const ImageCanvas = forwardRef((props, ref) => {
   // ... your existing state variables and functions
@@ -15,50 +9,54 @@ const ImageCanvas = forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     clear: clearCanvas,
     handleImageUpload: handleImageUpload,
-    setImage: setImage,
+    setImage: async (image) => {
+      await drawImage(image);
+    },
   }));
 
-  const drawImage = () => {
+  const drawImage = async (image) => {
+    setImage(image);
     const canvas = bgCanvasRef.current;
     const ctx = canvas.getContext('2d');
 
     if (image) {
-      const img = new Image();
-      img.src = image;
-      img.onload = () => {
-        // Calculate aspect ratio
-        const hRatio = canvas.width / img.width;
-        const vRatio = canvas.height / img.height;
-        const ratio = Math.min(hRatio, vRatio);
+      await new Promise((resolve, rejecct) => {
 
-        // Calculate new dimensions based on aspect ratio
-        const centerShift_x = (canvas.width - img.width * ratio) / 2;
-        const centerShift_y = (canvas.height - img.height * ratio) / 2;
+        const img = new Image();
+        img.src = image;
+        img.onload = () => {
+          // Calculate aspect ratio
+          const hRatio = canvas.width / img.width;
+          const vRatio = canvas.height / img.height;
+          const ratio = Math.min(hRatio, vRatio);
 
-        // Draw the image on the canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, img.width, img.height,
-          centerShift_x, centerShift_y, img.width * ratio, img.height * ratio);
-      };
+          // Calculate new dimensions based on aspect ratio
+          const centerShift_x = (canvas.width - img.width * ratio) / 2;
+          const centerShift_y = (canvas.height - img.height * ratio) / 2;
+
+          // Draw the image on the canvas
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, img.width, img.height,
+            centerShift_x, centerShift_y, img.width * ratio, img.height * ratio);
+          resolve();
+        };
+        img.onerror = (e) => reject(e);
+      })
     }
   };
 
+  const [hidden, setHidden] = useState(false);
+
   const clearCanvas = () => {
-    const canvas = bgCanvasRef.current;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHidden(!hidden)
   };
 
-  useEffect(() => {
-    drawImage();
-  }, [image]);
-
-  const handleImageUpload = (files) => {
+  const handleImageUpload = async (files) => {
     const file = files[0];
     const reader = new FileReader();
 
     reader.onloadend = () => {
-      setImage(reader.result);
+      drawImage(reader.result).then(() => console.log('Image loaded'));
     };
 
     if (file) {
@@ -70,6 +68,7 @@ const ImageCanvas = forwardRef((props, ref) => {
     <>
       {/*image && <img src={image} alt="Background" width={dimensions.width} height={dimensions.height} />*/}
       <canvas
+        hidden={hidden}
         ref={bgCanvasRef}
         width={dimensions.width}
         height={dimensions.height}

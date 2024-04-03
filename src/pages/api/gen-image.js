@@ -6,9 +6,11 @@ const openai = new OpenAI();
 
 const generateImageWithDallE = async ({ item, size }) =>{
 
+  const prompt = `create simple ${item} dashed outline image for kids to follow drawing lines`
+  console.log("prompt: ", prompt)
   return openai.images.generate({
     model: "dall-e-2",
-    prompt: `create simple ${item} dashed outline image for kids to follow drawing lines`,
+    prompt: prompt,
     n: 1,
     size: size
   })

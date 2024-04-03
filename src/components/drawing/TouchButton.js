@@ -2,8 +2,16 @@ import React, { useState } from 'react';
 
 const TouchButton = ({className, onClick, disabled, children}) => {
 
-  const handleClick = (e) => {
-    onClick(e)
+  const [clicked, setClicked] = useState(false)
+
+  const handleClick = async (e) => {
+    if (clicked) return;
+    setClicked(true)
+    try {
+      await onClick(e)
+    } finally {
+      setTimeout(() => setClicked(false), 300)
+    }
   };
 
   const handleTouchStart = (e) => {
