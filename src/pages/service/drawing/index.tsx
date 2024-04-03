@@ -193,21 +193,23 @@ const Drawing = (_: any) => {
         await bgRef.current.setImage([body.data[0].url]);
 
         //setResponse(data);
-        setLoading(false);
         return;
       }
       throw new Error(`Error: ${response.text()}`);
     } catch (err) {
       //setError(`${err}`);
       console.log("error", err)
-      setLoading(false);
+    } finally {
+      setHidden(false)
+      setLoading(false)
     }
   }
 
-  const handleNoBg = () => {
+  const [hidden, setHidden] = useState(false);
+
+  const handleHidden = () => {
     // TODO: need to reset file input
-    // @ts-ignore
-    bgRef?.current?.clear();
+    setHidden(!hidden)
   }
 
   return (
@@ -246,7 +248,7 @@ const Drawing = (_: any) => {
             {/*<TouchButton className={'p-4 no-selection'} onClick={toggleFullscreen}>Full</TouchButton>*/}
             <TouchButton className={'p-4 no-selection'} onClick={handleDownload}>Get</TouchButton>
             <TouchButton className={'p-4 no-selection'} onClick={loadAiImage} disabled={loading}>{loading ? '...' : 'AI'}</TouchButton>
-            <TouchButton className={'p-4 no-selection'} onClick={handleNoBg}>OX</TouchButton>
+            <TouchButton className={'p-4 no-selection'} onClick={handleHidden}>{hidden ? 'O': 'X'}</TouchButton>
           </>}
       } >
         <div style={{
@@ -254,7 +256,7 @@ const Drawing = (_: any) => {
           width: dimensions.width,
           height: dimensions.height
         }} />
-        <ImageCanvas ref={bgRef} dimensions={dimensions} />
+        <ImageCanvas ref={bgRef} dimensions={dimensions} hidden={hidden} />
         <canvas
           ref={canvasRef}
           style={{ background: background }}

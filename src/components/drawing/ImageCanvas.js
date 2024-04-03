@@ -1,13 +1,11 @@
 import React, { forwardRef, useImperativeHandle, useRef, useState } from "react";
 
-const ImageCanvas = forwardRef((props, ref) => {
+const ImageCanvas = forwardRef(({ dimensions, hidden }, ref) => {
   // ... your existing state variables and functions
-  const dimensions = props.dimensions
   const [image, setImage] = useState(null);
   const bgCanvasRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
-    clear: clearCanvas,
     handleImageUpload: handleImageUpload,
     setImage: async (image) => {
       await drawImage(image);
@@ -43,12 +41,6 @@ const ImageCanvas = forwardRef((props, ref) => {
         img.onerror = (e) => reject(e);
       })
     }
-  };
-
-  const [hidden, setHidden] = useState(false);
-
-  const clearCanvas = () => {
-    setHidden(!hidden)
   };
 
   const handleImageUpload = async (files) => {
