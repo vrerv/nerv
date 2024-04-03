@@ -1,6 +1,6 @@
 import React from 'react';
 
-const FileInputButton = ({ label = "File", type, accept, onFileChange, className }) => {
+const FileInputButton = ({ label = "File", type, accept, onFileChange, className, value }) => {
   return (
     <>
       <style jsx>{`
@@ -24,6 +24,7 @@ const FileInputButton = ({ label = "File", type, accept, onFileChange, className
         id="fileInput"
         className="hidden-input"
         onChange={onFileChange}
+        value={value}
       />
       <label htmlFor="fileInput" className={"small-button"}>
         {label}

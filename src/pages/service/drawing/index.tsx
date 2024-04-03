@@ -10,6 +10,92 @@ import ColorSelector from "@/components/drawing/ColorSelector";
 import TabLayout from "@/components/drawing/TabLayout";
 import Head from "next/head";
 import { dateNumber } from "@/mentalcare/lib/date-number";
+import { clearCanvas, downloadCanvasAsPng } from "@/components/drawing/canvasHelper";
+
+
+const EDGE_THRESHOLD = 20;
+
+const getTouch = (touchList: TouchList, rect: any) => {
+  /*
+  clientX: 231.591796875
+  clientY: 189.01303100585938
+  force: 1
+  identifier: 0
+  pageX: 231.591796875
+  pageY: 189.01303100585938
+  radiusX: 0.63720703125
+  radiusY: 0.63720703125
+  rotationAngle: 0
+  screenX: 231.591796875
+  screenY: 271.6796875
+   */
+  console.log("getTouch", touchList)
+  if (touchList.length === 1) {
+    return touchList[0];
+  }
+  const touches: Touch[] = [];
+  for(let i = 0; i < touchList.length; i++) {
+    const touch = touchList[i];
+    if (touch !== null && touch !== undefined) {
+      touches.push(touch);
+    }
+  }
+  console.log("touches", touches);
+  const centreX = rect.width / 2;
+  const centreY = rect.height / 2;
+  return touches.sort((a, b) => a.radiusX - b.radiusX)
+    .sort((a, b) => {
+      // Sort by distance from the centre of the canvas
+      const distA = Math.sqrt((a.clientX - centreX) ** 2 + (a.clientY - centreY) ** 2);
+      const distB = Math.sqrt((b.clientX - centreX) ** 2 + (b.clientY - centreY) ** 2);
+      return distA - distB;
+    })
+    .find(touch => {
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      return !(x < EDGE_THRESHOLD || x > (rect.width - EDGE_THRESHOLD) ||
+        y < EDGE_THRESHOLD || y > (rect.height - EDGE_THRESHOLD))
+    });
+};
+const draw = (e: any, canvas: HTMLCanvasElement, brush = 'pen') => {
+  if (e.cancelable) {
+    e.preventDefault(); // Prevent scrolling
+  } else {
+    e.stopPropagation();
+  }
+
+  const ctx = canvas.getContext("2d")!
+  const rect = canvas.getBoundingClientRect();
+
+  let x, y;
+  let lineWidth = brush === 'eraser' ? 20 : 5;
+  // Set the blend mode based on the brush type
+  ctx.globalCompositeOperation = brush === 'eraser' ? 'destination-out' : 'source-over';
+
+  if (e.touches) { // If this is a touch event
+
+    const touch = getTouch(e.touches, rect)
+    if (touch) {
+      x = touch.clientX - rect.left;
+      y = touch.clientY - rect.top;
+      if (brush !== 'eraser') {
+        lineWidth = Math.min(touch.radiusX, 1) * 5;
+      }
+    } else {
+      return;
+    }
+  } else { // If this is a mouse event
+    x = e.clientX - rect.left;
+    y = e.clientY - rect.top;
+  }
+
+  ctx.lineWidth = lineWidth;
+
+  ctx.lineTo(x, y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+};
 
 const Drawing = (_: any) => {
   const background = "#ffffff05";
@@ -21,11 +107,9 @@ const Drawing = (_: any) => {
     height: 0
   });
 
-  const EDGE_THRESHOLD = 20;
-
   const handleStart = (e:any) => {
     setDrawing(true);
-    draw(e);
+    handleMove(e)
   };
 
   const handleEnd = (_:any) => {
@@ -35,6 +119,16 @@ const Drawing = (_: any) => {
     ctx.beginPath();
   };
 
+  const handleMove = (e: any) => {
+    if (!drawing) return;
+    setDrawing(true);
+    const canvas: HTMLCanvasElement = canvasRef.current!
+    const ctx = canvas.getContext('2d')!
+    ctx.lineCap = "round";
+    ctx.strokeStyle = color.code;
+    draw(e, canvas, color.code === '#FFFFFF' ? 'eraser': 'pen');
+  }
+
   /*
   const toggleFullscreen = (_:any) => {
     const canvas = document.documentElement
@@ -43,94 +137,9 @@ const Drawing = (_: any) => {
     }
   }*/
 
-  const getTouch = (touchList: TouchList, rect: any) => {
-    /*
-    clientX: 231.591796875
-    clientY: 189.01303100585938
-    force: 1
-    identifier: 0
-    pageX: 231.591796875
-    pageY: 189.01303100585938
-    radiusX: 0.63720703125
-    radiusY: 0.63720703125
-    rotationAngle: 0
-    screenX: 231.591796875
-    screenY: 271.6796875
-     */
-    console.log("getTouch", touchList)
-    if (touchList.length === 1) {
-      return touchList[0];
-    }
-    const touches: Touch[] = [];
-    for(let i = 0; i < touchList.length; i++) {
-      const touch = touchList[i];
-      if (touch !== null && touch !== undefined) {
-        touches.push(touch);
-      }
-    }
-    console.log("touches", touches);
-    const centreX = rect.width / 2;
-    const centreY = rect.height / 2;
-    return touches.sort((a, b) => a.radiusX - b.radiusX)
-      .sort((a, b) => {
-        // Sort by distance from the centre of the canvas
-        const distA = Math.sqrt((a.clientX - centreX) ** 2 + (a.clientY - centreY) ** 2);
-        const distB = Math.sqrt((b.clientX - centreX) ** 2 + (b.clientY - centreY) ** 2);
-        return distA - distB;
-      })
-      .find(touch => {
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-        return !(x < EDGE_THRESHOLD || x > (rect.width - EDGE_THRESHOLD) ||
-          y < EDGE_THRESHOLD || y > (rect.height - EDGE_THRESHOLD))
-      });
-  };
-
-  const draw = (e: any) => {
-    if (!drawing) return;
-    if (e.cancelable) {
-      e.preventDefault(); // Prevent scrolling
-    } else {
-      e.stopPropagation();
-    }
-
+  const clear = () => {
     const canvas: HTMLCanvasElement = canvasRef.current!
-    const ctx = canvas.getContext("2d")!
-    const rect = canvas.getBoundingClientRect();
-
-    let x, y;
-    let lineWidth = color.code === '#FFFFFF' ? 20 : 5;
-    if (e.touches) { // If this is a touch event
-
-      const touch = getTouch(e.touches, rect)
-      if (touch) {
-        x = touch.clientX - rect.left;
-        y = touch.clientY - rect.top;
-        if (color.code !== '#FFFFFF') {
-          lineWidth = Math.min(touch.radiusX, 1) * 5;
-        }
-      } else {
-        return;
-      }
-    } else { // If this is a mouse event
-      x = e.clientX - rect.left;
-      y = e.clientY - rect.top;
-    }
-
-    ctx.lineWidth = lineWidth;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = color.code;
-
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-  };
-
-  const clearCanvas = () => {
-    const canvas: HTMLCanvasElement = canvasRef.current!
-    const ctx = canvas.getContext("2d")!
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    clearCanvas(canvas)
   };
 
   const bgRef = useRef(null);
@@ -138,25 +147,6 @@ const Drawing = (_: any) => {
   const handleUploadImage = (e: Event) => {
     // @ts-ignore
     bgRef.current.handleImageUpload(e.target.files);
-  }
-
-  const downloadCanvasAsPng = (canvas: HTMLCanvasElement, filename: string) => {
-    // Convert the canvas to a data URL
-    const imageURL = canvas.toDataURL('image/png');
-
-    // Create an anchor tag for downloading
-    const downloadLink = document.createElement('a');
-    downloadLink.href = imageURL;
-    downloadLink.download = filename;
-
-    // Append the link to the body (required for Firefox)
-    document.body.appendChild(downloadLink);
-
-    // Trigger the download
-    downloadLink.click();
-
-    // Clean up: remove the link from the body
-    document.body.removeChild(downloadLink);
   }
 
   const handleDownload = () => {
@@ -167,20 +157,15 @@ const Drawing = (_: any) => {
   const loadAiImage = async () => {
     setLoading(true)
     try {
-      const headers = {
-        "Content-Type": "application/json"
-      };
-
       const animals = ["rabbit", "fox", "cat", "elephant", "dog", "bird", "bear", "lion", "tiger", "penguin", "panda", "koala", "monkey", "squirrel", "deer", "wolf", "zebra", "giraffe", "hippo", "rhino", "kangaroo", "crocodile", "snake", "turtle", "frog", "fish", "shark", "whale", "dolphin", "octopus", "crab", "lobster"];
       const payload = {
         "item": animals[Math.floor(Math.random() * animals.length)],
         "size": "512x512"
       };
 
-      console.log("XXX get")
       const response = await fetch("/api/gen-image/", {
         method: 'post',
-        headers: headers,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       })
 
@@ -191,8 +176,6 @@ const Drawing = (_: any) => {
         console.log("XXX url", body.data[0].url)
         // @ts-ignore
         await bgRef.current.setImage([body.data[0].url]);
-
-        //setResponse(data);
         return;
       }
       throw new Error(`Error: ${response.text()}`);
@@ -208,7 +191,6 @@ const Drawing = (_: any) => {
   const [hidden, setHidden] = useState(false);
 
   const handleHidden = () => {
-    // TODO: need to reset file input
     setHidden(!hidden)
   }
 
@@ -242,9 +224,10 @@ const Drawing = (_: any) => {
               type="file"
               accept="image/*"
               onFileChange={(e: Event) => { handleUploadImage(e); }}
+                             value={''}
             />
             <ColorSelector className={'p-4 no-selection'} selectedColor={color} setSelectedColor={setColor} />
-            <TouchButton className={'p-4 no-selection'} onClick={clearCanvas}>Clear</TouchButton>
+            <TouchButton className={'p-4 no-selection'} onClick={clear}>Clear</TouchButton>
             {/*<TouchButton className={'p-4 no-selection'} onClick={toggleFullscreen}>Full</TouchButton>*/}
             <TouchButton className={'p-4 no-selection'} onClick={handleDownload}>Get</TouchButton>
             <TouchButton className={'p-4 no-selection'} onClick={loadAiImage} disabled={loading}>{loading ? '...' : 'AI'}</TouchButton>
@@ -264,10 +247,10 @@ const Drawing = (_: any) => {
           height={dimensions.height}
           onMouseDown={handleStart}
           onMouseUp={handleEnd}
-          onMouseMove={draw}
+          onMouseMove={handleMove}
           onTouchStart={handleStart}
           onTouchEnd={handleEnd}
-          onTouchMove={draw}
+          onTouchMove={handleMove}
         ></canvas>
       </TabLayout>
     </>
