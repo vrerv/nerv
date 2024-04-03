@@ -1,14 +1,20 @@
 
 
+import { createClient } from '../../lib/utils/supabase/server';
 import OpenAI from "openai";
 
 const openai = new OpenAI();
+const supabase = createClient();
+
+const prompt = "`create simple ${item} dashed outline image for kids to follow drawing lines`"
 
 const generateImageWithDallE = async ({ item, size }) =>{
 
+  console.log("user", supabase.auth.user())
+
   return openai.images.generate({
     model: "dall-e-2",
-    prompt: `create simple ${item} dashed outline image for kids to follow drawing lines`,
+    prompt: eval(prompt),
     n: 1,
     size: size
   })
