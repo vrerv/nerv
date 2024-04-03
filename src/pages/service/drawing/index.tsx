@@ -102,6 +102,8 @@ const Drawing = (_: any) => {
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
   const [color, setColor] = useState({name: 'Black', code: '#000000'});
+  const [brush, setBrush] = useState('pen')
+
   const [dimensions, setDimensions] = useState({
     width: 0,
     height: 0
@@ -126,7 +128,7 @@ const Drawing = (_: any) => {
     const ctx = canvas.getContext('2d')!
     ctx.lineCap = "round";
     ctx.strokeStyle = color.code;
-    draw(e, canvas, color.code === '#FFFFFF' ? 'eraser': 'pen');
+    draw(e, canvas, brush);
   }
 
   /*
@@ -137,10 +139,25 @@ const Drawing = (_: any) => {
     }
   }*/
 
+  /*
   const clear = () => {
     const canvas: HTMLCanvasElement = canvasRef.current!
     clearCanvas(canvas)
   };
+   */
+
+  const handleUseEraser = () => {
+    if (brush == 'pen') {
+      setBrush('eraser')
+    } else {
+      setBrush('pen')
+    }
+  }
+
+  const handleSetColor = (color) => {
+    setBrush('pen')
+    setColor(color)
+  }
 
   const bgRef = useRef(null);
 
@@ -226,8 +243,8 @@ const Drawing = (_: any) => {
               onFileChange={(e: Event) => { handleUploadImage(e); }}
                              value={''}
             />
-            <ColorSelector className={'p-4 no-selection'} selectedColor={color} setSelectedColor={setColor} />
-            <TouchButton className={'p-4 no-selection'} onClick={clear}>Clear</TouchButton>
+            <ColorSelector className={'p-4 no-selection'} selectedColor={color} setSelectedColor={handleSetColor} />
+            <TouchButton className={'p-4 no-selection'} onClick={handleUseEraser}>{brush === 'pen' ? '✏️' : '⌫'}</TouchButton>
             {/*<TouchButton className={'p-4 no-selection'} onClick={toggleFullscreen}>Full</TouchButton>*/}
             <TouchButton className={'p-4 no-selection'} onClick={handleDownload}>Get</TouchButton>
             <TouchButton className={'p-4 no-selection'} onClick={loadAiImage} disabled={loading}>{loading ? '...' : 'AI'}</TouchButton>
