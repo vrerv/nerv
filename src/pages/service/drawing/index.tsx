@@ -239,7 +239,7 @@ const Drawing = (_: any) => {
           width: dimensions.width,
           height: dimensions.height
         }} />
-        <ImageCanvas ref={bgRef} dimensions={dimensions} hidden={hidden} />
+        <ImageCanvas ref={bgRef} dimensions={dimensions} hidden={hidden} alpha={0.7} />
         <canvas
           ref={canvasRef}
           style={{ background: background }}
