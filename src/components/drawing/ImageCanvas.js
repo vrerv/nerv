@@ -1,6 +1,6 @@
 import React, { forwardRef, useImperativeHandle, useRef, useState } from "react";
 
-const ImageCanvas = forwardRef(({ dimensions, hidden }, ref) => {
+const ImageCanvas = forwardRef(({ dimensions, hidden, alpha = 1.0 }, ref) => {
   // ... your existing state variables and functions
   const [image, setImage] = useState(null);
   const bgCanvasRef = useRef(null);
@@ -34,6 +34,7 @@ const ImageCanvas = forwardRef(({ dimensions, hidden }, ref) => {
 
           // Draw the image on the canvas
           ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.globalAlpha = alpha
           ctx.drawImage(img, 0, 0, img.width, img.height,
             centerShift_x, centerShift_y, img.width * ratio, img.height * ratio);
           resolve();
