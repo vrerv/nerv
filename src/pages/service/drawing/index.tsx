@@ -10,7 +10,7 @@ import ColorSelector from "@/components/drawing/ColorSelector";
 import TabLayout from "@/components/drawing/TabLayout";
 import Head from "next/head";
 import { dateNumber } from "@/mentalcare/lib/date-number";
-import { clearCanvas, downloadCanvasAsPng } from "@/components/drawing/canvasHelper";
+import { downloadCanvasAsPng } from "@/components/drawing/canvasHelper";
 
 
 const EDGE_THRESHOLD = 20;
@@ -154,7 +154,7 @@ const Drawing = (_: any) => {
     }
   }
 
-  const handleSetColor = (color) => {
+  const handleSetColor = (color: { name: string, code: string }) => {
     setBrush('pen')
     setColor(color)
   }
