@@ -278,7 +278,7 @@ const Drawing = (_: any) => {
         <ImageCanvas ref={bgRef} dimensions={dimensions} hidden={hidden} alpha={0.7} />
         <canvas
           ref={canvasRef}
-          style={{ background: backgroundColor }}
+          style={{ background: '#ffffff05' }}
           width={dimensions.width}
           height={dimensions.height}
           onMouseDown={handleStart}
