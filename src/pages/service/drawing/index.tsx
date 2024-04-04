@@ -240,7 +240,7 @@ const Drawing = (_: any) => {
           return <>
             <FileInputButton className={"p-4 no-selection"} type="file" accept="image/*" onFileChange={handleUploadImage} value={""} label={"📄"} />
             <ColorSelector className={'p-4 no-selection text-2xl'} selectedColor={color} setSelectedColor={handleSetColor} menuText={'🎨'} />
-            <TouchButton className={'p-4 no-selection text-2xl'} onClick={handleUseEraser}>{brush === 'pen' ? '✏️' : '🩹'}</TouchButton>
+            <TouchButton className={'p-4 no-selection text-2xl'} onClick={handleUseEraser}>{brush === 'pen' ? '✏️' : '⌫'}</TouchButton>
             {/*<TouchButton className={'p-4 no-selection'} onClick={toggleFullscreen}>Full</TouchButton>*/}
             <TouchButton className={'p-4 no-selection text-2xl'} onClick={handleDownload}>⬇️</TouchButton>
             <TouchButton className={'p-4 no-selection text-2xl'} onClick={loadAiImage} disabled={loading}>{loading ? '...' : '🖼️'}</TouchButton>
