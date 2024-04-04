@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const TouchButton = ({className, onClick, disabled, children}) => {
+const TouchButton = ({className, onClick, disabled, children, ...props}) => {
 
   const [clicked, setClicked] = useState(false)
 
@@ -32,6 +32,7 @@ const TouchButton = ({className, onClick, disabled, children}) => {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       disabled={disabled}
+      {...props}
     >
       {children}
     </button>

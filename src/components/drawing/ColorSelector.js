@@ -28,7 +28,7 @@ function invertColor(hex, bw) {
   return "#" + r.padStart(2, '0') + g.padStart(2, '0') + b.padStart(2, '0');
 }
 
-const ColorSelector = ({className, selectedColor, setSelectedColor}) => {
+const ColorSelector = ({className, selectedColor, setSelectedColor, menuText = null}) => {
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -116,7 +116,7 @@ const ColorSelector = ({className, selectedColor, setSelectedColor}) => {
       `}</style>
       <div className={className} style={{ backgroundColor: selectedColor.code }}>
         <button onClick={toggleDropdown} className="dropdown-button" style={{color: invertColor(selectedColor.code, true)}}>
-          {selectedColor.name}
+          {menuText ? menuText : selectedColor.name}
         </button>
         {isOpen && (
           <div className="dropdown-menu" style={gridStyle}>

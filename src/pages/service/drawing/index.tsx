@@ -238,18 +238,13 @@ const Drawing = (_: any) => {
         () => {
 
           return <>
-            <FileInputButton className={'p-4 no-selection'}
-              type="file"
-              accept="image/*"
-              onFileChange={(e: Event) => { handleUploadImage(e); }}
-                             value={''}
-            />
-            <ColorSelector className={'p-4 no-selection'} selectedColor={color} setSelectedColor={handleSetColor} />
-            <TouchButton className={'p-4 no-selection'} onClick={handleUseEraser}>{brush === 'pen' ? '✏️' : '⌫'}</TouchButton>
+            <FileInputButton className={"p-4 no-selection"} type="file" accept="image/*" onFileChange={handleUploadImage} value={""} label={"📄"} />
+            <ColorSelector className={'p-4 no-selection text-2xl'} selectedColor={color} setSelectedColor={handleSetColor} menuText={'🎨'} />
+            <TouchButton className={'p-4 no-selection text-2xl'} onClick={handleUseEraser}>{brush === 'pen' ? '✏️' : '🩹'}</TouchButton>
             {/*<TouchButton className={'p-4 no-selection'} onClick={toggleFullscreen}>Full</TouchButton>*/}
-            <TouchButton className={'p-4 no-selection'} onClick={handleDownload}>Get</TouchButton>
-            <TouchButton className={'p-4 no-selection'} onClick={loadAiImage} disabled={loading}>{loading ? '...' : 'AI'}</TouchButton>
-            <TouchButton className={'p-4 no-selection'} onClick={handleHidden}>{hidden ? 'O': 'X'}</TouchButton>
+            <TouchButton className={'p-4 no-selection text-2xl'} onClick={handleDownload}>⬇️</TouchButton>
+            <TouchButton className={'p-4 no-selection text-2xl'} onClick={loadAiImage} disabled={loading}>{loading ? '...' : '🖼️'}</TouchButton>
+            <TouchButton className={'p-4 no-selection text-2xl'} onClick={handleHidden}>{hidden ? '👀': ' 🙈'}</TouchButton>
           </>}
       } >
         <div style={{
