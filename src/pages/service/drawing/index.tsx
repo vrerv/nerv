@@ -98,7 +98,7 @@ const draw = (e: any, canvas: HTMLCanvasElement, brush = 'pen') => {
 };
 
 const Drawing = (_: any) => {
-  const background = "#ffffff05";
+  const backgroundColor = '#ffffff'
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
   const [color, setColor] = useState({name: 'Black', code: '#000000'});
@@ -167,7 +167,7 @@ const Drawing = (_: any) => {
   }
 
   const handleDownload = () => {
-    downloadCanvasAsPng(canvasRef.current!, "drawing-" + dateNumber(new Date()) + ".png");
+    downloadCanvasAsPng(canvasRef.current!, "drawing-" + dateNumber(new Date()) + ".png", backgroundColor);
   }
 
   const [loading, setLoading] = useState(false);
@@ -248,14 +248,14 @@ const Drawing = (_: any) => {
           </>}
       } >
         <div style={{
-          background: "#ffffff",
+          background: backgroundColor,
           width: dimensions.width,
           height: dimensions.height
         }} />
         <ImageCanvas ref={bgRef} dimensions={dimensions} hidden={hidden} alpha={0.7} />
         <canvas
           ref={canvasRef}
-          style={{ background: background }}
+          style={{ background: backgroundColor }}
           width={dimensions.width}
           height={dimensions.height}
           onMouseDown={handleStart}
