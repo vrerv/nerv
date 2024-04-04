@@ -29,7 +29,6 @@ const getTouch = (touchList: TouchList, rect: any) => {
   screenX: 231.591796875
   screenY: 271.6796875
    */
-  console.log("getTouch", touchList)
   if (touchList.length === 1) {
     return touchList[0];
   }
@@ -40,7 +39,6 @@ const getTouch = (touchList: TouchList, rect: any) => {
       touches.push(touch);
     }
   }
-  console.log("touches", touches);
   const centreX = rect.width / 2;
   const centreY = rect.height / 2;
   return touches.sort((a, b) => a.radiusX - b.radiusX)
@@ -98,6 +96,7 @@ const draw = (e: any, canvas: HTMLCanvasElement, brush = 'pen') => {
         lineWidth = Math.min(touch.radiusX, 1) * 5;
       }
     } else {
+      console.log("no touch")
       return;
     }
   } else { // If this is a mouse event
@@ -125,9 +124,11 @@ const Drawing = (_: any) => {
     height: 0
   });
 
-  const handleStart = (e:any) => {
-    setDrawing(true);
-    handleMove(e)
+  const handleStart = async (e:any) => {
+    setDrawing((_: boolean) => {
+      callDraw(e, true)
+      return true
+    });
   };
 
   const handleEnd = (_:any) => {
@@ -141,8 +142,11 @@ const Drawing = (_: any) => {
   };
 
   const handleMove = (e: any) => {
+    callDraw(e, drawing)
+  }
+
+  const callDraw = (e: any, drawing: boolean) => {
     if (!drawing) return;
-    setDrawing(true);
     const canvas: HTMLCanvasElement = canvasRef.current!
     const ctx = canvas.getContext('2d')!
     ctx.lineCap = "round";
