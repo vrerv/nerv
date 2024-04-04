@@ -200,6 +200,7 @@ const Drawing = (_: any) => {
       //setError(`${err}`);
       console.log("error", err)
     } finally {
+      setBrush('pen')
       setHidden(false)
       setLoading(false)
     }
