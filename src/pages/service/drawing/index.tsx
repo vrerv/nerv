@@ -57,6 +57,22 @@ const getTouch = (touchList: TouchList, rect: any) => {
         y < EDGE_THRESHOLD || y > (rect.height - EDGE_THRESHOLD))
     });
 };
+
+const isCanvasCleared = (canvas: HTMLCanvasElement) => {
+  const ctx = canvas.getContext('2d')!;
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  // Check every pixel. Note: this could be optimized by checking fewer pixels.
+  for (let i = 0; i < data.length; i += 4) {
+    // If any pixel is not fully transparent, return false
+    if (data[i + 3] !== 0) return false;
+  }
+
+  // If we made it through all pixels without returning false, the canvas is cleared
+  return true;
+}
+
 const draw = (e: any, canvas: HTMLCanvasElement, brush = 'pen') => {
   if (e.cancelable) {
     e.preventDefault(); // Prevent scrolling
@@ -117,6 +133,9 @@ const Drawing = (_: any) => {
   const handleEnd = (_:any) => {
     setDrawing(false);
     const canvas: HTMLCanvasElement = canvasRef.current!
+    if (brush === 'eraser' && isCanvasCleared(canvas)) {
+      setBrush('pen')
+    }
     const ctx = canvas.getContext("2d")!
     ctx.beginPath();
   };
