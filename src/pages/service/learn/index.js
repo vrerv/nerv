@@ -10,7 +10,11 @@ import { evalLetters, letterfyAll } from "../../../learn/lib/hangul";
  * @param elements = [{x, y, width, height}]
  * @returns { x, y}
  */
-function randomPositionWithoutOverlay(container, element, elements) {
+function randomPositionWithoutOverlay(container, element, elements, tries = 0) {
+  const maxTry = 100
+  if (tries > maxTry) {
+    return { x: 0, y: 0 }
+  }
   const [x, y] = [Math.random() * (container.width - element.width), Math.random() * (container.height - element.height)]
   const [width, height] = [element.width, element.height]
   const [x2, y2] = [x + width, y + height]
@@ -21,7 +25,7 @@ function randomPositionWithoutOverlay(container, element, elements) {
     const [ex2, ey2] = [ex + e.width, ey + e.height]
 
     if (x < ex2 && x2 > ex && y < ey2 && y2 > ey) {
-      return randomPositionWithoutOverlay(container, element, elements)
+      return randomPositionWithoutOverlay(container, element, elements, ++tries)
     }
   }
 
@@ -42,12 +46,13 @@ const elementsFromChars = (container, word) => {
     type: 'TEXT',
     x: parseInt((container.width - (elementSize.width * word.length)) / 2),
     y: 10,
-    width: elementSize.width * word.length,
+    width: (elementSize.width + 8) * word.length,
     height: elementSize.height,
     color: '#eeee00',
     value: word,
     fontSize: 96,
     fontFamily: 'Nanum Gothic',
+    letterSpacing: 8,
     zIndex: 0,
   })
   for (let i = 0; i < chars.length; i++) {

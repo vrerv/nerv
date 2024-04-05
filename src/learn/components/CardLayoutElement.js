@@ -93,7 +93,7 @@ const Element = ({ type, shapeProps, isSelected, onSelect, onChange }) => {
             type === 'IMAGE' || type === 'CAROUSEL' ?
                 <ImageElement type={type} shapeRef={shapeRef} {...shapeDefaultProps} {...shapeProps} />
                 :
-                <Text ref={shapeRef} {...shapeDefaultProps} {...shapeProps} padding={0} lineHeight={1} letterSpacing={0} />
+                <Text ref={shapeRef} {...shapeDefaultProps} {...shapeProps} padding={0} lineHeight={1} />
 
         }
         {isSelected && (
