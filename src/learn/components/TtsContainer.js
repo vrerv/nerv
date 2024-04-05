@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 
 const TextToSpeech = ({text, children}) => {
   const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "ko-KR";
 
   useEffect(() => {
     speak(text);
@@ -12,7 +13,7 @@ const TextToSpeech = ({text, children}) => {
   };
 
   return (
-    children({onClick: (e) => speak(text)})
+    children && children({onClick: (e) => speak(text)})
   );
 };
 

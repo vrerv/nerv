@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Layer, Stage } from "react-konva";
 import Element from "./CardLayoutElement";
 
-const WordBuilder = ({layout, setLayout}) => {
+const WordBuilder = ({layout, setLayout, onChange}) => {
 
   const DEFAULT_BASE = 5
   const isShow = false;
@@ -12,7 +12,7 @@ const WordBuilder = ({layout, setLayout}) => {
   const [cardHeight, setCardHeight] = useState(layout.height)
 
   useEffect(() => {
-    const [newLayout, nHeight, rw] = translateLayout(cardWidth, layout)
+    const [newLayout, nHeight, rw] = translateLayout(deviceWidth, layout)
     setCardHeight(nHeight)
     setLayout(newLayout)
     selectShape(0)
@@ -123,6 +123,7 @@ const WordBuilder = ({layout, setLayout}) => {
             key={index}
             shapeProps={{
               id: "element-" + index,
+              index: index,
               x: element.x + DEFAULT_BASE,
               y: element.y + DEFAULT_BASE,
               text: element.value || element.name,
@@ -137,9 +138,7 @@ const WordBuilder = ({layout, setLayout}) => {
               draggable: element.type !== 'BG_IMAGE' && true /*selectedId === index*/,
               zIndex: element.type === 'BG_IMAGE' ? 0 : index + 1,
             }}
-            onChange={(newAttrs) => {
-              // OK
-            }}
+            onChange={onChange}
           />
         ))}
       </Layer>

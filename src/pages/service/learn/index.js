@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import WordBuilder from '@/learn/components/WordBuilder'; // 이 컴포넌트는 아래에서 구현됩니다.
 import TextToSpeech from "../../../learn/components/TtsContainer";
-import { letterfyAll } from "../../../learn/lib/hangul";
+import { evalLetters, letterfyAll } from "../../../learn/lib/hangul";
 
 /**
  * element should not be overlayed with other elements
@@ -58,11 +58,14 @@ function App() {
 
   const [chars, setChars] = useState([])
   const [index, setIndex] = useState(0)
+  const [text, setText] = useState(`"${words[index]}" 글자를 만드세요`)
+  const [loading, setLoading] = useState(false)
   const [layout, setLayout] = useState({
     width: window.innerWidth,
     height: window.innerHeight - 240,
     elements: []
   })
+  const [currentWord, setCurrentWord] = useState("")
 
   const handleNext = () => {
     if (index === words.length - 1) {
@@ -72,24 +75,43 @@ function App() {
     }
   }
 
+  const handleOnChange = (e) => {
+    const elements = [...layout.elements]
+    elements[e.index].x = e.x
+    elements[e.index].y = e.y
+    setLayout({...layout, elements})
+    console.log("e", e, "elements", elements)
+    const word = evalLetters(e.index, elements, currentWord)
+    console.log("word", word)
+    setCurrentWord(word)
+    if (word === words[index]) {
+      setText('맞았어요!')
+      setLoading(true)
+      setTimeout(() => handleNext(), 2000)
+    }
+  }
+
   useEffect(() => {
     setChars((pre) => {
 
       const newChars = letterfyAll(words[index])
       setLayout({...layout, elements: elementsFromChars(layout, newChars)})
+      setText(`"${words[index]}" 글자를 만드세요`)
+      setLoading(false)
       return newChars
     })
   }, [index]);
 
   return (
     <>
-      <TextToSpeech text={words[index]}>
-        {({onClick}) => <button style={{padding: 20, fontSize: 32}} onClick={onClick}>{words[index]}</button>}
+      <TextToSpeech text={currentWord} />
+      <TextToSpeech text={text}>
+        {({onClick}) => <button style={{padding: 20, fontSize: 32}} onClick={onClick}>{text}</button>}
       </TextToSpeech>
       <div style={{background: '#ffffff'}}>
-        <WordBuilder layout={layout} setLayout={setLayout} />
+        <WordBuilder layout={layout} setLayout={setLayout} onChange={handleOnChange} />
       </div>
-      <button style={{padding: 20, fontSize: 32}} onClick={handleNext}>Next</button>
+      <button style={{padding: 20, fontSize: 32}} onClick={handleNext} disabled={loading}>다음 글자</button>
     </>
   );
 }
