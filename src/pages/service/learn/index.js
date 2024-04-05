@@ -33,9 +33,23 @@ const words = [
   "하마", "꼬리", "머리띠", "뿌리", "씨소", "찌게", "개나리", "게다리", "야호", "여자", "요리", "우유", "크다"
 ]
 
-const elementsFromChars = (container, chars) => {
+const elementsFromChars = (container, word) => {
+  const chars = letterfyAll(word)
   const elementSize = { width: 100, height: 100 }
   const elements = []
+  // show guide text
+  elements.push({
+    type: 'TEXT',
+    x: parseInt((container.width - (elementSize.width * word.length)) / 2),
+    y: 10,
+    width: elementSize.width * word.length,
+    height: elementSize.height,
+    color: '#eeee00',
+    value: word,
+    fontSize: 96,
+    fontFamily: 'Nanum Gothic',
+    zIndex: 0,
+  })
   for (let i = 0; i < chars.length; i++) {
     const char = chars[i]
     const { x, y } = randomPositionWithoutOverlay(container, elementSize, elements)
@@ -56,7 +70,6 @@ const elementsFromChars = (container, chars) => {
 
 function App() {
 
-  const [chars, setChars] = useState([])
   const [index, setIndex] = useState(0)
   const [text, setText] = useState(`"${words[index]}" 글자를 만드세요`)
   const [loading, setLoading] = useState(false)
@@ -92,14 +105,10 @@ function App() {
   }
 
   useEffect(() => {
-    setChars((pre) => {
 
-      const newChars = letterfyAll(words[index])
-      setLayout({...layout, elements: elementsFromChars(layout, newChars)})
-      setText(`"${words[index]}" 글자를 만드세요`)
-      setLoading(false)
-      return newChars
-    })
+    setLayout({...layout, elements: elementsFromChars(layout, words[index])})
+    setText(`"${words[index]}" 글자를 만드세요`)
+    setLoading(false)
   }, [index]);
 
   return (

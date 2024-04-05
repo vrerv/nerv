@@ -136,7 +136,7 @@ const WordBuilder = ({layout, setLayout, onChange}) => {
               strokeWidth: element.type === 'BG_IMAGE' || !element.value ? 1 : 0,
               strokeEnabled: element.type === 'BG_IMAGE',
               draggable: element.type !== 'BG_IMAGE' && true /*selectedId === index*/,
-              zIndex: element.type === 'BG_IMAGE' ? 0 : index + 1,
+              zIndex: element.type === 'BG_IMAGE' ? 0 : element.zIndex ? element.zIndex : index + 11,
             }}
             onChange={onChange}
           />

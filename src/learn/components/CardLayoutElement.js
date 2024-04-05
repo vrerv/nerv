@@ -100,6 +100,7 @@ const Element = ({ type, shapeProps, isSelected, onSelect, onChange }) => {
             <Transformer
                 ref={trRef}
                 rotateEnabled={false}
+                shouldOverdrawWholeArea={true}
                 enabledAnchors={type === 'BG_IMAGE' ? ['bottom-center'] : type === 'TEXT' ? [] : ['middle-right', 'bottom-center', 'bottom-right']}
                 boundBoxFunc={(oldBox, newBox) => {
                   // limit resize
