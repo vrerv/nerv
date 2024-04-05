@@ -1,11 +1,3 @@
 {
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/node",
-      "config": {
-        "buildCommand": "yum install libuuid-devel libmount-devel zlib && yarn run build"
-      }
-    }
-  ]
+  "buildCommand": "yum install libuuid-devel libmount-devel zlib && yarn run build"
 }
