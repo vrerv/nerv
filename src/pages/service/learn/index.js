@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import WordBuilder from '@/learn/components/WordBuilder'; // 이 컴포넌트는 아래에서 구현됩니다.
 import TextToSpeech from "../../../learn/components/TtsContainer";
 import { evalLetters, letterfyAll } from "../../../learn/lib/hangul";
-
+import { LottieAnimation } from "@/learn/components/LottieAnimation";
 /**
  * element should not be overlayed with other elements
  * @param container = {width, height}
@@ -123,6 +123,7 @@ function App() {
         {({onClick}) => <button style={{padding: 20, fontSize: 32}} onClick={onClick}>{text}</button>}
       </TextToSpeech>
       <div style={{background: '#ffffff'}}>
+        {loading && <LottieAnimation width={layout.width} />}
         <WordBuilder layout={layout} setLayout={setLayout} onChange={handleOnChange} />
       </div>
       <button style={{padding: 20, fontSize: 32}} onClick={handleNext} disabled={loading}>다음 글자</button>

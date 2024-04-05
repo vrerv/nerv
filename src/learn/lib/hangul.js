@@ -74,8 +74,10 @@ export function evalLetters(i, paramElements, word) {
     const diff = Math.sqrt(xDiff ** 2 + yDiff ** 2);
     //console.log("xDiff", xDiff, "yDiff", yDiff, "element1", {x: element1.x, y: element1.y}, "element2", {x: element2.x, y: element2.y})
     const isElement1BelowElement2 = yDiff < -minimum * 0.3 && yDiff > -minimum && diff < minimum;
-    const isElement1LeftOfElement2 = !isElement1BelowElement2 && xDiff > minimum * 0.5 && xDiff < minimum && diff < minimum && Math.abs(yDiff) < minimum / 4;
-    const isElement1AboveElement2 = yDiff > minimum * 0.3 && yDiff < minimum && diff < minimum && Math.abs(xDiff) < minimum / 4;
+    const isElement1LeftOfElement2 =  xDiff > minimum * 0.5 && xDiff < minimum && diff < minimum
+      && Math.abs(yDiff) < minimum / 3 && !isElement1BelowElement2;
+    const isElement1AboveElement2 = yDiff > minimum * 0.3 && yDiff < minimum && diff < minimum
+      && Math.abs(xDiff) < minimum / 3;
 
     return {
       isLeft: isElement1LeftOfElement2,
