@@ -3,6 +3,8 @@ import WordBuilder from '@/learn/components/WordBuilder'; // 이 컴포넌트는
 import TextToSpeech from "../../../learn/components/TtsContainer";
 import { evalLetters, letterfyAll } from "../../../learn/lib/hangul";
 import { LottieAnimation } from "@/learn/components/LottieAnimation";
+
+
 /**
  * element should not be overlayed with other elements
  * @param container = {width, height}
@@ -10,26 +12,39 @@ import { LottieAnimation } from "@/learn/components/LottieAnimation";
  * @param elements = [{x, y, width, height}]
  * @returns { x, y}
  */
-function randomPositionWithoutOverlay(container, element, elements, tries = 0) {
-  const maxTry = 100
-  if (tries > maxTry) {
-    return { x: 0, y: 0 }
-  }
-  const [x, y] = [Math.random() * (container.width - element.width), Math.random() * (container.height - element.height)]
-  const [width, height] = [element.width, element.height]
-  const [x2, y2] = [x + width, y + height]
+function randomPositionWithoutOverlay(container, element, elements) {
+  const gridSize = Math.max(element.width, element.height); // Assuming square grid cells for simplicity
+  const rows = Math.floor(container.height / gridSize);
+  const cols = Math.floor(container.width / gridSize);
+  const occupancyMap = Array.from({ length: rows }, () => Array(cols).fill(false));
 
-  for (let i = 0; i < elements.length; i++) {
-    const e = elements[i]
-    const [ex, ey] = [e.x, e.y]
-    const [ex2, ey2] = [ex + e.width, ey + e.height]
+  // Mark existing elements as occupied in the occupancy map
+  elements.forEach(el => {
+    const elCols = Math.ceil(el.width / gridSize);
+    const elRows = Math.ceil(el.height / gridSize);
+    const row = Math.floor(el.y / gridSize);
+    const col = Math.floor(el.x / gridSize);
+    if (row < rows && col < cols) {
+      occupancyMap[row][col] = true;
+      for (let r = row; r < row + elRows; r++) {
+        for (let c = col; c < col + elCols; c++) {
+          occupancyMap[r][c] = true;
+        }
+      }
+    }
+  });
 
-    if (x < ex2 && x2 > ex && y < ey2 && y2 > ey) {
-      return randomPositionWithoutOverlay(container, element, elements, ++tries)
+  // Try to find an unoccupied spot
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const row = Math.floor(Math.random() * rows);
+    const col = Math.floor(Math.random() * cols);
+    if (!occupancyMap[row][col]) {
+      return { x: col * gridSize, y: row * gridSize }; // Found an open spot
     }
   }
 
-  return { x, y }
+  // Fallback if no spot is found after attempts
+  return { x: 0, y: 0 };
 }
 
 const words = [
@@ -111,6 +126,7 @@ function App() {
 
   useEffect(() => {
 
+    speechSynthesis.cancel()
     setLayout({...layout, elements: elementsFromChars(layout, words[index])})
     setText(`"${words[index]}" 글자를 만드세요`)
     setLoading(false)
