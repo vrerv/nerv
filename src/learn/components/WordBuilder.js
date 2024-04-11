@@ -4,7 +4,7 @@ import Element from "./CardLayoutElement";
 
 const WordBuilder = ({layout, setLayout, onChange}) => {
 
-  const DEFAULT_BASE = 5
+  const DEFAULT_BASE = 0
   const isShow = false;
 
   const deviceWidth = layout.width
@@ -35,7 +35,6 @@ const WordBuilder = ({layout, setLayout, onChange}) => {
         element.width = twoDecimalTrunc(element.width * rw)
         element.height = twoDecimalTrunc(element.height * rw)
         element.fontSize = twoDecimalTrunc(element.fontSize)
-        element.fontFamily = "Nanum Gothic"
       }
       return element
     })
@@ -116,13 +115,13 @@ const WordBuilder = ({layout, setLayout, onChange}) => {
         {layout?.elements?.map((element, index) => (
           <Element
             type={element.type}
-            isSelected={index === selectedId}
+            //isSelected={index === selectedId}
             onSelect={() => {
               selectShape(index)
             }}
             key={index}
             shapeProps={{
-              id: "element-" + index,
+              id: element.id,
               index: index,
               x: element.x + DEFAULT_BASE,
               y: element.y + DEFAULT_BASE,
@@ -135,8 +134,7 @@ const WordBuilder = ({layout, setLayout, onChange}) => {
               stroke: element.type === 'BG_IMAGE' ? '#aaaaaa' : '#000000',
               strokeWidth: element.type === 'BG_IMAGE' || !element.value ? 1 : 0,
               strokeEnabled: element.type === 'BG_IMAGE',
-              draggable: element.type !== 'BG_IMAGE' && true /*selectedId === index*/,
-              zIndex: element.type === 'BG_IMAGE' ? 0 : element.zIndex ? element.zIndex : index + 11,
+              draggable: element.type !== 'BG_IMAGE' && element.draggable === true,
               letterSpacing: element.letterSpacing ? element.letterSpacing : 0,
             }}
             onChange={onChange}

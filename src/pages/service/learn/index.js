@@ -52,12 +52,16 @@ const words = [
   "하마", "꼬리", "머리띠", "뿌리", "씨소", "찌게", "개나리", "게다리", "야호", "여자", "요리", "우유", "크다"
 ]
 
+const fontFamily =  'Nanum Gothic'
+const textSize = 96
+
 const elementsFromChars = (container, word) => {
   const chars = letterfyAll(word)
   const elementSize = { width: 100, height: 100 }
   const elements = []
   // show guide text
   elements.push({
+    id: 'BG',
     type: 'TEXT',
     x: parseInt((container.width - (elementSize.width * word.length)) / 2),
     y: 10,
@@ -65,15 +69,16 @@ const elementsFromChars = (container, word) => {
     height: elementSize.height,
     color: '#eeee00',
     value: word,
-    fontSize: 96,
-    fontFamily: 'Nanum Gothic',
+    fontSize: textSize,
+    fontFamily: fontFamily,
     letterSpacing: 8,
-    zIndex: 0,
+    draggable: false,
   })
   for (let i = 0; i < chars.length; i++) {
     const char = chars[i]
     const { x, y } = randomPositionWithoutOverlay(container, elementSize, elements)
     elements.push({
+      id: `CHAR_${i}`,
       type: 'TEXT',
       x: x,
       y: y,
@@ -81,8 +86,9 @@ const elementsFromChars = (container, word) => {
       height: elementSize.height,
       color: '#000000',
       value: char,
-      fontSize: 96,
-      fontFamily: 'Nanum Gothic'
+      fontSize: textSize,
+      fontFamily: fontFamily,
+      draggable: true,
     })
   }
   return elements
@@ -110,10 +116,17 @@ function App() {
 
   const handleOnChange = (e) => {
     const elements = [...layout.elements]
-    elements[e.index].x = e.x
-    elements[e.index].y = e.y
-    setLayout({...layout, elements})
-    console.log("e", e, "elements", elements)
+    console.log("e1", e, "elements", layout.elements)
+    elements.forEach(element => {
+      if (element.id === e.id) {
+        console.log("id", e.id)
+        element.x = e.x
+        element.y = e.y
+      }
+    })
+    // TODO: setLayout 시 다른 엘리먼트가 같이 움직이는 버그가 있다.
+    //setLayout({...layout, elements})
+    console.log("e2", e, "elements", elements)
     const word = evalLetters(e.index, elements, currentWord)
     console.log("word", word)
     setCurrentWord(word)
