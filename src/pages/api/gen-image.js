@@ -12,7 +12,8 @@ const generateImageWithDallE = async ({ item, size }) =>{
     model: "dall-e-2",
     prompt: prompt,
     n: 1,
-    size: size
+    size: size,
+    response_format: 'b64_json'
   })
 }
 

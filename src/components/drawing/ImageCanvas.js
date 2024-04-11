@@ -8,7 +8,7 @@ const ImageCanvas = forwardRef(({ dimensions, hidden, alpha = 1.0 }, ref) => {
   useImperativeHandle(ref, () => ({
     handleImageUpload: handleImageUpload,
     setImage: async (image) => {
-      await drawImage(image);
+      return await drawImage(image);
     },
   }));
 
@@ -18,7 +18,7 @@ const ImageCanvas = forwardRef(({ dimensions, hidden, alpha = 1.0 }, ref) => {
     const ctx = canvas.getContext('2d');
 
     if (image) {
-      await new Promise((resolve, rejecct) => {
+      await new Promise((resolve, reject) => {
 
         const img = new Image();
         img.src = image;

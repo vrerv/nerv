@@ -11,6 +11,7 @@ import TabLayout from "@/components/drawing/TabLayout";
 import Head from "next/head";
 import { dateNumber } from "@/mentalcare/lib/date-number";
 import { clearCanvas, downloadCanvasAsPng } from "@/components/drawing/canvasHelper";
+import { selectImage, uploadImage } from "@/lib/api/drawing";
 
 
 const EDGE_THRESHOLD = 20;
@@ -112,6 +113,38 @@ const draw = (e: any, canvas: HTMLCanvasElement, brush = 'pen') => {
   ctx.moveTo(x, y);
 };
 
+type GemImagePayload = {
+  item: string;
+  size: string;
+}
+
+const getGenImage = async (payload: GemImagePayload) => {
+
+  const response = await fetch("/api/gen-image/", {
+    method: 'post',
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+
+  if (response.ok) {
+    const body = await response.json()
+    console.log("XXX response, ", body)
+    //const file = body.data[0].url
+    const file = body.data[0].b64_json
+    // @ts-ignore
+    console.log("XXX url", body.data)
+    // upload files
+    const { data, error } = await uploadImage(payload.item, payload.size, file)
+    console.log("data", data)
+    if (error) {
+      console.log("Failed to upload", error)
+    }
+    return file;
+  } else {
+    throw new Error(`Error: ${response.text()}`);
+  }
+}
+
 const Drawing = (_: any) => {
   const backgroundColor = '#ffffff'
   const canvasRef = useRef(null);
@@ -198,28 +231,19 @@ const Drawing = (_: any) => {
     setLoading(true)
     try {
       const animals = ["rabbit", "fox", "cat", "elephant", "dog", "bird", "bear", "lion", "tiger", "penguin", "panda", "koala", "monkey", "squirrel", "deer", "wolf", "zebra", "giraffe", "hippo", "rhino", "kangaroo", "crocodile", "snake", "turtle", "frog", "fish", "shark", "whale", "dolphin", "octopus", "crab", "lobster"];
-      const payload = {
-        "item": animals[Math.floor(Math.random() * animals.length)],
-        "size": "512x512"
+      const item = animals[Math.floor(Math.random() * animals.length)]!
+      const size = '512x512'
+      const payload: GemImagePayload = {
+        "item": item,
+        "size": size,
       };
 
-      const response = await fetch("/api/gen-image/", {
-        method: 'post',
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      })
+      console.log("select item", item)
+      const file = await selectImage(item) || await getGenImage(payload)
 
-      if (response.ok) {
-        const body = await response.json()
-        console.log("XXX response, ", body)
-        // @ts-ignore
-        console.log("XXX url", body.data[0].url)
-        clearCanvas(canvasRef.current!);
-        // @ts-ignore
-        await bgRef.current.setImage([body.data[0].url]);
-        return;
-      }
-      throw new Error(`Error: ${response.text()}`);
+      clearCanvas(canvasRef.current!);
+      // @ts-ignore
+      await bgRef.current.setImage(["data:image/png;base64," + file]);
     } catch (err) {
       //setError(`${err}`);
       console.log("error", err)
