@@ -10,7 +10,7 @@ import ColorSelector from "@/components/drawing/ColorSelector";
 import TabLayout from "@/components/drawing/TabLayout";
 import Head from "next/head";
 import { dateNumber } from "@/mentalcare/lib/date-number";
-import { downloadCanvasAsPng } from "@/components/drawing/canvasHelper";
+import { clearCanvas, downloadCanvasAsPng } from "@/components/drawing/canvasHelper";
 
 
 const EDGE_THRESHOLD = 20;
@@ -215,6 +215,7 @@ const Drawing = (_: any) => {
         // @ts-ignore
         console.log("XXX url", body.data[0].url)
         // @ts-ignore
+        clearCanvas(canvasRef.current!);
         await bgRef.current.setImage([body.data[0].url]);
         return;
       }
