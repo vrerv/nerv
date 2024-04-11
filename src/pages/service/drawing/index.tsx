@@ -214,8 +214,8 @@ const Drawing = (_: any) => {
         console.log("XXX response, ", body)
         // @ts-ignore
         console.log("XXX url", body.data[0].url)
-        // @ts-ignore
         clearCanvas(canvasRef.current!);
+        // @ts-ignore
         await bgRef.current.setImage([body.data[0].url]);
         return;
       }
