@@ -1,0 +1,137 @@
+---
+title: Google 시트에서 초기데이터 로딩하기
+date: '2024-07-01'
+tags: ['google-sheets', 'fixture', 'automation', "csv", "opencsv", "spring-data-jpa", "google-sheet-api"]
+draft: false
+summary: 'Google 시트로 테이블의 초기데이터를 관리하고, 로딩하는 방법을 알아 본다.'
+authors: ['default']
+---
+
+어플리케이션의 초기데이터는 초기화 `sql file` 이나 `json` 등의 파일로 어플리케이션에 포함되어, 어플리케이션이 시작될때 데이터베이스에 로딩되어 사용된다.
+물론 복잡한 어플리케이션과 시스템에서는 데이터베이스를 구축하는 프로세스 자체가 분리되어 관리될 수 도 있지만,
+여기서는 소규모에서 간단하게 서버 어플리케이션 초기 데이터를 구글 시트로 부터 로딩하는 방법을 알아본다.
+
+어플리케이션에서 초기데이터란 어플리케이션의 사용에 있어서 필수적으로 존재해야 하는 값들이다.
+이런 값들은 보통 비지니스 로직에 의해 결정되므로, 소프트웨어 엔지니어가 아닌 비지니스 담당자가 관리하고 수정할 수 있어야 한다.
+이런 경우에 구글 시트를 사용하면, 비지니스 담당자가 쉽게 데이터를 수정하고, 엔지니어는 구글 시트로 부터 데이터를 로딩하여 사용할 수 있다.
+
+`Google Sheet API` 를 사용하여 우리는 구글 시트의 특정 영역의 값을 가져와서 `DB` 에 넣을수 있다.
+이때 이 값을 매번 구글 시트로부터 불러오는 것이 아니라, 빌드시 한번 `CSV` 파일로 다운로드한 다음, 패키지에 포함하여 어플리케이션 구동에 사용하면 더 효율적으로 사용할 수 있다.
+
+## 구글 시트 생성및 설정
+
+`Google Sheet` 를 하나 만들고 다음 데이터를 넣는다고 하자
+
+| account   | email |
+|-----------|-------|
+| user1     | user1@vrerv.com |
+| user2     | user2@vrerv.com |
+
+참고로 우리는 구글 시트의 특정 영역만을 다운로드 할 수 있으므로, 위의 몇 행에 우리의 비지니스 담당자를 위해 시트의 사용법을 기술할 수도 있다.
+
+## Google Sheet API 설정
+
+구글 시트를 다운로드 하기 위해서는 구글 시트 API 를 사용해야 한다.
+구글 시트 API 를 사용하기 위해서는 구글 클라우드 플랫폼에서 프로젝트를 생성하고, 서비스 계정을 생성하여 인증키를 발급받아야 한다.
+
+1. [Google Cloud Console](https://console.cloud.google.com/) 에서 프로젝트를 생성한다.
+2. 프로젝트를 선택하고, `API 및 서비스` -> `대시보드` 에서 `Google Sheets API` 를 활성화 한다.
+3. `사용자 인증 정보` -> `서비스 계정` 에서 서비스 계정을 생성한다.
+4. 생성된 서비스 계정의 키(JSON File)를 다운로드 받는다.
+5. 생성된 서비스 계정의 이메일을 구글 시트에 공유한다. 우리는 단순히 다운로드만 할 것이므로 뷰어 권한만 주면 충분하다.
+
+## 구글 시트를 CSV 로 다운로드
+
+구글 시트를 간단하게 빌드시 다운로드 하기 위해 [Gradle G Sheet Download Plugin](https://plugins.gradle.org/plugin/com.vrerv.gradle.plugin.gsheet.download) 을 사용한다.
+해당 플러그인은 gradle 빌드에서 구글 시트를 다운로드하여 CSV 파일로 저장할 수 있게 해준다.
+구글 서비스 인증키 파일을 환경변수 `GOOGLE_APPLICATION_CREDENTIALS` 로 설정하거나, 플러그인의 `googleApplicationCredentials` 설정에 직접지정할 수도 있다.
+
+build.gradle:
+
+```groovy
+import com.vrerv.gradle.plugin.gsheet.download.DownloadConfig
+import com.vrerv.gradle.plugin.gsheet.download.GSheetDownloadTask
+
+plugins {
+	id "com.vrerv.gradle.plugin.gsheet.download" version "0.1.4"
+}
+
+gsheetDownloadConfig {
+
+	googleApplicationCredentials = System.getenv("GOOGLE_APPLICATION_CREDENTIALS_2")
+	outputDir = file("src/main/resources/fixture")
+	downloads = [
+	        new DownloadConfig(
+					"1k8ezAzSKj22WBG31EMGvMfVq5tnZXQvT6ZDoP0Vv1vk",
+					"Sheet1",
+					"A2",
+					"B10",
+					"users.csv"
+			)
+	]
+}
+
+// download google sheet before classes task
+tasks.named("classes") {
+	dependsOn tasks.withType(GSheetDownloadTask.class)
+}
+
+```
+
+## 구글 시트를 로딩하여 데이터 초기화
+
+`opencsv` 라이브러리를 사용하여 다운로드된 `CSV` 파일을 파싱하고, 데이터베이스에 저장한다.
+
+라이브러리 의존성을 설정한다.
+
+```groovy
+implementation('com.opencsv:opencsv:5.8')
+```
+
+아래는 `Spring Data JPA `를 사용하는 경우의 예제이다.
+
+```java
+@Slf4j
+@RequiredArgsConstructor
+@Transactional
+@Component
+public class UserFixture {
+
+	private final UserRepo userRepository;
+
+	@Data
+	@Builder
+	@AllArgsConstructor
+	@NoArgsConstructor
+	public static class UserCsv {
+		@CsvBindByName(column = "account")
+		private String account;
+		@CsvBindByName(column = "email")
+		private String email;
+	}
+
+	@PostConstruct
+	public void init() {
+		if (userRepository.count() > 0) {
+			return;
+		}
+
+		try (Reader reader = new InputStreamReader(new ClassPathResource("fixture/users.csv").getInputStream())) {
+			CsvToBean<UserCsv> csvToBean = new CsvToBeanBuilder<UserCsv>(reader)
+					.withType(UserCsv.class)
+					.build();
+			List<User> users = csvToBean.parse().stream()
+					.map(it -> User.builder().account(it.getAccount()).password("1234").build())
+					.collect(Collectors.toList());
+			userRepository.saveAll(users);
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+}
+```
+
+## 예제 소스
+
+[Sample Source](https://github.com/sh1nj1/springboot-template/commit/daf155312f6ad872f566f4bba6a2f7e2e060b783)
