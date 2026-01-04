@@ -40,6 +40,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # dotenv local files
+.env
 .env*.local
 
 # local folder
@@ -55,4 +56,3 @@ local
 /public/sw.js.map
 /public/workbox-*.js
 /public/workbox-*.js.map
-
