@@ -16,7 +16,7 @@ import { MentalCareHeader } from "@/mentalcare/components/header";
 import { Input } from "@/components/ui/input";
 import { createRoutine, listChallenges, listPeriods } from "@/mentalcare/lib/api";
 
-const MainPage = ({locale}: { locale: string; }) => {
+const MainPage = ({ locale }: { locale: string; }) => {
 
   const router = useRouter()
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
@@ -27,11 +27,13 @@ const MainPage = ({locale}: { locale: string; }) => {
     listPeriods().then(r => {
       const { data, error } = r;
       if (error) throw error
+      // @ts-ignore
       setPeriods(data?.map(it => it as Period) || [])
     })
     listChallenges().then(r => {
       const { data, error } = r;
       if (error) throw error
+      // @ts-ignore
       setChallenges(data?.map(it => it as Challenge) || [])
     })
   }, []);
@@ -58,7 +60,7 @@ const MainPage = ({locale}: { locale: string; }) => {
     })
   }
 
-  const handleNameChange = (event:any) => {
+  const handleNameChange = (event: any) => {
     setRoutine({
       ...routine,
       name: event.target.value
@@ -91,71 +93,71 @@ const MainPage = ({locale}: { locale: string; }) => {
 
   return <>
     <div className={'flex flex-col items-start p-0'}>
-    <TabLayout control={
-      () => <>
-        <div className="p-2"><button onClick={handleCancel}>Cancel</button></div>
-        <div className="p-2"><button onClick={() => setSelectedTabIndex(selectedTabIndex - 1) }>이전</button></div>
-        <div className="p-2"><button onClick={handleNext}>{selectedTabIndex === STEP_END ? '시작' : '다음'}</button></div>
-      </>
-    } >
-      <>
-        <div className={'w-full h-full'}>
-          <MentalCareHeader locale={locale} />
-          <main className={'p-4'}>
+      <TabLayout control={
+        () => <>
+          <div className="p-2"><button onClick={handleCancel}>Cancel</button></div>
+          <div className="p-2"><button onClick={() => setSelectedTabIndex(selectedTabIndex - 1)}>이전</button></div>
+          <div className="p-2"><button onClick={handleNext}>{selectedTabIndex === STEP_END ? '시작' : '다음'}</button></div>
+        </>
+      } >
+        <>
+          <div className={'w-full h-full'}>
+            <MentalCareHeader locale={locale} />
+            <main className={'p-4'}>
 
-        {selectedTabIndex === 0 && <div>
-          당신의 몸과 마음의 건강을 위해 매일의 루틴을 설정하고 시작해보세요.
-        </div>}
-        {selectedTabIndex === 1 && <div>
+              {selectedTabIndex === 0 && <div>
+                당신의 몸과 마음의 건강을 위해 매일의 루틴을 설정하고 시작해보세요.
+              </div>}
+              {selectedTabIndex === 1 && <div>
 
-          <h2 className={"pb-2"}>루틴 생성 - 주기 설정</h2>
-          <label
-            htmlFor={'name'}
-            className="leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          >
-            Name
-          </label>
-          <Input id={'name'} value={routine.name} onChange={handleNameChange} />
-            <RadioGroup>
-              <ul>
-            {periods.map((period) => <li key={period.name}>
-              <div className="flex items-center space-x-2 p-1">
-                <RadioGroupItem id={period.name} value={period.name} onClick={handlePeriod(period)} />
+                <h2 className={"pb-2"}>루틴 생성 - 주기 설정</h2>
                 <label
-                  htmlFor={period.name}
+                  htmlFor={'name'}
                   className="leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  {period.name}
+                  Name
                 </label>
-              </div>
-            </li>)}
-              </ul>
-            </RadioGroup>
-        </div>}
-          {selectedTabIndex === 2 && <div>
-            <h2 className={"pb-2"}>루틴 생성 - 도전 설정</h2>
-              <ul>
-                {challenges.map((challenge) => <li key={challenge.code}>
-                  <div className="flex items-center space-x-2 p-1">
-                    <Checkbox id={challenge.code} onCheckedChange={handleChallenge(challenge)} />
-                    <label
-                      htmlFor={challenge.code}
-                      className="leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {challenge.name}
-                    </label>
-                  </div>
-                </li>)}
-              </ul>
-          </div>}
-          {selectedTabIndex === 3 && <div>
-            <h2>루틴 생성 - 이름</h2>
-              <input name="name" type="text" minLength={1} maxLength={32} />
-          </div>}
-          </main>
-        </div>
-      </>
-    </TabLayout>
+                <Input id={'name'} value={routine.name} onChange={handleNameChange} />
+                <RadioGroup>
+                  <ul>
+                    {periods.map((period) => <li key={period.name}>
+                      <div className="flex items-center space-x-2 p-1">
+                        <RadioGroupItem id={period.name} value={period.name} onClick={handlePeriod(period)} />
+                        <label
+                          htmlFor={period.name}
+                          className="leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {period.name}
+                        </label>
+                      </div>
+                    </li>)}
+                  </ul>
+                </RadioGroup>
+              </div>}
+              {selectedTabIndex === 2 && <div>
+                <h2 className={"pb-2"}>루틴 생성 - 도전 설정</h2>
+                <ul>
+                  {challenges.map((challenge) => <li key={challenge.code}>
+                    <div className="flex items-center space-x-2 p-1">
+                      <Checkbox id={challenge.code} onCheckedChange={handleChallenge(challenge)} />
+                      <label
+                        htmlFor={challenge.code}
+                        className="leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {challenge.name}
+                      </label>
+                    </div>
+                  </li>)}
+                </ul>
+              </div>}
+              {selectedTabIndex === 3 && <div>
+                <h2>루틴 생성 - 이름</h2>
+                <input name="name" type="text" minLength={1} maxLength={32} />
+              </div>}
+            </main>
+          </div>
+        </>
+      </TabLayout>
     </div>
   </>
 }

@@ -7,7 +7,7 @@ import { visit } from 'unist-util-visit'
 import getAllFilesRecursively from './utils/files'
 // Remark packages
 import remarkGfm from 'remark-gfm'
-import remarkFootnotes from 'remark-footnotes'
+
 import remarkMath from 'remark-math'
 import remarkExtractFrontmatter from './remark-extract-frontmatter'
 import remarkCodeTitles from './remark-code-title'
@@ -71,7 +71,7 @@ export async function getFileBySlug(type, slug, locale = '') {
         [remarkTocHeadings, { exportRef: toc }],
         remarkGfm,
         remarkCodeTitles,
-        [remarkFootnotes, { inlineNotes: true }],
+
         remarkMath,
         remarkImgToJsx,
       ]

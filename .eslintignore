@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+public
+build
+dist
+*.log
+coverage
+*-lottie.json

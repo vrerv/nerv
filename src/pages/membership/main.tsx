@@ -25,14 +25,14 @@ export async function getStaticProps({ locale }: { locale: any }) {
     },
   }
 }
-const MainPage = ({locale}: { locale: string; }) => {
+const MainPage = ({ locale }: { locale: string; }) => {
 
   const [selectedTabIndex, _] = useState(0);
   const router = useRouter();
   const { t } = useTranslation('common')
   console.log("locale", locale)
   // TODO: login 여부 확인후 로그인 되어 있으면 멤버쉽 메인으로 이동
-  const [user, _setUser ] = useAtom(userAtom)
+  const [user, _setUser] = useAtom(userAtom)
   const [services, setServices] = useState<Service[]>([])
   const [error, setError] = useState('')
 
@@ -44,6 +44,7 @@ const MainPage = ({locale}: { locale: string; }) => {
     const fn = async () => {
       const { data, error } = await listServices();
       if (data) {
+        // @ts-ignore
         setServices(data?.map(it => it as Service) || [])
       }
       if (error) {
@@ -63,34 +64,34 @@ const MainPage = ({locale}: { locale: string; }) => {
   }
 
   return <div className={'flex flex-col items-start p-0'}>
-      <TabLayout control={
-        () => <>
-          <div className="p-2"><Button variant={'link'} onClick={handleHome}>{t('home')}</Button></div>
-          <div className={"flex-grow"} />
-          <div className="p-2"><Button variant={"default"}
-                                       onClick={() => router.push("/membership/auth/update-password")}>{t("updatePassword")}</Button>
+    <TabLayout control={
+      () => <>
+        <div className="p-2"><Button variant={'link'} onClick={handleHome}>{t('home')}</Button></div>
+        <div className={"flex-grow"} />
+        <div className="p-2"><Button variant={"default"}
+          onClick={() => router.push("/membership/auth/update-password")}>{t("updatePassword")}</Button>
+        </div>
+        <div className="p-2"><Button variant={"default"}
+          onClick={() => handleSignout()}>{t("logout")}</Button>
+        </div>
+      </>
+    } >
+      <>
+        {selectedTabIndex === 0 && <div className={'w-full h-full p-4'}>
+          <h1 className="text-2xl">{t('services')}</h1>
+          <div className="inline-flex items-baseline w-full pt-4">
+            {t('servicesDescription')}
           </div>
-          <div className="p-2"><Button variant={"default"}
-                                       onClick={() => handleSignout()}>{t("logout")}</Button>
+          <div className="flex flex-col items-center w-full pt-4">
+            <ul>
+              {services.map((service) => <li key={service.name}><Link href={service.url}>{service.name}</Link></li>)}
+            </ul>
+            {error && <span className="text-red-500">{error}</span>}
           </div>
-        </>
-      } >
-        <>
-          {selectedTabIndex === 0 && <div className={'w-full h-full p-4'}>
-            <h1 className="text-2xl">{t('services')}</h1>
-            <div className="inline-flex items-baseline w-full pt-4">
-              {t('servicesDescription')}
-            </div>
-            <div className="flex flex-col items-center w-full pt-4">
-              <ul>
-                {services.map((service) => <li key={service.name}><Link href={service.url}>{service.name}</Link></li>)}
-              </ul>
-              {error && <span className="text-red-500">{error}</span>}
-            </div>
-          </div>}
-        </>
-      </TabLayout>
-    </div>
+        </div>}
+      </>
+    </TabLayout>
+  </div>
 }
 
 export default MainPage

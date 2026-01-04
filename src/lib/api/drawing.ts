@@ -16,7 +16,7 @@ export function uuid() {
   })
 }
 
-export const uploadImage = async(item: string, size: string, file: string) => {
+export const uploadImage = async (item: string, size: string, file: string) => {
 
   const path = `private/${item}-${size}-${uuid()}.png`
   const res = await supabase.storage
@@ -46,6 +46,7 @@ export const selectImage = async (keyword: string) => {
   const images = await supabase
     .from('drawing-images')
     .select('*')
+    // @ts-ignore
     .eq('keywords', keyword)
 
   const { data, error } = images

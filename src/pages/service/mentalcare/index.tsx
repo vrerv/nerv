@@ -43,7 +43,7 @@ export async function getStaticProps({ locale }: { locale: any }) {
   }
 }
 
-const IndexPage = ({locale}: { locale: string; }) => {
+const IndexPage = ({ locale }: { locale: string; }) => {
 
   const router = useRouter();
   const [user, setUser] = useAtom(userAtom)
@@ -122,6 +122,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
     listChallenges().then(r => {
       const { data, error } = r;
       if (error) throw error
+      // @ts-ignore
       setChallenges(data?.map(it => it as Challenge) || [])
       fetchRoutines().then()
     })
@@ -151,7 +152,7 @@ const IndexPage = ({locale}: { locale: string; }) => {
     }
   }
 
-  const handleSelectRoutine = async (id:string) => {
+  const handleSelectRoutine = async (id: string) => {
     const routine = routines.find(r => `${r.id}` === id)
     setRoutine(routine)
   }
@@ -169,68 +170,68 @@ const IndexPage = ({locale}: { locale: string; }) => {
 
   return <>
     <div className={'flex flex-col items-start p-0'}>
-    <TabLayout control={
-      () => <>
-        <div className="p-2"><button onClick={handleHome}>Home</button></div>
-        <div className={"flex-grow"} />
-        <div className="p-2"><button onClick={handleGoCalendar}><CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></button></div>
-        <div className="p-2"><button onClick={handleNewRoutine}>New</button></div>
-        <div className="p-2"><button onClick={handleEditMode}>{editMode ? 'Done' : 'Edit'}</button></div>
-        <div className="p-2"><button onClick={handleDelete}>Del</button></div>
-      </>
-    } >
-      <>
-        <div className={'w-full h-full'}>
-          <MentalCareHeader locale={locale} />
-          <main className={'p-4'}>
-            {routines.length === 0 && <div>
-              오늘의 도전 목록이 없습니다
-            </div>}
-            {routine &&
-            <div className={'w-full mt-2'}>
-              <div className={'text-2xl flex mb-2'}>
-                <span>오늘의 루틴: &nbsp;</span>
-                {(!editMode) && <div className={'text-2xl'}>{`${routine?.name} ${routine?.period.name}`}</div>}
-              </div>
-              {editMode &&
-              <Select onValueChange={handleSelectRoutine} value={`${routine?.id}`}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a routine" />
-                </SelectTrigger>
-                <SelectContent>
-                  {routines.map((routine) =>
-                    <SelectItem value={`${routine.id}`}><div className={'text-xl'}>{`${routine.name} ${routine.period.name} - ${routine.id}`}</div></SelectItem>
-                  )}
-                </SelectContent>
-              </Select>}
-              {editMode && <>
-                <ul className={'mt-2 mb-2'}>
-                  {challenges.filter(ch => !routine?.challenges?.find(c => c === ch.code)).map((challenge) => <li key={challenge.code}>
-                    <div className="flex items-center space-x-2 p-1">
-                      <Checkbox id={challenge.code} onCheckedChange={handleChallenge(routine?.id || 0, challenge)} />
-                      <label
-                        htmlFor={challenge.code}
-                        className="leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {challenge.name}
-                      </label>
-                    </div>
-                  </li>)}
-                </ul>
-              </>}
-              <>
-                {routine?.challenges?.map((challenge) =>
-                <div key={`${routine.id}/${challenge}`} className={'flex justify-between text-xl w-full' + `${isCompleted(challenge) ? ' bg-green-500': ''}`}>
-                  <Link href={`/service/mentalcare/challenge/${challenge}`}>{challenges.find(it => it.code === challenge)?.name}</Link>
-                  {editMode && <Button type={'button'} variant={'outline'} size={'sm'} onClick={handleRemoveChallenge(routine.id, challenge)}>Remove</Button>}
-                </div>)}
-              </>
-            </div>
-            }
-          </main>
-        </div>
-      </>
-    </TabLayout>
+      <TabLayout control={
+        () => <>
+          <div className="p-2"><button onClick={handleHome}>Home</button></div>
+          <div className={"flex-grow"} />
+          <div className="p-2"><button onClick={handleGoCalendar}><CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></button></div>
+          <div className="p-2"><button onClick={handleNewRoutine}>New</button></div>
+          <div className="p-2"><button onClick={handleEditMode}>{editMode ? 'Done' : 'Edit'}</button></div>
+          <div className="p-2"><button onClick={handleDelete}>Del</button></div>
+        </>
+      } >
+        <>
+          <div className={'w-full h-full'}>
+            <MentalCareHeader locale={locale} />
+            <main className={'p-4'}>
+              {routines.length === 0 && <div>
+                오늘의 도전 목록이 없습니다
+              </div>}
+              {routine &&
+                <div className={'w-full mt-2'}>
+                  <div className={'text-2xl flex mb-2'}>
+                    <span>오늘의 루틴: &nbsp;</span>
+                    {(!editMode) && <div className={'text-2xl'}>{`${routine?.name} ${routine?.period.name}`}</div>}
+                  </div>
+                  {editMode &&
+                    <Select onValueChange={handleSelectRoutine} value={`${routine?.id}`}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a routine" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {routines.map((routine) =>
+                          <SelectItem key={routine.id} value={`${routine.id}`}><div className={'text-xl'}>{`${routine.name} ${routine.period.name} - ${routine.id}`}</div></SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>}
+                  {editMode && <>
+                    <ul className={'mt-2 mb-2'}>
+                      {challenges.filter(ch => !routine?.challenges?.find(c => c === ch.code)).map((challenge) => <li key={challenge.code}>
+                        <div className="flex items-center space-x-2 p-1">
+                          <Checkbox id={challenge.code} onCheckedChange={handleChallenge(routine?.id || 0, challenge)} />
+                          <label
+                            htmlFor={challenge.code}
+                            className="leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            {challenge.name}
+                          </label>
+                        </div>
+                      </li>)}
+                    </ul>
+                  </>}
+                  <>
+                    {routine?.challenges?.map((challenge) =>
+                      <div key={`${routine.id}/${challenge}`} className={'flex justify-between text-xl w-full' + `${isCompleted(challenge) ? ' bg-green-500' : ''}`}>
+                        <Link href={`/service/mentalcare/challenge/${challenge}`}>{challenges.find(it => it.code === challenge)?.name}</Link>
+                        {editMode && <Button type={'button'} variant={'outline'} size={'sm'} onClick={handleRemoveChallenge(routine.id, challenge)}>Remove</Button>}
+                      </div>)}
+                  </>
+                </div>
+              }
+            </main>
+          </div>
+        </>
+      </TabLayout>
     </div>
   </>
 }
