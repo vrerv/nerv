@@ -3,13 +3,15 @@ import { supabase } from '@/lib/api/base';
 import { Routine, UserChallenge } from "@/mentalcare/states";
 import { dateNumber } from "@/mentalcare/lib/date-number";
 
-export const listChallenges = async () =>  {
+export const listChallenges = async () => {
   return supabase.from('challenges').select()
 }
 
 export const getRoutineDay = async (date: number) => {
   return supabase.from('routine_days').select()
+    // @ts-ignore
     .eq('date', date)
+    // @ts-ignore
     .eq('owner_id', await getUserId())
     .single()
 }
@@ -36,21 +38,23 @@ export const listRoutines = async () => {
     period:periods (id, name, weeks, is_holiday),
     challenges
   `)
+    // @ts-ignore
     .eq('owner_id', await getUserId())
 }
 
 export const createRoutine = async (input: Routine) => {
-  const { id, period, ...data} = {...input, period_id: input.period.id}
+  const { id, period, ...data } = { ...input, period_id: input.period.id }
   // @ts-ignore
-  await supabase.from("routines").insert({...data, owner_id: await getUserId()})
+  await supabase.from("routines").insert({ ...data, owner_id: await getUserId() })
 }
 
 export const deleteRoutine = async (id: number) => {
+  // @ts-ignore
   return supabase.from("routines").delete().eq('id', id)
 }
 
 export const updateRoutine = async (input: Routine) => {
-  const { period, ...data} = {...input, period_id: input.period.id}
+  const { period, ...data } = { ...input, period_id: input.period.id }
   // @ts-ignore
   await supabase.from("routines").update(data).eq('id', data.id)
 }
@@ -58,13 +62,16 @@ export const updateRoutine = async (input: Routine) => {
 export const listChallengeRecords = async (code: string, date: number) => {
 
   return supabase.from("challenge_records").select()
+    // @ts-ignore
     .eq('challenge_code', code)
+    // @ts-ignore
     .eq('date', date)
+    // @ts-ignore
     .eq('owner_id', await getUserId())
 }
 
 export const updateChallengeRecords = async (input: UserChallenge) => {
-  const data = {...input, challenge_code: input.challenge_code, owner_id: await getUserId()}
+  const data = { ...input, challenge_code: input.challenge_code, owner_id: await getUserId() }
 
   // @ts-ignore
   await supabase.from("challenge_records").upsert(data)

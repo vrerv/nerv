@@ -70,4 +70,6 @@ const ImageCanvas = forwardRef(({ dimensions, hidden, alpha = 1.0 }, ref) => {
   );
 });
 
+ImageCanvas.displayName = 'ImageCanvas';
+
 export default ImageCanvas;

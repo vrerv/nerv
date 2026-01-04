@@ -2,8 +2,12 @@ import React, { useEffect, useState } from "react";
 import WordBuilder from '@/learn/components/WordBuilder'; // 이 컴포넌트는 아래에서 구현됩니다.
 import TextToSpeech from "../../../learn/components/TtsContainer";
 import { evalLetters, letterfyAll } from "../../../learn/lib/hangul";
-import { LottieAnimation } from "@/learn/components/LottieAnimation";
+import dynamic from 'next/dynamic';
 
+const LottieAnimation = dynamic(
+  () => import('@/learn/components/LottieAnimation').then((mod) => mod.LottieAnimation),
+  { ssr: false }
+);
 
 /**
  * element should not be overlayed with other elements
@@ -52,7 +56,7 @@ const words = [
   "하마", "꼬리", "머리띠", "뿌리", "씨소", "찌게", "개나리", "게다리", "야호", "여자", "요리", "우유", "크다"
 ]
 
-const fontFamily =  'Nanum Gothic'
+const fontFamily = 'Nanum Gothic'
 const textSize = 96
 
 const elementsFromChars = (container, word) => {
@@ -100,8 +104,8 @@ function App() {
   const [text, setText] = useState(`"${words[index]}" 글자를 만드세요`)
   const [loading, setLoading] = useState(false)
   const [layout, setLayout] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight - 240,
+    width: typeof window !== 'undefined' ? window.innerWidth : 1024,
+    height: typeof window !== 'undefined' ? window.innerHeight - 240 : 768,
     elements: []
   })
   const [currentWord, setCurrentWord] = useState("")
@@ -140,7 +144,7 @@ function App() {
   useEffect(() => {
 
     speechSynthesis.cancel()
-    setLayout({...layout, elements: elementsFromChars(layout, words[index])})
+    setLayout({ ...layout, elements: elementsFromChars(layout, words[index]) })
     setText(`"${words[index]}" 글자를 만드세요`)
     setLoading(false)
   }, [index]);
@@ -149,13 +153,13 @@ function App() {
     <>
       <TextToSpeech text={currentWord} />
       <TextToSpeech text={text}>
-        {({onClick}) => <button style={{padding: 20, fontSize: 32}} onClick={onClick}>{text}</button>}
+        {({ onClick }) => <button style={{ padding: 20, fontSize: 32 }} onClick={onClick}>{text}</button>}
       </TextToSpeech>
-      <div style={{background: '#ffffff'}}>
+      <div style={{ background: '#ffffff' }}>
         {loading && <LottieAnimation width={layout.width} />}
         <WordBuilder layout={layout} setLayout={setLayout} onChange={handleOnChange} />
       </div>
-      <button style={{padding: 20, fontSize: 32}} onClick={handleNext} disabled={loading}>다음 글자</button>
+      <button style={{ padding: 20, fontSize: 32 }} onClick={handleNext} disabled={loading}>다음 글자</button>
     </>
   );
 }
