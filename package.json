@@ -18,7 +18,7 @@
     "cypress:headless": "cypress run",
     "e2e": "start-server-and-test dev http://localhost:3000 cypress",
     "e2e:headless": "start-server-and-test dev http://localhost:3000 cypress:headless",
-    "prepare": "cd .. && husky install front/.husky",
+    "prepare": "husky install",
     "postbuild": "next-sitemap",
     "deploy": "touch out/.nojekyll && gh-pages -d out --dotfiles"
   },
