@@ -10,7 +10,7 @@ import { useTranslation } from 'next-i18next';
 
 type IMainProps = {
   meta: ReactNode;
-  children: ReactNode;
+  children?: ReactNode;
 };
 
 const Main = (props: IMainProps) => {
@@ -36,11 +36,11 @@ const Main = (props: IMainProps) => {
       {props.meta}
       <div className="pt-16" />
       <div className="py-0 text-xl max-w-full">
-          <div className="flex justify-center items-center w-full">
-            <div className="bg-bg-100 dark:bg-bg-900 w-full md:w-2/3 lg:w-1/2">
-              {props.children}
-            </div>
+        <div className="flex justify-center items-center w-full">
+          <div className="bg-bg-100 dark:bg-bg-900 w-full md:w-2/3 lg:w-1/2">
+            {props.children}
           </div>
+        </div>
       </div>
       <div className="pt-16" />
       <div className="py-5 text-lg md:text-xl w-full">
@@ -50,19 +50,19 @@ const Main = (props: IMainProps) => {
               <ul className="flex h-16 items-center sm:space-x-2">
                 <li className="flex-grow flex-shrink pl-4">
                   <Image src={logoImage}
-                         alt={AppConfig.title} width={24} height={24}
-                         className="cursor-pointer"
-                         onClick={toggleTheme} />
+                    alt={AppConfig.title} width={24} height={24}
+                    className="cursor-pointer"
+                    onClick={toggleTheme} />
                 </li>
                 <li className="flex-grow flex-shrink"><Link href="/hello"
-                                                            className="block px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">{t('hello')}</Link>
+                  className="block px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">{t('hello')}</Link>
                 </li>
                 <li className="flex-grow flex-shrink"><Link href="/blog"
-                                                            className="px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">{t('blog')}</Link>
+                  className="px-4 py-2 hover:bg-gray-200 no-underline text-decoration-none">{t('blog')}</Link>
                 </li>
                 <li className="flex-grow flex-shrink"><Link href="/membership"
-                                                            className="block px-4 py-2 hover:bg-gray-200 no-underline"><i
-                  className="fab fa-github mr-2"></i>{t('membership')}</Link></li>
+                  className="block px-4 py-2 hover:bg-gray-200 no-underline"><i
+                    className="fab fa-github mr-2"></i>{t('membership')}</Link></li>
                 {/*
                       <li className="flex-grow flex-shrink"><a href="#services" className="px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">도전</a></li>
                       <li className="flex-grow flex-shrink"><a href="#contact" className="px-4 py-2 hover:bg-gray-800 no-underline text-decoration-none">문의하기</a></li>
