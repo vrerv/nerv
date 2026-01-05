@@ -108,7 +108,7 @@ const WordBuilder = ({ layout, setLayout, onChange }) => {
 
   return (
 
-    <Stage width={deviceWidth} height={cardHeight + 48} style={{ border: "1px solid #cccccc" }}
+    <Stage width={deviceWidth} height={cardHeight + 48} style={{ border: "1px solid #cccccc", touchAction: "none", overscrollBehaviorX: "none" }}
       onMouseDown={checkDeselect}
       onTouchStart={checkDeselect}>
       <Layer>
