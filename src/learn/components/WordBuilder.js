@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Layer, Stage } from "react-konva";
 import Element from "./CardLayoutElement";
 
-const WordBuilder = ({layout, setLayout, onChange}) => {
+const WordBuilder = ({ layout, setLayout, onChange }) => {
 
   const DEFAULT_BASE = 0
   const isShow = false;
@@ -28,7 +28,7 @@ const WordBuilder = ({layout, setLayout, onChange}) => {
     layout?.elements?.map((element, index) => {
       element.x = twoDecimalTrunc(element.x * rw)
       element.y = twoDecimalTrunc(element.y * rw)
-      if (element.type === 'BG_IMAGE' ) {
+      if (element.type === 'BG_IMAGE') {
         element.width = twoDecimalTrunc(cardWidth)
         element.height = twoDecimalTrunc(nHeight)
       } else {
@@ -108,9 +108,9 @@ const WordBuilder = ({layout, setLayout, onChange}) => {
 
   return (
 
-    <Stage width={deviceWidth} height={cardHeight + 48} style={{border: "1px solid #cccccc"}}
-           onMouseDown={checkDeselect}
-           onTouchStart={checkDeselect}>
+    <Stage width={deviceWidth} height={cardHeight + 48} style={{ border: "1px solid #cccccc" }}
+      onMouseDown={checkDeselect}
+      onTouchStart={checkDeselect}>
       <Layer>
         {layout?.elements?.map((element, index) => (
           <Element
