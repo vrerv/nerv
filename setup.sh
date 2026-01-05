@@ -1,4 +1,5 @@
-yum install wget
+set -e
+yum install -y wget
 
 wget https://github.com/NixOS/patchelf/archive/refs/tags/0.17.0.tar.gz
 tar -xf 0.17.0.tar.gz
