@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>🎮 인형뽑기 Physics</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; -webkit-tap-highlight-color: transparent; }
+        html, body { width: 100%; height: 100%; overflow: hidden; position: fixed; background: #1a1a2e; font-family: system-ui, sans-serif; }
+        #canvas { display: block; width: 100%; height: 100%; }
+        
+        .ui-top { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; z-index: 100; padding-top: env(safe-area-inset-top); }
+        .stat-box { background: rgba(0,0,0,0.8); padding: 8px 15px; border-radius: 20px; border: 2px solid #ffd700; color: #fff; font-weight: bold; }
+        .stat-box span { color: #00ffff; }
+        
+        /* 상태 표시 */
+        .status-display { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); padding: 10px 20px; border-radius: 15px; border: 2px solid #00ff00; color: #00ff00; font-size: 1rem; font-weight: bold; z-index: 100; opacity: 0; transition: opacity 0.2s; text-align: center; }
+        .status-display.visible { opacity: 1; }
+        .status-display.warning { border-color: #ffaa00; color: #ffaa00; }
+        .status-display.danger { border-color: #ff4444; color: #ff4444; }
+        
+        /* 그립력 게이지 */
+        .grip-display { position: fixed; top: 120px; left: 50%; transform: translateX(-50%); width: 200px; z-index: 100; opacity: 0; transition: opacity 0.3s; }
+        .grip-display.visible { opacity: 1; }
+        .grip-label { color: #fff; font-size: 0.8rem; text-align: center; margin-bottom: 5px; }
+        .grip-bar { height: 12px; background: #222; border-radius: 6px; overflow: hidden; border: 1px solid #444; }
+        .grip-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ff4444, #ffaa00, #00ff00); transition: width 0.1s; border-radius: 6px; }
+        
+        .ui-bottom { position: fixed; bottom: 15px; left: 0; right: 0; padding: 0 15px; padding-bottom: env(safe-area-inset-bottom); z-index: 100; }
+        
+        /* 원형 파워 게이지 - 버튼을 감싸는 형태 */
+        .grab-wrapper { position: relative; width: 140px; height: 140px; }
+        .power-ring { position: absolute; top: 0; left: 0; width: 140px; height: 140px; transform: rotate(-90deg); }
+        .power-ring-bg { fill: none; stroke: #333; stroke-width: 8; }
+        .power-ring-fill { fill: none; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 408; stroke-dashoffset: 408; transition: stroke-dashoffset 0.05s linear; }
+        .power-ring-sweet { fill: none; stroke: rgba(0,255,0,0.3); stroke-width: 12; stroke-dasharray: 40.8 367.2; stroke-dashoffset: -163.2; }
+        .power-ring-marker { fill: none; stroke: #fff; stroke-width: 2; stroke-dasharray: 4 404; stroke-dashoffset: 0; }
+        
+        .controls-row { display: flex; justify-content: space-between; align-items: center; }
+        
+        .dpad { display: grid; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(3, 50px); gap: 4px; }
+        .dpad-btn { background: linear-gradient(180deg, rgba(80,80,80,0.9) 0%, rgba(40,40,40,0.95) 100%); border: 2px solid rgba(255,255,255,0.15); border-radius: 10px; color: #fff; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; }
+        .dpad-btn:active, .dpad-btn.active { background: linear-gradient(180deg, #00aaff 0%, #0066aa 100%); border-color: #00ffff; transform: scale(0.95); }
+        .dpad-btn.empty { background: transparent; border: none; }
+        
+        .grab-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; background: linear-gradient(180deg, #00dd66 0%, #00aa44 100%); border: 4px solid #00ff88; border-radius: 50%; color: #fff; font-size: 1rem; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 7px 0 #007733, 0 10px 20px rgba(0,0,0,0.4); }
+        .grab-btn:active, .grab-btn.active { transform: translate(-50%, calc(-50% + 5px)); box-shadow: 0 2px 0 #007733; background: linear-gradient(180deg, #00ff77 0%, #00cc55 100%); }
+        .grab-btn:disabled { background: linear-gradient(180deg, #555 0%, #333 100%); border-color: #666; box-shadow: 0 7px 0 #222; }
+        .grab-btn .icon { font-size: 2rem; margin-bottom: 2px; }
+        
+        .collection { position: fixed; top: 70px; right: 15px; background: rgba(0,0,0,0.8); padding: 8px 12px; border-radius: 12px; border: 2px solid #ffd700; z-index: 100; }
+        .collection-title { color: #ffd700; font-size: 0.7rem; margin-bottom: 4px; }
+        .collection-items { font-size: 1.1rem; display: flex; flex-wrap: wrap; gap: 2px; }
+        
+        .feedback { position: fixed; top: 35%; left: 50%; transform: translate(-50%, -50%); font-size: 3.5rem; font-weight: bold; pointer-events: none; z-index: 1000; animation: popFeedback 1s ease-out forwards; }
+        .feedback.perfect { color: #00ff00; text-shadow: 0 0 40px #00ff00; }
+        .feedback.good { color: #ffaa00; text-shadow: 0 0 30px #ffaa00; }
+        .feedback.fail { color: #ff4444; text-shadow: 0 0 20px #ff4444; }
+        
+        @keyframes popFeedback { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1) translateY(-50px); opacity: 0; } }
+        
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        
+        @media (max-height: 600px) { .dpad { grid-template-columns: repeat(3, 42px); grid-template-rows: repeat(3, 42px); } .grab-wrapper { width: 120px; height: 120px; } .power-ring { width: 120px; height: 120px; } .grab-btn { width: 85px; height: 85px; } }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="ui-top">
+        <div class="stat-box">🪙 <span id="coins">10</span></div>
+        <div class="stat-box">🏆 <span id="wins">0</span></div>
+    </div>
+    
+    <div class="status-display" id="status">대기 중...</div>
+    
+    <div class="grip-display" id="gripDisplay">
+        <div class="grip-label">💪 그립력: <span id="gripPercent">0</span>%</div>
+        <div class="grip-bar"><div class="grip-fill" id="gripFill"></div></div>
+    </div>
+    
+    <div class="collection">
+        <div class="collection-title">🎀 Collection</div>
+        <div class="collection-items" id="collection"></div>
+    </div>
+    
+    <div class="ui-bottom">
+        <div class="controls-row">
+            <div class="dpad" id="dpad">
+                <div class="dpad-btn empty"></div>
+                <button class="dpad-btn" data-dir="up">↑</button>
+                <div class="dpad-btn empty"></div>
+                <button class="dpad-btn" data-dir="left">←</button>
+                <div class="dpad-btn empty"></div>
+                <button class="dpad-btn" data-dir="right">→</button>
+                <div class="dpad-btn empty"></div>
+                <button class="dpad-btn" data-dir="down">↓</button>
+                <div class="dpad-btn empty"></div>
+            </div>
+            <div class="grab-wrapper">
+                <svg class="power-ring" viewBox="0 0 140 140">
+                    <!-- 배경 원 -->
+                    <circle class="power-ring-bg" cx="70" cy="70" r="65"/>
+                    <!-- 최적 구간 표시 (위쪽 = 45-55%) -->
+                    <circle class="power-ring-sweet" cx="70" cy="70" r="65"/>
+                    <!-- 12시 방향 마커 -->
+                    <circle class="power-ring-marker" cx="70" cy="70" r="65"/>
+                    <!-- 파워 게이지 -->
+                    <circle class="power-ring-fill" id="powerFill" cx="70" cy="70" r="65"/>
+                </svg>
+                <button class="grab-btn" id="grabBtn"><span class="icon">🦀</span>GRAB</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+    </script>
+    
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ═══════════════════════════════════════════
+        // 상태
+        // ═══════════════════════════════════════════
+        const state = {
+            craneX: 0, craneZ: 0,
+            coins: 24, wins: 0, // 인형 12개 × 2
+            isDropping: false, isCharging: false,
+            power: 0, powerDir: 1,
+            moveX: 0, moveZ: 0,
+            prizes: [], collection: [],
+            currentGrip: 0,
+            grabbedPrize: null,
+            phase: 'idle' // idle, descending, grabbing, ascending, releasing
+        };
+
+        const BOUNDS = { x: 2.2, z: 1.8 };
+        const GRAVITY = 0.015;
+        const BOUNCE = 0.4;
+        const FRICTION = 0.95;
+        const PRIZE_COUNT = 12;  // 인형 갯수
+
+        // ═══════════════════════════════════════════
+        // 🔊 사운드 시스템 (Web Audio API)
+        // ═══════════════════════════════════════════
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+        
+        function playTone(freq, duration, type = 'square', volume = 0.3, decay = true) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            gain.gain.value = volume;
+            if (decay) gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+        
+        function playNoise(duration, volume = 0.2) {
+            if (!audioCtx) return;
+            const bufferSize = audioCtx.sampleRate * duration;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const gain = audioCtx.createGain();
+            gain.gain.value = volume;
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 800;
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            noise.start();
+        }
+        
+        const SFX = {
+            move: () => playTone(150, 0.05, 'square', 0.1),
+            descend: () => { playTone(200, 0.3, 'sawtooth', 0.15); playNoise(0.3, 0.1); },
+            ascend: () => { playTone(300, 0.3, 'sawtooth', 0.15); playNoise(0.3, 0.1); },
+            grab: () => { playTone(400, 0.1, 'square', 0.2); playTone(500, 0.1, 'square', 0.2); },
+            success: () => {
+                [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playTone(f, 0.2, 'square', 0.25), i * 100));
+            },
+            slip: () => { playTone(300, 0.15, 'sawtooth', 0.3); playTone(150, 0.3, 'sawtooth', 0.25); },
+            fail: () => { playTone(200, 0.2, 'square', 0.2); playTone(150, 0.3, 'square', 0.2); },
+            coin: () => { playTone(1200, 0.1, 'square', 0.2); playTone(1600, 0.15, 'square', 0.2); },
+            button: () => playTone(800, 0.05, 'square', 0.15),
+            bounce: () => playTone(100 + Math.random() * 100, 0.1, 'sine', 0.15),
+            // 🐱 고양이 야옹!
+            meow: () => {
+                playTone(600, 0.1, 'sine', 0.25);
+                setTimeout(() => playTone(800, 0.15, 'sine', 0.2), 100);
+                setTimeout(() => playTone(500, 0.2, 'sine', 0.15), 200);
+            },
+        };
+
+        // ═══════════════════════════════════════════
+        // Three.js
+        // ═══════════════════════════════════════════
+        const canvas = document.getElementById('canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 5, 6);
+
+        const controls = new OrbitControls(camera, canvas);
+        controls.target.set(0, 1, 0);
+        controls.enableDamping = true;
+        controls.maxPolarAngle = Math.PI / 2.1;
+        controls.minDistance = 3;
+        controls.maxDistance = 12;
+        controls.enablePan = false;
+        controls.update();
+
+        // 조명
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(3, 8, 4);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.set(1024, 1024);
+        scene.add(dirLight);
+        
+        const pinkLight = new THREE.PointLight(0xff66aa, 0.5, 10);
+        pinkLight.position.set(-3, 4, 0);
+        scene.add(pinkLight);
+
+        // ═══════════════════════════════════════════
+        // 기계
+        // ═══════════════════════════════════════════
+        const machine = new THREE.Group();
+        
+        // 바닥
+        const floor = new THREE.Mesh(
+            new THREE.BoxGeometry(5.5, 0.2, 4.5),
+            new THREE.MeshStandardMaterial({ color: 0x2a1a4a, roughness: 0.8 })
+        );
+        floor.receiveShadow = true;
+        machine.add(floor);
+        
+        // 그리드
+        const grid = new THREE.GridHelper(5, 10, 0x6633aa, 0x4422aa);
+        grid.position.y = 0.11;
+        machine.add(grid);
+        
+        // 벽 (충돌용)
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x3a2a5a, transparent: true, opacity: 0.3 });
+        const walls = [
+            { pos: [0, 1, -2.1], size: [5.5, 2, 0.1] },
+            { pos: [0, 1, 2.1], size: [5.5, 2, 0.1] },
+            { pos: [-2.6, 1, 0], size: [0.1, 2, 4.5] },
+            { pos: [2.6, 1, 0], size: [0.1, 2, 4.5] }
+        ];
+        walls.forEach(w => {
+            const wall = new THREE.Mesh(new THREE.BoxGeometry(...w.size), wallMat);
+            wall.position.set(...w.pos);
+            machine.add(wall);
+        });
+        
+        // 프레임
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.7, roughness: 0.3 });
+        const pillarGeo = new THREE.CylinderGeometry(0.08, 0.08, 4, 12);
+        [[-2.5, 2, -2], [2.5, 2, -2], [-2.5, 2, 2], [2.5, 2, 2]].forEach(pos => {
+            const pillar = new THREE.Mesh(pillarGeo, frameMat);
+            pillar.position.set(...pos);
+            pillar.castShadow = true;
+            machine.add(pillar);
+        });
+        
+        scene.add(machine);
+
+        // ═══════════════════════════════════════════
+        // 인형 (물리 포함)
+        // ═══════════════════════════════════════════
+        function createPlushie(color, type = 'bear') {
+            const plushie = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.9 });
+            
+            // 고양이는 20% 더 크고 길쭉! 더피는 15% 더 큼!
+            const scale = type === 'cat' ? 1.2 : type === 'duffy' ? 1.15 : type === 'rabbit' ? 1.15 : 1.0;
+            const bodyStretch = type === 'cat' ? 1.5 : 1.0; // 고양이 몸통 길쭉
+            
+            if (type === 'duffy') {
+                // 🧸 더피! 디즈니 베어!
+                const duffyBrown = new THREE.MeshStandardMaterial({ color: 0xd4a574, roughness: 0.95 }); // 연한 갈색
+                const duffyLight = new THREE.MeshStandardMaterial({ color: 0xf5e6d3, roughness: 0.95 }); // 밝은 베이지
+                const duffySailor = new THREE.MeshStandardMaterial({ color: 0x2255aa, roughness: 0.8 }); // 세일러복 파랑
+                const duffyWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
+                const duffyRed = new THREE.MeshStandardMaterial({ color: 0xcc2222, roughness: 0.8 });
+                
+                // 몸통 (통통)
+                const body = new THREE.Mesh(new THREE.SphereGeometry(0.26 * scale, 16, 16), duffyBrown);
+                body.position.y = 0.26 * scale;
+                body.castShadow = true;
+                plushie.add(body);
+                
+                // 세일러복 상의
+                const sailorTop = new THREE.Mesh(new THREE.CylinderGeometry(0.22 * scale, 0.26 * scale, 0.18 * scale, 16), duffySailor);
+                sailorTop.position.y = 0.32 * scale;
+                plushie.add(sailorTop);
+                
+                // 세일러 칼라 (흰색)
+                const collarGeo = new THREE.TorusGeometry(0.2 * scale, 0.03 * scale, 8, 16, Math.PI);
+                const collar = new THREE.Mesh(collarGeo, duffyWhite);
+                collar.rotation.x = Math.PI / 2;
+                collar.rotation.z = Math.PI;
+                collar.position.set(0, 0.42 * scale, 0.08 * scale);
+                plushie.add(collar);
+                
+                // 빨간 리본
+                const ribbonGeo = new THREE.BoxGeometry(0.08 * scale, 0.04 * scale, 0.02 * scale);
+                const ribbon = new THREE.Mesh(ribbonGeo, duffyRed);
+                ribbon.position.set(0, 0.42 * scale, 0.18 * scale);
+                plushie.add(ribbon);
+                
+                // 머리 (통통, 약간 큼)
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.22 * scale, 16, 16), duffyBrown);
+                head.position.y = 0.62 * scale;
+                head.castShadow = true;
+                plushie.add(head);
+                
+                // 🐭 얼굴의 미키 마우스 무늬! (밝은 베이지)
+                // 중앙 원
+                const mickeyCenter = new THREE.Mesh(new THREE.CircleGeometry(0.1 * scale, 16), duffyLight);
+                mickeyCenter.position.set(0, 0.6 * scale, 0.2 * scale);
+                plushie.add(mickeyCenter);
+                // 왼쪽 귀
+                const mickeyEarL = new THREE.Mesh(new THREE.CircleGeometry(0.05 * scale, 12), duffyLight);
+                mickeyEarL.position.set(-0.08 * scale, 0.68 * scale, 0.19 * scale);
+                plushie.add(mickeyEarL);
+                // 오른쪽 귀
+                const mickeyEarR = new THREE.Mesh(new THREE.CircleGeometry(0.05 * scale, 12), duffyLight);
+                mickeyEarR.position.set(0.08 * scale, 0.68 * scale, 0.19 * scale);
+                plushie.add(mickeyEarR);
+                
+                // 동그란 귀 (테디베어 귀)
+                const earGeo = new THREE.SphereGeometry(0.08 * scale, 12, 12);
+                [-0.16, 0.16].forEach(x => {
+                    const ear = new THREE.Mesh(earGeo, duffyBrown);
+                    ear.position.set(x * scale, 0.78 * scale, 0);
+                    ear.scale.z = 0.6;
+                    ear.castShadow = true;
+                    plushie.add(ear);
+                    // 귀 안쪽 (밝은색)
+                    const innerEar = new THREE.Mesh(new THREE.SphereGeometry(0.05 * scale, 10, 10), duffyLight);
+                    innerEar.position.set(x * scale, 0.78 * scale, 0.02 * scale);
+                    innerEar.scale.z = 0.5;
+                    plushie.add(innerEar);
+                });
+                
+                // 눈 (반짝이는 검은 눈)
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 });
+                [-0.06, 0.06].forEach(x => {
+                    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.025 * scale, 10, 10), eyeMat);
+                    eye.position.set(x * scale, 0.62 * scale, 0.19 * scale);
+                    plushie.add(eye);
+                    // 하이라이트
+                    const highlight = new THREE.Mesh(new THREE.SphereGeometry(0.008 * scale, 6, 6), duffyWhite);
+                    highlight.position.set(x * scale + 0.01 * scale, 0.63 * scale, 0.21 * scale);
+                    plushie.add(highlight);
+                });
+                
+                // 코 (갈색 타원)
+                const noseMat = new THREE.MeshStandardMaterial({ color: 0x654321, roughness: 0.7 });
+                const nose = new THREE.Mesh(new THREE.SphereGeometry(0.03 * scale, 8, 8), noseMat);
+                nose.scale.set(1.2, 0.8, 0.8);
+                nose.position.set(0, 0.55 * scale, 0.2 * scale);
+                plushie.add(nose);
+                
+                // 팔다리 (통통한 갈색)
+                const limbGeo = new THREE.CapsuleGeometry(0.06 * scale, 0.12 * scale, 6, 8);
+                // 팔
+                [[-0.22, 0.28, 0.08], [0.22, 0.28, 0.08]].forEach((pos, i) => {
+                    const arm = new THREE.Mesh(limbGeo, duffyBrown);
+                    arm.position.set(pos[0] * scale, pos[1] * scale, pos[2] * scale);
+                    arm.rotation.z = i === 0 ? 0.5 : -0.5;
+                    arm.castShadow = true;
+                    plushie.add(arm);
+                });
+                // 다리
+                [[-0.1, 0.08, 0.05], [0.1, 0.08, 0.05]].forEach(pos => {
+                    const leg = new THREE.Mesh(limbGeo, duffyBrown);
+                    leg.position.set(pos[0] * scale, pos[1] * scale, pos[2] * scale);
+                    leg.rotation.x = 0.3;
+                    leg.castShadow = true;
+                    plushie.add(leg);
+                });
+                
+                // 🐭 엉덩이 미키 버스마크!
+                const birthmark = new THREE.Mesh(new THREE.CircleGeometry(0.03 * scale, 12), duffyLight);
+                birthmark.position.set(0.08 * scale, 0.2 * scale, -0.24 * scale);
+                birthmark.rotation.y = Math.PI;
+                plushie.add(birthmark);
+                const bmEarL = new THREE.Mesh(new THREE.CircleGeometry(0.015 * scale, 8), duffyLight);
+                bmEarL.position.set(0.06 * scale, 0.24 * scale, -0.24 * scale);
+                bmEarL.rotation.y = Math.PI;
+                plushie.add(bmEarL);
+                const bmEarR = new THREE.Mesh(new THREE.CircleGeometry(0.015 * scale, 8), duffyLight);
+                bmEarR.position.set(0.1 * scale, 0.24 * scale, -0.24 * scale);
+                bmEarR.rotation.y = Math.PI;
+                plushie.add(bmEarR);
+                
+            } else if (type === 'cat') {
+                // 🐱 고양이 - 길쭉한 몸통!
+                const bodyGeo = new THREE.CapsuleGeometry(0.18 * scale, 0.25 * scale * bodyStretch, 8, 12);
+                const body = new THREE.Mesh(bodyGeo, mat);
+                body.rotation.x = Math.PI / 2; // 가로로 눕히기
+                body.position.y = 0.2 * scale;
+                body.castShadow = true;
+                plushie.add(body);
+                
+                // 머리 (약간 납작)
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.16 * scale, 12, 12), mat);
+                head.scale.z = 0.85; // 살짝 납작
+                head.position.set(0, 0.4 * scale, 0.22 * scale);
+                head.castShadow = true;
+                plushie.add(head);
+                
+                // 삼각형 귀! (뾰족)
+                const earGeo = new THREE.ConeGeometry(0.06 * scale, 0.12 * scale, 4);
+                [-0.09, 0.09].forEach((x, i) => {
+                    const ear = new THREE.Mesh(earGeo, mat);
+                    ear.position.set(x * scale, 0.55 * scale, 0.18 * scale);
+                    ear.rotation.z = i === 0 ? 0.2 : -0.2;
+                    ear.rotation.x = -0.2;
+                    ear.castShadow = true;
+                    plushie.add(ear);
+                });
+                // 귀 안쪽 (분홍)
+                const innerEarMat = new THREE.MeshStandardMaterial({ color: 0xffaaaa, roughness: 0.9 });
+                const innerEarGeo = new THREE.ConeGeometry(0.03 * scale, 0.08 * scale, 4);
+                [-0.09, 0.09].forEach((x, i) => {
+                    const innerEar = new THREE.Mesh(innerEarGeo, innerEarMat);
+                    innerEar.position.set(x * scale, 0.54 * scale, 0.2 * scale);
+                    innerEar.rotation.z = i === 0 ? 0.2 : -0.2;
+                    innerEar.rotation.x = -0.2;
+                    plushie.add(innerEar);
+                });
+                
+                // 노란 눈 + 세로 동공!
+                const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffee44, roughness: 0.5 });
+                const pupilMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+                [-0.055, 0.055].forEach(x => {
+                    // 눈 (노란색)
+                    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.04 * scale, 8, 8), eyeWhiteMat);
+                    eye.position.set(x * scale, 0.43 * scale, 0.32 * scale);
+                    plushie.add(eye);
+                    // 세로 동공
+                    const pupilGeo = new THREE.CapsuleGeometry(0.008 * scale, 0.025 * scale, 4, 4);
+                    const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+                    pupil.position.set(x * scale, 0.43 * scale, 0.36 * scale);
+                    plushie.add(pupil);
+                });
+                
+                // 분홍 코 (역삼각형)
+                const noseMat = new THREE.MeshStandardMaterial({ color: 0xff9999, roughness: 0.8 });
+                const noseGeo = new THREE.ConeGeometry(0.025 * scale, 0.02 * scale, 3);
+                const nose = new THREE.Mesh(noseGeo, noseMat);
+                nose.rotation.x = Math.PI;
+                nose.position.set(0, 0.36 * scale, 0.32 * scale);
+                plushie.add(nose);
+                
+                // 수염! (6개)
+                const whiskerMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                const whiskerGeo = new THREE.CylinderGeometry(0.003, 0.003, 0.12 * scale, 4);
+                [-1, 1].forEach(side => {
+                    [-0.08, 0, 0.08].forEach((yOff, i) => {
+                        const whisker = new THREE.Mesh(whiskerGeo, whiskerMat);
+                        whisker.rotation.z = Math.PI / 2;
+                        whisker.rotation.y = side * 0.2;
+                        whisker.position.set(side * 0.1 * scale, 0.35 * scale + yOff * 0.15, 0.3 * scale);
+                        plushie.add(whisker);
+                    });
+                });
+                
+                // 발 4개!
+                const pawMat = new THREE.MeshStandardMaterial({ color: 0xffdddd, roughness: 0.9 });
+                const pawGeo = new THREE.SphereGeometry(0.05 * scale, 8, 8);
+                [[-0.1, 0.05, 0.12], [0.1, 0.05, 0.12], [-0.1, 0.05, -0.18], [0.1, 0.05, -0.18]].forEach(pos => {
+                    const paw = new THREE.Mesh(pawGeo, pawMat);
+                    paw.position.set(pos[0] * scale, pos[1] * scale, pos[2] * scale);
+                    paw.scale.y = 0.6;
+                    plushie.add(paw);
+                });
+                
+                // 꼬리! (길고 구부러짐)
+                const tailGeo = new THREE.CapsuleGeometry(0.03 * scale, 0.2 * scale, 4, 8);
+                const tail = new THREE.Mesh(tailGeo, mat);
+                tail.position.set(0, 0.25 * scale, -0.32 * scale);
+                tail.rotation.x = -0.8;
+                tail.rotation.z = 0.3;
+                tail.castShadow = true;
+                plushie.add(tail);
+                
+                // 꼬리 끝
+                const tailTip = new THREE.Mesh(new THREE.SphereGeometry(0.04 * scale, 8, 8), mat);
+                tailTip.position.set(0.08 * scale, 0.4 * scale, -0.38 * scale);
+                plushie.add(tailTip);
+                
+            } else {
+                // 몸통
+                const body = new THREE.Mesh(new THREE.SphereGeometry(0.22 * scale, 12, 12), mat);
+                body.position.y = 0.22 * scale;
+                body.castShadow = true;
+                plushie.add(body);
+                
+                // 머리
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.18 * scale, 12, 12), mat);
+                head.position.y = 0.52 * scale;
+                head.castShadow = true;
+                plushie.add(head);
+                
+                // 귀 (토끼는 길쭉하게)
+                if (type === 'rabbit') {
+                    // 토끼 귀 (길고 쫑긋)
+                    const earGeo = new THREE.CapsuleGeometry(0.04 * scale, 0.2 * scale, 4, 8);
+                    [-0.08, 0.08].forEach((x, i) => {
+                        const ear = new THREE.Mesh(earGeo, mat);
+                        ear.position.set(x * scale, 0.85 * scale, 0);
+                        ear.rotation.z = i === 0 ? 0.15 : -0.15;
+                        ear.castShadow = true;
+                        plushie.add(ear);
+                    });
+                    // 분홍색 귀 안쪽
+                    const innerEarMat = new THREE.MeshStandardMaterial({ color: 0xffaaaa, roughness: 0.9 });
+                    const innerEarGeo = new THREE.CapsuleGeometry(0.02 * scale, 0.12 * scale, 4, 8);
+                    [-0.08, 0.08].forEach((x, i) => {
+                        const innerEar = new THREE.Mesh(innerEarGeo, innerEarMat);
+                        innerEar.position.set(x * scale, 0.85 * scale, 0.02);
+                        innerEar.rotation.z = i === 0 ? 0.15 : -0.15;
+                        plushie.add(innerEar);
+                    });
+                } else {
+                    // 곰 귀 (동그랗게)
+                    const earGeo = new THREE.SphereGeometry(0.06 * scale, 8, 8);
+                    [-0.11, 0.11].forEach(x => {
+                        const ear = new THREE.Mesh(earGeo, mat);
+                        ear.position.set(x * scale, 0.68 * scale, 0);
+                        ear.scale.y = 1.3;
+                        plushie.add(ear);
+                    });
+                }
+                
+                // 눈
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+                const eyeSize = type === 'rabbit' ? 0.035 : 0.03;
+                [-0.06, 0.06].forEach(x => {
+                    const eye = new THREE.Mesh(new THREE.SphereGeometry(eyeSize * scale, 8, 8), eyeMat);
+                    eye.position.set(x * scale, 0.55 * scale, 0.14 * scale);
+                    plushie.add(eye);
+                });
+                
+                // 코 (토끼는 분홍색)
+                const noseMat = new THREE.MeshStandardMaterial({ color: type === 'rabbit' ? 0xff9999 : 0x333333 });
+                const nose = new THREE.Mesh(new THREE.SphereGeometry(0.025 * scale, 8, 8), noseMat);
+                nose.position.set(0, 0.48 * scale, 0.16 * scale);
+                plushie.add(nose);
+            }
+            
+            return plushie;
+        }
+
+        function spawnPrizes() {
+            state.prizes.forEach(p => scene.remove(p.mesh));
+            state.prizes = [];
+            
+            const bearColors = [0xff9999, 0x99ff99, 0x9999ff, 0xffff99, 0xff99ff, 0x99ffff, 0xffcc99, 0xcc99ff];
+            const rabbitColors = [0xffffff, 0xffddee, 0xeeddff, 0xffffee]; // 토끼는 밝은 색
+            // 🐱 고양이 색상들!
+            const catColors = [
+                0xff9944, // 주황
+                0x888888, // 회색
+                0xffeecc, // 크림
+                0x333333, // 검정
+                0xffffff, // 흰색
+            ];
+            // 🧸 더피는 고정 색상!
+            const duffyColor = 0xd4a574;
+            
+            for (let i = 0; i < PRIZE_COUNT; i++) {
+                // 10% 더피, 15% 고양이, 10% 토끼, 65% 곰
+                const rand = Math.random();
+                const type = rand < 0.1 ? 'duffy' : rand < 0.25 ? 'cat' : rand < 0.35 ? 'rabbit' : 'bear';
+                const colors = type === 'duffy' ? [duffyColor] : type === 'cat' ? catColors : type === 'rabbit' ? rabbitColors : bearColors;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const mesh = createPlushie(color, type);
+                
+                // 무게 기반 슬립 확률 (무거울수록 슬립 확률 증가)
+                // 곰=1.0(기준), 토끼=1.2, 고양이=1.4(가장 무거움), 더피=0.8(가벼움)
+                const weight = type === 'cat' ? 1.4 : type === 'rabbit' ? 1.2 : type === 'duffy' ? 0.8 : 1.0;
+                // 부피 (클수록 위치 정확도가 중요)
+                const volume = type === 'cat' ? 1.4 : type === 'duffy' ? 1.15 : type === 'rabbit' ? 1.15 : 1.0;
+                // 고양이는 그립력 20% 더 필요, 더피는 잡기 쉬움!
+                const gripRequired = type === 'cat' ? 1.2 : type === 'duffy' ? 0.8 : 1.0;
+                
+                let x, z, overlap, tries = 0;
+                const spacing = type === 'cat' ? 0.9 : type === 'duffy' ? 0.85 : type === 'rabbit' ? 0.8 : 0.6; // 고양이 > 더피 > 토끼
+                do {
+                    x = (Math.random() - 0.5) * 4;
+                    z = (Math.random() - 0.5) * 3;
+                    overlap = state.prizes.some(p => Math.abs(p.x - x) < spacing && Math.abs(p.z - z) < spacing);
+                    tries++;
+                } while (overlap && tries < 30);
+                
+                const yOffset = type === 'cat' ? 0.15 : type === 'duffy' ? 0.14 : type === 'rabbit' ? 0.12 : 0.1;
+                mesh.position.set(x, yOffset, z);
+                mesh.rotation.y = Math.random() * Math.PI * 2;
+                scene.add(mesh);
+                
+                state.prizes.push({
+                    mesh, x, z, y: yOffset,
+                    vx: 0, vy: 0, vz: 0,
+                    color, type, weight, volume, gripRequired,
+                    grabbed: false,
+                    isHeld: false,
+                    bobOffset: Math.random() * Math.PI * 2,
+                    strugglePhase: 0 // 고양이 발버둥 애니메이션용
+                });
+            }
+            
+            // 코인 = 인형 갯수 × 2
+            state.coins = PRIZE_COUNT * 2;
+            document.getElementById('coins').textContent = state.coins;
+        }
+
+        // ═══════════════════════════════════════════
+        // 크레인 (관절 있는 집게)
+        // ═══════════════════════════════════════════
+        const crane = new THREE.Group();
+        const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.7, roughness: 0.3 });
+        const metalMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8, roughness: 0.3 });
+        
+        // 트롤리
+        const trolley = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.5), goldMat);
+        trolley.position.y = 3.8;
+        trolley.castShadow = true;
+        crane.add(trolley);
+        
+        // 로프
+        const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.2, 8), metalMat);
+        rope.position.y = 3.1;
+        crane.add(rope);
+        
+        // 집게 그룹
+        const clawGroup = new THREE.Group();
+        clawGroup.position.y = 2.5;
+        crane.add(clawGroup);
+        
+        // 허브
+        const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.12, 8), goldMat);
+        hub.castShadow = true;
+        clawGroup.add(hub);
+        
+        // 손가락 (관절 포함)
+        const fingers = [];
+        for (let i = 0; i < 3; i++) {
+            const finger = new THREE.Group();
+            const angle = (i / 3) * Math.PI * 2;
+            finger.position.set(Math.sin(angle) * 0.08, -0.06, Math.cos(angle) * 0.08);
+            finger.userData.baseAngle = angle;
+            finger.userData.openRotation = 0.4;
+            finger.userData.closedRotation = 0.05;
+            finger.rotation.x = finger.userData.openRotation;
+            
+            // 상단 세그먼트
+            const seg1 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.25, 0.03), metalMat);
+            seg1.position.y = -0.12;
+            seg1.castShadow = true;
+            finger.add(seg1);
+            
+            // 하단 세그먼트 (관절)
+            const joint = new THREE.Group();
+            joint.position.y = -0.25;
+            finger.add(joint);
+            finger.userData.joint = joint;
+            
+            const seg2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.15, 0.04), metalMat);
+            seg2.position.y = -0.07;
+            seg2.castShadow = true;
+            joint.add(seg2);
+            
+            // 팁
+            const tip = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), metalMat);
+            tip.position.y = -0.15;
+            tip.castShadow = true;
+            joint.add(tip);
+            
+            clawGroup.add(finger);
+            fingers.push(finger);
+        }
+        
+        scene.add(crane);
+        
+        // ═══════════════════════════════════════════
+        // 집게 애니메이션
+        // ═══════════════════════════════════════════
+        function setClawState(openAmount) { // 0 = closed, 1 = open
+            fingers.forEach(f => {
+                const targetRot = f.userData.closedRotation + (f.userData.openRotation - f.userData.closedRotation) * openAmount;
+                f.rotation.x = targetRot;
+                // 관절도 함께 움직임
+                f.userData.joint.rotation.x = openAmount * 0.3;
+            });
+        }
+        
+        function animateClawClose(duration = 300) {
+            return new Promise(resolve => {
+                const start = performance.now();
+                const startOpen = 1;
+                
+                function animate() {
+                    const t = Math.min((performance.now() - start) / duration, 1);
+                    setClawState(1 - t);
+                    if (t < 1) requestAnimationFrame(animate);
+                    else resolve();
+                }
+                animate();
+            });
+        }
+        
+        function animateClawOpen(duration = 200) {
+            return new Promise(resolve => {
+                const start = performance.now();
+                
+                function animate() {
+                    const t = Math.min((performance.now() - start) / duration, 1);
+                    setClawState(t);
+                    if (t < 1) requestAnimationFrame(animate);
+                    else resolve();
+                }
+                animate();
+            });
+        }
+
+        // ═══════════════════════════════════════════
+        // 물리 업데이트
+        // ═══════════════════════════════════════════
+        function updatePhysics() {
+            state.prizes.forEach(p => {
+                if (p.grabbed || p.isHeld) return;
+                
+                // 중력
+                p.vy -= GRAVITY;
+                
+                // 위치 업데이트
+                p.x += p.vx;
+                p.y += p.vy;
+                p.z += p.vz;
+                
+                // 바닥 충돌
+                if (p.y < 0.1) {
+                    if (p.vy < -0.05) SFX.bounce(); // 충분히 빠르면 소리
+                    p.y = 0.1;
+                    p.vy *= -BOUNCE;
+                    p.vx *= FRICTION;
+                    p.vz *= FRICTION;
+                }
+                
+                // 벽 충돌
+                if (p.x < -2.3) { p.x = -2.3; p.vx *= -BOUNCE; }
+                if (p.x > 2.3) { p.x = 2.3; p.vx *= -BOUNCE; }
+                if (p.z < -1.9) { p.z = -1.9; p.vz *= -BOUNCE; }
+                if (p.z > 1.9) { p.z = 1.9; p.vz *= -BOUNCE; }
+                
+                // 마찰
+                p.vx *= FRICTION;
+                p.vz *= FRICTION;
+                
+                // 메시 업데이트
+                p.mesh.position.set(p.x, p.y, p.z);
+            });
+        }
+
+        // ═══════════════════════════════════════════
+        // 드롭 로직
+        // ═══════════════════════════════════════════
+        const statusEl = document.getElementById('status');
+        const gripDisplay = document.getElementById('gripDisplay');
+        const gripFill = document.getElementById('gripFill');
+        const gripPercent = document.getElementById('gripPercent');
+        
+        function setStatus(text, type = '') {
+            statusEl.textContent = text;
+            statusEl.className = 'status-display visible ' + type;
+        }
+        
+        function hideStatus() {
+            statusEl.classList.remove('visible');
+            gripDisplay.classList.remove('visible');
+        }
+        
+        function setGrip(percent) {
+            state.currentGrip = percent;
+            gripPercent.textContent = Math.round(percent);
+            gripFill.style.width = percent + '%';
+            gripDisplay.classList.add('visible');
+        }
+
+        async function drop() {
+            if (state.isDropping || state.coins <= 0) return;
+            
+            state.isDropping = true;
+            state.coins--;
+            document.getElementById('coins').textContent = state.coins;
+            document.getElementById('grabBtn').disabled = true;
+            
+            const power = state.power;
+            state.power = 0;
+            
+            // 파워에 따른 그립력 계산
+            let gripStrength;
+            if (power >= 45 && power <= 55) gripStrength = 95;
+            else if (power >= 35 && power <= 65) gripStrength = 75;
+            else if (power >= 25 && power <= 75) gripStrength = 50;
+            else gripStrength = 25;
+            
+            // Phase 1: 내려가기
+            state.phase = 'descending';
+            setStatus('⬇️ 내려가는 중...', '');
+            SFX.descend();
+            
+            const targetY = 0.8;
+            await animateCrane(targetY);
+            
+            // Phase 2: 잡기
+            state.phase = 'grabbing';
+            setStatus('🦀 잡는 중...', '');
+            SFX.grab();
+            
+            await animateClawClose(400);
+            
+            // 잡을 수 있는 인형 체크
+            let grabbed = null;
+            let bestDist = Infinity;
+            
+            for (const p of state.prizes) {
+                if (p.grabbed) continue;
+                const dx = p.x - state.craneX;
+                const dz = p.z - state.craneZ;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist < 0.5 && dist < bestDist) {
+                    grabbed = p;
+                    bestDist = dist;
+                }
+            }
+            
+            if (grabbed) {
+                // 거리에 따른 그립력 보정 (고양이는 gripRequired로 나눔!)
+                const distFactor = 1 - (bestDist / 0.5);
+                const gripReq = grabbed.gripRequired || 1.0;
+                const finalGrip = (gripStrength * distFactor) / gripReq;
+                setGrip(finalGrip);
+                
+                grabbed.isHeld = true;
+                state.grabbedPrize = grabbed;
+                
+                const typeEmoji = grabbed.type === 'duffy' ? '🧸✨' : grabbed.type === 'cat' ? '🐱' : grabbed.type === 'rabbit' ? '🐰' : '🧸';
+                const typeWarning = grabbed.type === 'duffy' ? ' (더피! 잡기 쉬움!)' : grabbed.type === 'cat' ? ' (무겁고 미끄러움!)' : grabbed.type === 'rabbit' ? ' (미끄러움!)' : '';
+                
+                // 🐱 고양이 잡으면 야옹!
+                if (grabbed.type === 'cat') SFX.meow();
+                
+                if (finalGrip >= 70) {
+                    setStatus(`✊ ${typeEmoji} 잡았다! (${Math.round(finalGrip)}%)${typeWarning}`, grabbed.type === 'rabbit' ? 'warning' : '');
+                } else if (finalGrip >= 40) {
+                    setStatus(`😰 ${typeEmoji} 불안정... (${Math.round(finalGrip)}%)${typeWarning}`, 'warning');
+                } else {
+                    setStatus(`😱 ${typeEmoji} 위험! (${Math.round(finalGrip)}%)${typeWarning}`, 'danger');
+                }
+                
+                await sleep(500);
+                
+                // Phase 3: 올라가기
+                state.phase = 'ascending';
+                setStatus('⬆️ 올라가는 중...', finalGrip >= 50 ? '' : 'warning');
+                SFX.ascend();
+                
+                // 슬립 확률 계산 (타입별 슬립 확률 제거, 무게 + 위치/부피 기반)
+                // 1. 위치 부정확성: 거리가 멀수록 높음 (0~1)
+                const positionInaccuracy = 1 - distFactor;
+                // 2. 부피 영향: 부피가 클수록 위치 부정확성이 슬립에 더 영향
+                const volumeEffect = 1 + positionInaccuracy * (grabbed.volume - 1);
+                // 3. 기본 슬립 확률 (그립력 기반)
+                const baseSlipChance = finalGrip < 40 ? 0.8 : finalGrip < 60 ? 0.4 : finalGrip < 80 ? 0.1 : 0.02;
+                // 4. 최종 슬립 확률 = 기본 * 무게 * 부피효과
+                const slipChance = baseSlipChance * grabbed.weight * volumeEffect;
+                let slipped = false;
+                
+                const startY = clawGroup.position.y;
+                const endY = 2.5;
+                const duration = 600;
+                const startTime = performance.now();
+                
+                await new Promise(resolve => {
+                    function animate() {
+                        const elapsed = performance.now() - startTime;
+                        const t = Math.min(elapsed / duration, 1);
+                        const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+                        
+                        const newY = startY + (endY - startY) * ease;
+                        clawGroup.position.y = newY;
+                        
+                        const ropeLen = 3.7 - newY;
+                        rope.scale.y = ropeLen / 1.2;
+                        rope.position.y = 3.7 - ropeLen / 2;
+                        
+                        if (grabbed && grabbed.isHeld) {
+                            // 고양이는 더 많이 흔들림!
+                            const swingAmp = grabbed.type === 'cat' ? 0.06 : 0.02;
+                            const swingSpeed = grabbed.type === 'cat' ? 0.02 : 0.01;
+                            
+                            grabbed.mesh.position.y = newY - 0.35;
+                            grabbed.mesh.position.x = state.craneX + Math.sin(elapsed * swingSpeed) * swingAmp;
+                            grabbed.mesh.position.z = state.craneZ + Math.cos(elapsed * swingSpeed * 1.2) * swingAmp;
+                            grabbed.y = grabbed.mesh.position.y;
+                            grabbed.x = grabbed.mesh.position.x;
+                            grabbed.z = grabbed.mesh.position.z;
+                            
+                            // 🐱 고양이 발버둥 모션!
+                            if (grabbed.type === 'cat') {
+                                grabbed.strugglePhase += 0.15;
+                                grabbed.mesh.rotation.y = Math.sin(grabbed.strugglePhase) * 0.5;
+                                grabbed.mesh.rotation.z = Math.cos(grabbed.strugglePhase * 1.3) * 0.2;
+                                grabbed.mesh.rotation.x = Math.sin(grabbed.strugglePhase * 0.8) * 0.15;
+                            }
+                            
+                            // 랜덤 미끄러짐 체크
+                            if (!slipped && Math.random() < slipChance * 0.02) {
+                                slipped = true;
+                                grabbed.isHeld = false;
+                                grabbed.vy = 0;
+                                grabbed.vx = (Math.random() - 0.5) * 0.1;
+                                grabbed.vz = (Math.random() - 0.5) * 0.1;
+                                state.grabbedPrize = null;
+                                const slipMsg = grabbed.type === 'cat' ? '🐱 발버둥!' : '😱 미끄러졌다!';
+                                setStatus(slipMsg, 'danger');
+                                showFeedback(grabbed.type === 'cat' ? '🐱 ESCAPE!' : 'SLIP!', 'fail');
+                                SFX.slip();
+                            }
+                        }
+                        
+                        if (t < 1) requestAnimationFrame(animate);
+                        else resolve();
+                    }
+                    animate();
+                });
+                
+                // 최종 결과
+                if (grabbed.isHeld && !slipped) {
+                    // 성공!
+                    state.wins++;
+                    const prizeEmoji = grabbed.type === 'duffy' ? '🧸✨' : grabbed.type === 'cat' ? '🐱' : grabbed.type === 'rabbit' ? '🐰' : '🧸';
+                    state.collection.push(prizeEmoji);
+                    document.getElementById('wins').textContent = state.wins;
+                    document.getElementById('collection').innerHTML = state.collection.join(' ');
+                    
+                    const isDuffy = grabbed.type === 'duffy';
+                    const isCat = grabbed.type === 'cat';
+                    const isRabbit = grabbed.type === 'rabbit';
+                    
+                    if (isDuffy) {
+                        showFeedback('🧸 DUFFY!', 'perfect');
+                        setStatus('🎉 더피 획득! 디즈니 베어!', '');
+                    } else if (isCat) {
+                        showFeedback('🐱 CAT!', 'perfect');
+                        setStatus('🎉 고양이 잡았다! (무거움!)', '');
+                    } else if (isRabbit) {
+                        showFeedback('🐰 RARE!', 'perfect');
+                        setStatus('🎉 레어 토끼 획득!', '');
+                    } else {
+                        showFeedback(finalGrip >= 80 ? 'PERFECT!' : 'GOOD!', finalGrip >= 80 ? 'perfect' : 'good');
+                        setStatus('🎉 성공!', '');
+                    }
+                    SFX.success();
+                    
+                    grabbed.grabbed = true;
+                    grabbed.isHeld = false;
+                    scene.remove(grabbed.mesh);
+                }
+            } else {
+                setStatus('❌ 빗나감!', 'danger');
+                SFX.fail();
+                await sleep(300);
+                
+                // 빗나갔어도 올라가야 함!
+                state.phase = 'ascending';
+                setStatus('⬆️ 올라가는 중...', '');
+                SFX.ascend();
+                await animateCrane(2.5);
+            }
+            
+            // Phase 4: 열기
+            state.phase = 'releasing';
+            await animateClawOpen(200);
+            
+            if (state.grabbedPrize && state.grabbedPrize.isHeld) {
+                state.grabbedPrize.isHeld = false;
+                state.grabbedPrize.vy = 0;
+            }
+            state.grabbedPrize = null;
+            
+            await sleep(200);
+            hideStatus();
+            
+            state.isDropping = false;
+            state.phase = 'idle';
+            document.getElementById('grabBtn').disabled = state.coins <= 0;
+            
+            if (state.coins <= 0) {
+                await sleep(500);
+                const duffyCount = state.collection.filter(e => e === '🧸✨').length;
+                const catCount = state.collection.filter(e => e === '🐱').length;
+                const rabbitCount = state.collection.filter(e => e === '🐰').length;
+                let msg = state.collection.length > 0 ? `🎉 ${state.collection.length}개 획득!` : '💀 다시 도전!';
+                if (duffyCount > 0) msg += `\n🧸✨ 더피 ${duffyCount}마리! (디즈니 베어!)`;
+                if (catCount > 0) msg += `\n🐱 고양이 ${catCount}마리! (20% 더 어려움!)`;
+                if (rabbitCount > 0) msg += `\n🐰 토끼 ${rabbitCount}마리!`;
+                alert(msg);
+                resetGame();
+            }
+        }
+        
+        function animateCrane(targetY) {
+            return new Promise(resolve => {
+                const startY = clawGroup.position.y;
+                const duration = 500;
+                const start = performance.now();
+                
+                function animate() {
+                    const t = Math.min((performance.now() - start) / duration, 1);
+                    const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+                    
+                    clawGroup.position.y = startY + (targetY - startY) * ease;
+                    const ropeLen = 3.7 - clawGroup.position.y;
+                    rope.scale.y = ropeLen / 1.2;
+                    rope.position.y = 3.7 - ropeLen / 2;
+                    
+                    if (t < 1) requestAnimationFrame(animate);
+                    else resolve();
+                }
+                animate();
+            });
+        }
+        
+        function showFeedback(text, type) {
+            const el = document.createElement('div');
+            el.className = `feedback ${type}`;
+            el.textContent = text;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+        
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+        
+        function resetGame() {
+            state.coins = 10;
+            state.wins = 0;
+            state.collection = [];
+            state.craneX = 0;
+            state.craneZ = 0;
+            crane.position.set(0, 0, 0);
+            document.getElementById('coins').textContent = 10;
+            document.getElementById('wins').textContent = 0;
+            document.getElementById('collection').innerHTML = '';
+            spawnPrizes();
+            document.getElementById('grabBtn').disabled = false;
+            setClawState(1);
+            clawGroup.position.y = 2.5;
+        }
+
+        // ═══════════════════════════════════════════
+        // 입력
+        // ═══════════════════════════════════════════
+        const dpad = document.getElementById('dpad');
+        const grabBtn = document.getElementById('grabBtn');
+        const powerFill = document.getElementById('powerFill');
+        
+        dpad.querySelectorAll('.dpad-btn[data-dir]').forEach(btn => {
+            const dir = btn.dataset.dir;
+            const start = () => {
+                if (dir === 'up') state.moveZ = -1;
+                else if (dir === 'down') state.moveZ = 1;
+                else if (dir === 'left') state.moveX = -1;
+                else if (dir === 'right') state.moveX = 1;
+                btn.classList.add('active');
+            };
+            const end = () => {
+                if (dir === 'up' || dir === 'down') state.moveZ = 0;
+                else state.moveX = 0;
+                btn.classList.remove('active');
+            };
+            btn.addEventListener('touchstart', e => { e.preventDefault(); initAudio(); SFX.move(); start(); });
+            btn.addEventListener('touchend', end);
+            btn.addEventListener('touchcancel', end);
+            btn.addEventListener('mousedown', () => { initAudio(); SFX.move(); start(); });
+            btn.addEventListener('mouseup', end);
+            btn.addEventListener('mouseleave', end);
+        });
+        
+        grabBtn.addEventListener('touchstart', e => { e.preventDefault(); initAudio(); if (!state.isDropping) { state.isCharging = true; grabBtn.classList.add('active'); SFX.button(); } });
+        grabBtn.addEventListener('touchend', () => { if (state.isCharging) { state.isCharging = false; grabBtn.classList.remove('active'); SFX.coin(); drop(); } });
+        grabBtn.addEventListener('mousedown', () => { initAudio(); if (!state.isDropping) { state.isCharging = true; grabBtn.classList.add('active'); SFX.button(); } });
+        grabBtn.addEventListener('mouseup', () => { if (state.isCharging) { state.isCharging = false; grabBtn.classList.remove('active'); SFX.coin(); drop(); } });
+        
+        document.addEventListener('keydown', e => {
+            if (e.code === 'ArrowUp' || e.code === 'KeyW') state.moveZ = -1;
+            else if (e.code === 'ArrowDown' || e.code === 'KeyS') state.moveZ = 1;
+            else if (e.code === 'ArrowLeft' || e.code === 'KeyA') state.moveX = -1;
+            else if (e.code === 'ArrowRight' || e.code === 'KeyD') state.moveX = 1;
+            else if (e.code === 'Space' && !e.repeat && !state.isDropping) { e.preventDefault(); initAudio(); SFX.button(); state.isCharging = true; }
+        });
+        document.addEventListener('keyup', e => {
+            if (e.code === 'ArrowUp' || e.code === 'KeyW') state.moveZ = 0;
+            else if (e.code === 'ArrowDown' || e.code === 'KeyS') state.moveZ = 0;
+            else if (e.code === 'ArrowLeft' || e.code === 'KeyA') state.moveX = 0;
+            else if (e.code === 'ArrowRight' || e.code === 'KeyD') state.moveX = 0;
+            else if (e.code === 'Space' && state.isCharging) { state.isCharging = false; SFX.coin(); drop(); }
+        });
+
+        // ═══════════════════════════════════════════
+        // 게임 루프
+        // ═══════════════════════════════════════════
+        spawnPrizes();
+        setClawState(1);
+        
+        function gameLoop() {
+            requestAnimationFrame(gameLoop);
+            
+            // 크레인 이동
+            if (!state.isDropping) {
+                state.craneX += state.moveX * 0.05;
+                state.craneZ += state.moveZ * 0.05;
+                state.craneX = Math.max(-BOUNDS.x, Math.min(BOUNDS.x, state.craneX));
+                state.craneZ = Math.max(-BOUNDS.z, Math.min(BOUNDS.z, state.craneZ));
+                crane.position.x = state.craneX;
+                crane.position.z = state.craneZ;
+            }
+            
+            // 파워
+            if (state.isCharging) {
+                state.power += state.powerDir * 2;
+                if (state.power >= 100 || state.power <= 0) state.powerDir *= -1;
+                state.power = Math.max(0, Math.min(100, state.power));
+            }
+            // 원형 파워 게이지 업데이트
+            const circumference = 408; // 2 * π * 65
+            const offset = circumference - (state.power / 100) * circumference;
+            powerFill.style.strokeDashoffset = offset;
+            // 파워에 따른 색상 (위쪽 45-55%가 PERFECT)
+            let strokeColor;
+            if (state.power >= 45 && state.power <= 55) strokeColor = '#00ff00';
+            else if (state.power >= 30 && state.power <= 70) strokeColor = '#ffaa00';
+            else strokeColor = '#ff4444';
+            powerFill.style.stroke = strokeColor;
+            
+            // 물리
+            updatePhysics();
+            
+            // 인형 대기 애니메이션
+            const time = performance.now() * 0.002;
+            state.prizes.forEach(p => {
+                if (!p.grabbed && !p.isHeld && Math.abs(p.vy) < 0.001) {
+                    p.mesh.position.y = 0.1 + Math.sin(time + p.bobOffset) * 0.015;
+                    p.mesh.rotation.y += 0.002;
+                }
+            });
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        gameLoop();
+    </script>
+</body>
+</html>
