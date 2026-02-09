@@ -9,6 +9,8 @@ const LottieAnimation = dynamic(
   { ssr: false }
 );
 
+import { getServiceByName } from "@/lib/api/services";
+
 /**
  * element should not be overlayed with other elements
  * @param container = {width, height}
@@ -51,17 +53,17 @@ function randomPositionWithoutOverlay(container, element, elements) {
   return { x: 0, y: 0 };
 }
 
-const words = [
+const defaultWords = [
   "고기", "나비", "다리", "라마", "머리", "비누", "사자", "아기", "자두", "차", "코끼리", "쿠키", "타조",
   "하마", "꼬리", "머리띠", "뿌리", "씨소", "찌게", "개나리", "게다리", "야호", "여자", "요리", "우유", "크다"
 ]
 
 const fontFamily = 'Nanum Gothic'
-const textSize = 96
+const textSize = 64
 
 const elementsFromChars = (container, word) => {
   const chars = letterfyAll(word)
-  const elementSize = { width: 100, height: 100 }
+  const elementSize = { width: textSize + 4, height: textSize + 4 }
   const elements = []
   // show guide text
   elements.push({
@@ -100,6 +102,7 @@ const elementsFromChars = (container, word) => {
 
 function App() {
 
+  const [words, setWords] = useState(defaultWords)
   const [index, setIndex] = useState(0)
   const [text, setText] = useState(`"${words[index]}" 글자를 만드세요`)
   const [loading, setLoading] = useState(false)
@@ -142,24 +145,34 @@ function App() {
   }
 
   useEffect(() => {
+    getServiceByName('Learn Hangul').then(({ data, error }) => {
+      if (data && data.configuration && data.configuration.words) {
+        setWords(data.configuration.words)
+      }
+    })
+  }, [])
+
+  useEffect(() => {
 
     speechSynthesis.cancel()
-    setLayout({ ...layout, elements: elementsFromChars(layout, words[index]) })
-    setText(`"${words[index]}" 글자를 만드세요`)
+    if (words[index]) {
+      setLayout({ ...layout, elements: elementsFromChars(layout, words[index]) })
+      setText(`"${words[index]}" 글자를 만드세요`)
+    }
     setLoading(false)
-  }, [index]);
+  }, [index, words]);
 
   return (
     <>
       <TextToSpeech text={currentWord} />
       <TextToSpeech text={text}>
-        {({ onClick }) => <button style={{ padding: 20, fontSize: 32 }} onClick={onClick}>{text}</button>}
+        {({ onClick }) => <button style={{ padding: 20, fontSize: 24 }} onClick={onClick}>{text}</button>}
       </TextToSpeech>
       <div style={{ background: '#ffffff' }}>
         {loading && <LottieAnimation width={layout.width} />}
         <WordBuilder layout={layout} setLayout={setLayout} onChange={handleOnChange} />
       </div>
-      <button style={{ padding: 20, fontSize: 32 }} onClick={handleNext} disabled={loading}>다음 글자</button>
+      <button style={{ padding: 20, fontSize: 24 }} onClick={handleNext} disabled={loading}>다음 글자</button>
     </>
   );
 }
