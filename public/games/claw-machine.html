@@ -289,7 +289,16 @@
         scene.background = new THREE.Color(0x1a1a2e);
 
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 5, 6);
+        // 화면 가로 크기에 따라 카메라 거리 조절 (좁을수록 더 멀리)
+        function getCameraDistance() {
+            const width = window.innerWidth;
+            if (width >= 768) return { y: 5, z: 6 };
+            // 320px ~ 768px 범위에서 선형 보간
+            const t = Math.max(0, Math.min(1, (768 - width) / (768 - 320)));
+            return { y: 5 + t * 2, z: 6 + t * 3 }; // y: 5~7, z: 6~9
+        }
+        const camDist = getCameraDistance();
+        camera.position.set(0, camDist.y, camDist.z);
 
         const controls = new OrbitControls(camera, canvas);
         controls.target.set(0, 1, 0);
@@ -1260,6 +1269,9 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            // 화면 크기 변경 시 카메라 거리도 조절
+            const newDist = getCameraDistance();
+            camera.position.set(0, newDist.y, newDist.z);
         });
         
         gameLoop();
