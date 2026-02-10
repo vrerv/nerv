@@ -62,6 +62,27 @@
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
         
         @media (max-height: 600px) { .dpad { grid-template-columns: repeat(3, 42px); grid-template-rows: repeat(3, 42px); } .grab-wrapper { width: 120px; height: 120px; } .power-ring { width: 120px; height: 120px; } .grab-btn { width: 85px; height: 85px; } }
+        
+        /* 도움말 버튼 */
+        .help-btn { position: fixed; top: 10px; right: 15px; width: 36px; height: 36px; background: rgba(0,0,0,0.8); border: 2px solid #ffd700; border-radius: 50%; color: #ffd700; font-size: 1.2rem; font-weight: bold; display: flex; align-items: center; justify-content: center; z-index: 100; cursor: pointer; padding-top: env(safe-area-inset-top); }
+        .help-btn:active { background: rgba(255,215,0,0.3); }
+        
+        /* 도움말 모달 */
+        .help-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .help-modal.visible { display: flex; }
+        .help-content { background: #1a1a2e; border: 3px solid #ffd700; border-radius: 20px; padding: 20px; max-width: 360px; max-height: 80vh; overflow-y: scroll; color: #fff; font-size: 0.9rem; line-height: 1.5; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+        .help-content * { touch-action: pan-y; }
+        .help-content h2 { color: #ffd700; font-size: 1.3rem; margin-bottom: 15px; text-align: center; }
+        .help-content h3 { color: #00ffff; font-size: 1rem; margin: 15px 0 8px; border-bottom: 1px solid #333; padding-bottom: 4px; }
+        .help-content ul { list-style: none; padding-left: 0; }
+        .help-content li { margin: 6px 0; padding-left: 20px; position: relative; }
+        .help-content li::before { content: "•"; position: absolute; left: 5px; color: #ffd700; }
+        .help-content .tip { background: rgba(0,255,0,0.1); border-left: 3px solid #00ff00; padding: 8px 12px; margin: 10px 0; border-radius: 0 8px 8px 0; }
+        .help-content table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 0.85rem; }
+        .help-content th, .help-content td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #333; }
+        .help-content th { color: #ffd700; }
+        .help-close { display: block; width: 100%; margin-top: 15px; padding: 12px; background: linear-gradient(180deg, #ffd700 0%, #cc9900 100%); border: none; border-radius: 10px; color: #000; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .help-close:active { background: linear-gradient(180deg, #ffee55 0%, #ddaa00 100%); }
     </style>
 </head>
 <body>
@@ -82,6 +103,52 @@
     <div class="collection">
         <div class="collection-title">🎀 Collection</div>
         <div class="collection-items" id="collection"></div>
+    </div>
+    
+    <button class="help-btn" id="helpBtn">?</button>
+    
+    <div class="help-modal" id="helpModal">
+        <div class="help-content">
+            <h2>🎮 인형뽑기 도움말</h2>
+            
+            <h3>🕹️ 조작법</h3>
+            <ul>
+                <li><strong>방향키</strong>: 크레인 이동</li>
+                <li><strong>GRAB 버튼</strong>: 꾹 눌러서 파워 게이지 충전 → 떼면 뽑기!</li>
+                <li><strong>드래그</strong>: 화면 앵글 조절</li>
+                <li><strong>핀치/스크롤</strong>: 화면 확대/축소</li>
+            </ul>
+            
+            <h3>🎯 파워 게이지 타이밍</h3>
+            <p>원형 게이지가 차오를 때 <strong style="color:#00ff00;">초록색 구간(45-55%)</strong>에서 떼면 최고 그립력!</p>
+            <table>
+                <tr><th>구간</th><th>그립력</th></tr>
+                <tr><td>45-55%</td><td>95% ⭐</td></tr>
+                <tr><td>35-65%</td><td>75%</td></tr>
+                <tr><td>25-75%</td><td>50%</td></tr>
+                <tr><td>그 외</td><td>25%</td></tr>
+            </table>
+            
+            <h3>🧸 인형 종류</h3>
+            <table>
+                <tr><th>인형</th><th>난이도</th><th>특징</th></tr>
+                <tr><td>🧸✨ 더피</td><td>쉬움</td><td>미키 무늬, 가벼움</td></tr>
+                <tr><td>🧸 곰</td><td>보통</td><td>기본</td></tr>
+                <tr><td>🐰 토끼</td><td>어려움</td><td>긴 귀, 미끄러움</td></tr>
+                <tr><td>🐱 고양이</td><td>매우 어려움</td><td>발버둥, 무거움</td></tr>
+            </table>
+            
+            <h3>💡 팁</h3>
+            <div class="tip">
+                <ul>
+                    <li>인형 <strong>정중앙</strong>을 노려라!</li>
+                    <li><strong>더피</strong>부터 잡으면 성공률 UP</li>
+                    <li>고양이는 발버둥 쳐서 미끄러지기 쉬움</li>
+                </ul>
+            </div>
+            
+            <button class="help-close" id="helpClose">닫기</button>
+        </div>
     </div>
     
     <div class="ui-bottom">
@@ -1196,6 +1263,27 @@
         });
         
         gameLoop();
+        
+        // ═══════════════════════════════════════════
+        // 도움말 모달
+        // ═══════════════════════════════════════════
+        const helpBtn = document.getElementById('helpBtn');
+        const helpModal = document.getElementById('helpModal');
+        const helpClose = document.getElementById('helpClose');
+        
+        helpBtn.addEventListener('click', () => {
+            helpModal.classList.add('visible');
+        });
+        
+        helpClose.addEventListener('click', () => {
+            helpModal.classList.remove('visible');
+        });
+        
+        helpModal.addEventListener('click', (e) => {
+            if (e.target === helpModal) {
+                helpModal.classList.remove('visible');
+            }
+        });
     </script>
 </body>
 </html>
