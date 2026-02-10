@@ -329,10 +329,21 @@
         // 바닥
         const floor = new THREE.Mesh(
             new THREE.BoxGeometry(5.5, 0.2, 4.5),
-            new THREE.MeshStandardMaterial({ color: 0x2a1a4a, roughness: 0.8 })
+            new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.8 })
         );
         floor.receiveShadow = true;
         machine.add(floor);
+        
+        // 그리드 (기본 off, 레벨링에서 사용)
+        const grid = new THREE.GridHelper(5, 10, 0x6633aa, 0x4422aa);
+        grid.position.y = 0.11;
+        grid.visible = false; // 기본 off
+        machine.add(grid);
+        
+        // 그리드 on/off 함수 (레벨링에서 사용)
+        window.setGridVisible = function(visible) {
+            grid.visible = visible;
+        };
         
         // 벽 (충돌용)
         const wallMat = new THREE.MeshStandardMaterial({ color: 0x3a2a5a, transparent: true, opacity: 0.3 });
