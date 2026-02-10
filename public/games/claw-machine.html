@@ -9,8 +9,8 @@
         html, body { width: 100%; height: 100%; overflow: hidden; position: fixed; background: #1a1a2e; font-family: system-ui, sans-serif; }
         #canvas { display: block; width: 100%; height: 100%; }
         
-        .ui-top { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; z-index: 100; padding-top: env(safe-area-inset-top); }
-        .stat-box { background: rgba(0,0,0,0.8); padding: 8px 15px; border-radius: 20px; border: 2px solid #ffd700; color: #fff; font-weight: bold; }
+        .ui-top { position: fixed; top: 10px; left: 10px; display: flex; gap: 8px; z-index: 100; padding-top: env(safe-area-inset-top); }
+        .stat-box { background: rgba(0,0,0,0.8); padding: 6px 10px; border-radius: 15px; border: 2px solid #ffd700; color: #fff; font-weight: bold; font-size: 0.85rem; white-space: nowrap; }
         .stat-box span { color: #00ffff; }
         
         /* 상태 표시 */
@@ -89,8 +89,9 @@
     <canvas id="canvas"></canvas>
     
     <div class="ui-top">
+        <div class="stat-box">📊 Lv.<span id="level">1</span></div>
         <div class="stat-box">🪙 <span id="coins">10</span></div>
-        <div class="stat-box">🏆 <span id="wins">0</span></div>
+        <div class="stat-box">🏆 <span id="wins">0</span>/<span id="target">6</span></div>
     </div>
     
     <div class="status-display" id="status">대기 중...</div>
@@ -137,6 +138,14 @@
                 <tr><td>🐰 토끼</td><td>어려움</td><td>긴 귀, 미끄러움</td></tr>
                 <tr><td>🐱 고양이</td><td>매우 어려움</td><td>발버둥, 무거움</td></tr>
             </table>
+            
+            <h3>📊 레벨 시스템</h3>
+            <ul>
+                <li>모든 인형을 잡으면 <strong>레벨 클리어!</strong></li>
+                <li>레벨이 올라갈수록 인형 수 증가</li>
+                <li>레벨이 올라갈수록 어려운 인형 비율 증가</li>
+                <li>진행 상황은 자동 저장됩니다</li>
+            </ul>
             
             <h3>💡 팁</h3>
             <div class="tip">
@@ -193,7 +202,8 @@
         // ═══════════════════════════════════════════
         const state = {
             craneX: 0, craneZ: 0,
-            coins: 24, wins: 0, // 인형 12개 × 2
+            coins: 24, wins: 0,
+            level: 1,
             isDropping: false, isCharging: false,
             power: 0, powerDir: 1,
             moveX: 0, moveZ: 0,
@@ -207,7 +217,26 @@
         const GRAVITY = 0.015;
         const BOUNCE = 0.4;
         const FRICTION = 0.95;
-        const PRIZE_COUNT = 12;  // 인형 갯수
+        
+        // 레벨별 설정
+        function getLevelConfig(level) {
+            const baseCount = 6;
+            const prizeCount = Math.min(baseCount + Math.floor((level - 1) * 1.5), 20); // 최대 20개
+            const coinsPerPrize = Math.max(3 - Math.floor(level / 5) * 0.5, 1.5); // 레벨 올라갈수록 코인 줄어듦
+            
+            // 레벨 올라갈수록 어려운 인형 비율 증가
+            const duffyRate = Math.max(0.15 - level * 0.01, 0.02);  // 15% → 2%
+            const catRate = Math.min(0.1 + level * 0.03, 0.4);      // 10% → 40%
+            const rabbitRate = Math.min(0.1 + level * 0.02, 0.3);   // 10% → 30%
+            // 나머지는 곰
+            
+            return {
+                prizeCount,
+                coins: Math.ceil(prizeCount * coinsPerPrize),
+                target: prizeCount, // 모두 잡아야 클리어
+                rates: { duffy: duffyRate, cat: catRate, rabbit: rabbitRate }
+            };
+        }
 
         // ═══════════════════════════════════════════
         // 🔊 사운드 시스템 (Web Audio API)
@@ -272,6 +301,12 @@
                 playTone(600, 0.1, 'sine', 0.25);
                 setTimeout(() => playTone(800, 0.15, 'sine', 0.2), 100);
                 setTimeout(() => playTone(500, 0.2, 'sine', 0.15), 200);
+            },
+            // 🎉 레벨업!
+            levelUp: () => {
+                [523, 659, 784, 880, 1047, 1319].forEach((f, i) => 
+                    setTimeout(() => playTone(f, 0.25, 'square', 0.3), i * 80)
+                );
             },
         };
 
@@ -666,6 +701,8 @@
             state.prizes.forEach(p => scene.remove(p.mesh));
             state.prizes = [];
             
+            const config = getLevelConfig(state.level);
+            
             const bearColors = [0xff9999, 0x99ff99, 0x9999ff, 0xffff99, 0xff99ff, 0x99ffff, 0xffcc99, 0xcc99ff];
             const rabbitColors = [0xffffff, 0xffddee, 0xeeddff, 0xffffee]; // 토끼는 밝은 색
             // 🐱 고양이 색상들!
@@ -679,10 +716,11 @@
             // 🧸 더피는 고정 색상!
             const duffyColor = 0xd4a574;
             
-            for (let i = 0; i < PRIZE_COUNT; i++) {
-                // 10% 더피, 15% 고양이, 10% 토끼, 65% 곰
+            for (let i = 0; i < config.prizeCount; i++) {
+                // 레벨별 확률 적용
                 const rand = Math.random();
-                const type = rand < 0.1 ? 'duffy' : rand < 0.25 ? 'cat' : rand < 0.35 ? 'rabbit' : 'bear';
+                const { duffy, cat, rabbit } = config.rates;
+                const type = rand < duffy ? 'duffy' : rand < duffy + cat ? 'cat' : rand < duffy + cat + rabbit ? 'rabbit' : 'bear';
                 const colors = type === 'duffy' ? [duffyColor] : type === 'cat' ? catColors : type === 'rabbit' ? rabbitColors : bearColors;
                 const color = colors[Math.floor(Math.random() * colors.length)];
                 const mesh = createPlushie(color, type);
@@ -720,9 +758,11 @@
                 });
             }
             
-            // 코인 = 인형 갯수 × 2
-            state.coins = PRIZE_COUNT * 2;
+            // 레벨 설정에 따른 코인
+            state.coins = config.coins;
             document.getElementById('coins').textContent = state.coins;
+            document.getElementById('level').textContent = state.level;
+            document.getElementById('target').textContent = config.target;
         }
 
         // ═══════════════════════════════════════════
@@ -1134,6 +1174,14 @@
                     grabbed.grabbed = true;
                     grabbed.isHeld = false;
                     scene.remove(grabbed.mesh);
+                    
+                    // 레벨 클리어 체크
+                    const config = getLevelConfig(state.level);
+                    if (state.wins >= config.target) {
+                        await sleep(500);
+                        await levelUp();
+                        return; // levelUp에서 게임 상태 리셋
+                    }
                 }
             } else {
                 setStatus('❌ 빗나감!', 'danger');
@@ -1166,15 +1214,34 @@
             
             if (state.coins <= 0) {
                 await sleep(500);
+                const config = getLevelConfig(state.level);
+                const remaining = config.target - state.wins;
                 const duffyCount = state.collection.filter(e => e === '🧸✨').length;
                 const catCount = state.collection.filter(e => e === '🐱').length;
                 const rabbitCount = state.collection.filter(e => e === '🐰').length;
-                let msg = state.collection.length > 0 ? `🎉 ${state.collection.length}개 획득!` : '💀 다시 도전!';
-                if (duffyCount > 0) msg += `\n🧸✨ 더피 ${duffyCount}마리! (디즈니 베어!)`;
-                if (catCount > 0) msg += `\n🐱 고양이 ${catCount}마리! (20% 더 어려움!)`;
-                if (rabbitCount > 0) msg += `\n🐰 토끼 ${rabbitCount}마리!`;
-                alert(msg);
-                resetGame();
+                
+                let msg = `📊 레벨 ${state.level} 실패!\n`;
+                msg += `🏆 ${state.wins}/${config.target}개 (${remaining}개 남음)\n\n`;
+                if (state.collection.length > 0) {
+                    msg += `획득한 인형:\n`;
+                    if (duffyCount > 0) msg += `🧸✨ 더피 ${duffyCount}마리\n`;
+                    if (catCount > 0) msg += `🐱 고양이 ${catCount}마리\n`;
+                    if (rabbitCount > 0) msg += `🐰 토끼 ${rabbitCount}마리\n`;
+                    const bearCount = state.collection.filter(e => e === '🧸').length;
+                    if (bearCount > 0) msg += `🧸 곰 ${bearCount}마리\n`;
+                }
+                msg += `\n이 레벨 다시 도전하시겠습니까?`;
+                
+                const retry = confirm(msg);
+                if (retry) {
+                    resetGame(true); // 레벨 유지
+                } else {
+                    if (state.level > 1 && confirm('레벨 1부터 다시 시작하시겠습니까?')) {
+                        resetGame(false); // 레벨 1로
+                    } else {
+                        resetGame(true); // 레벨 유지
+                    }
+                }
             }
         }
         
@@ -1210,14 +1277,49 @@
         
         function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
         
-        function resetGame() {
-            state.coins = 10;
+        async function levelUp() {
+            SFX.levelUp();
+            showFeedback(`🎉 LEVEL ${state.level} CLEAR!`, 'perfect');
+            setStatus(`🎊 레벨 ${state.level} 클리어! 다음 레벨로...`, '');
+            
+            await sleep(1500);
+            
+            state.level++;
             state.wins = 0;
             state.collection = [];
             state.craneX = 0;
             state.craneZ = 0;
             crane.position.set(0, 0, 0);
-            document.getElementById('coins').textContent = 10;
+            
+            // localStorage에 레벨 저장
+            try { localStorage.setItem('clawMachineLevel', state.level); } catch(e) {}
+            
+            document.getElementById('wins').textContent = 0;
+            document.getElementById('collection').innerHTML = '';
+            spawnPrizes();
+            document.getElementById('grabBtn').disabled = false;
+            setClawState(1);
+            clawGroup.position.y = 2.5;
+            
+            state.isDropping = false;
+            state.phase = 'idle';
+            
+            showFeedback(`LEVEL ${state.level}`, 'good');
+            setStatus(`📊 레벨 ${state.level} 시작!`, '');
+            await sleep(1000);
+            hideStatus();
+        }
+        
+        function resetGame(keepLevel = false) {
+            if (!keepLevel) {
+                state.level = 1;
+                try { localStorage.removeItem('clawMachineLevel'); } catch(e) {}
+            }
+            state.wins = 0;
+            state.collection = [];
+            state.craneX = 0;
+            state.craneZ = 0;
+            crane.position.set(0, 0, 0);
             document.getElementById('wins').textContent = 0;
             document.getElementById('collection').innerHTML = '';
             spawnPrizes();
@@ -1276,8 +1378,13 @@
         });
 
         // ═══════════════════════════════════════════
-        // 게임 루프
+        // 게임 초기화 - localStorage에서 레벨 로드
         // ═══════════════════════════════════════════
+        try {
+            const savedLevel = localStorage.getItem('clawMachineLevel');
+            if (savedLevel) state.level = parseInt(savedLevel) || 1;
+        } catch(e) {}
+        
         spawnPrizes();
         setClawState(1);
         
