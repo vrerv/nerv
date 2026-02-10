@@ -334,11 +334,6 @@
         floor.receiveShadow = true;
         machine.add(floor);
         
-        // 그리드
-        const grid = new THREE.GridHelper(5, 10, 0x6633aa, 0x4422aa);
-        grid.position.y = 0.11;
-        machine.add(grid);
-        
         // 벽 (충돌용)
         const wallMat = new THREE.MeshStandardMaterial({ color: 0x3a2a5a, transparent: true, opacity: 0.3 });
         const walls = [
