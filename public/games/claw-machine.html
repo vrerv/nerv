@@ -871,6 +871,62 @@
                 // 메시 업데이트
                 p.mesh.position.set(p.x, p.y, p.z);
             });
+            
+            // 인형 간 충돌 처리
+            const activePrizes = state.prizes.filter(p => !p.grabbed && !p.isHeld);
+            for (let i = 0; i < activePrizes.length; i++) {
+                for (let j = i + 1; j < activePrizes.length; j++) {
+                    const p1 = activePrizes[i];
+                    const p2 = activePrizes[j];
+                    
+                    const dx = p2.x - p1.x;
+                    const dy = p2.y - p1.y;
+                    const dz = p2.z - p1.z;
+                    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    
+                    // 인형 크기에 따른 충돌 반경 (타입별 크기 고려)
+                    const r1 = p1.type === 'cat' ? 0.35 : p1.type === 'duffy' ? 0.32 : 0.28;
+                    const r2 = p2.type === 'cat' ? 0.35 : p2.type === 'duffy' ? 0.32 : 0.28;
+                    const minDist = r1 + r2;
+                    
+                    if (dist < minDist && dist > 0.001) {
+                        // 겹침 해소 - 서로 밀어내기
+                        const overlap = minDist - dist;
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        const nz = dz / dist;
+                        
+                        // 위치 분리 (각각 절반씩)
+                        const sep = overlap * 0.5;
+                        p1.x -= nx * sep;
+                        p1.y -= ny * sep;
+                        p1.z -= nz * sep;
+                        p2.x += nx * sep;
+                        p2.y += ny * sep;
+                        p2.z += nz * sep;
+                        
+                        // 속도 교환 (탄성 충돌)
+                        const relVx = p1.vx - p2.vx;
+                        const relVy = p1.vy - p2.vy;
+                        const relVz = p1.vz - p2.vz;
+                        const relVn = relVx * nx + relVy * ny + relVz * nz;
+                        
+                        if (relVn > 0) { // 서로 접근 중일 때만
+                            const impulse = relVn * BOUNCE;
+                            p1.vx -= impulse * nx;
+                            p1.vy -= impulse * ny;
+                            p1.vz -= impulse * nz;
+                            p2.vx += impulse * nx;
+                            p2.vy += impulse * ny;
+                            p2.vz += impulse * nz;
+                        }
+                        
+                        // 메시 위치 업데이트
+                        p1.mesh.position.set(p1.x, p1.y, p1.z);
+                        p2.mesh.position.set(p2.x, p2.y, p2.z);
+                    }
+                }
+            }
         }
 
         // ═══════════════════════════════════════════
