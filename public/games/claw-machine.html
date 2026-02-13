@@ -743,34 +743,16 @@
                 // 고양이는 그립력 20% 더 필요, 더피는 잡기 쉬움!
                 const gripRequired = type === 'cat' ? 1.2 : type === 'duffy' ? 0.8 : 1.0;
                 
-                let x, z, yOffset;
-                const spacing = type === 'cat' ? 0.9 : type === 'duffy' ? 0.85 : type === 'rabbit' ? 0.8 : 0.6;
-                const baseY = type === 'cat' ? 0.15 : type === 'duffy' ? 0.14 : type === 'rabbit' ? 0.12 : 0.1;
+                let x, z, overlap, tries = 0;
+                const spacing = type === 'cat' ? 0.9 : type === 'duffy' ? 0.85 : type === 'rabbit' ? 0.8 : 0.6; // 고양이 > 더피 > 토끼
+                do {
+                    x = (Math.random() - 0.5) * 4;
+                    z = (Math.random() - 0.5) * 3;
+                    overlap = state.prizes.some(p => Math.abs(p.x - x) < spacing && Math.abs(p.z - z) < spacing);
+                    tries++;
+                } while (overlap && tries < 30);
                 
-                if (config.prizeCount > 30) {
-                    // 대량 스폰: 격자 배치 + 다층 스택
-                    const gridSpacing = 0.45;
-                    const cols = Math.floor(4.4 / gridSpacing); // ~9
-                    const rows = Math.floor(3.6 / gridSpacing); // ~8
-                    const perLayer = cols * rows;
-                    const layer = Math.floor(i / perLayer);
-                    const idx = i % perLayer;
-                    const col = idx % cols;
-                    const row = Math.floor(idx / cols);
-                    x = -2.1 + col * gridSpacing + (Math.random() - 0.5) * 0.1;
-                    z = -1.7 + row * gridSpacing + (Math.random() - 0.5) * 0.1;
-                    yOffset = baseY + layer * 0.3;
-                } else {
-                    // 기존 랜덤 배치
-                    let overlap, tries = 0;
-                    do {
-                        x = (Math.random() - 0.5) * 4;
-                        z = (Math.random() - 0.5) * 3;
-                        overlap = state.prizes.some(p => Math.abs(p.x - x) < spacing && Math.abs(p.z - z) < spacing);
-                        tries++;
-                    } while (overlap && tries < 30);
-                    yOffset = baseY;
-                }
+                const yOffset = type === 'cat' ? 0.15 : type === 'duffy' ? 0.14 : type === 'rabbit' ? 0.12 : 0.1;
                 mesh.position.set(x, yOffset, z);
                 mesh.rotation.y = Math.random() * Math.PI * 2;
                 scene.add(mesh);
@@ -936,11 +918,6 @@
                 p.vx *= FRICTION;
                 p.vz *= FRICTION;
                 
-                // 속도가 매우 작으면 정지 (떨림 방지)
-                if (Math.abs(p.vx) < 0.001) p.vx = 0;
-                if (Math.abs(p.vy) < 0.001 && p.y <= 0.11) p.vy = 0;
-                if (Math.abs(p.vz) < 0.001) p.vz = 0;
-                
                 // 메시 업데이트
                 p.mesh.position.set(p.x, p.y, p.z);
             });
@@ -985,7 +962,7 @@
                         const relVn = relVx * nx + relVy * ny + relVz * nz;
                         
                         if (relVn > 0) { // 서로 접근 중일 때만
-                            const impulse = Math.min(relVn * BOUNCE, 0.05);
+                            const impulse = relVn * BOUNCE;
                             p1.vx -= impulse * nx;
                             p1.vy -= impulse * ny;
                             p1.vz -= impulse * nz;
