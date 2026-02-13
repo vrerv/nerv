@@ -1293,6 +1293,7 @@
             await sleep(1500);
             
             state.level++;
+            gtag('event', 'level_up', { level: state.level });
             state.wins = 0;
             state.collection = [];
             state.craneX = 0;
@@ -1462,10 +1463,12 @@
         
         helpBtn.addEventListener('click', () => {
             helpModal.classList.add('visible');
+            gtag('event', 'help_open', { help: true });
         });
         
         helpClose.addEventListener('click', () => {
             helpModal.classList.remove('visible');
+            gtag('event', 'help_close', { help_close: true });
         });
         
         helpModal.addEventListener('click', (e) => {
