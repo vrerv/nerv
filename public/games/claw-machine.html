@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>🎮 인형뽑기 Physics</title>
+    <script src="physics-solver.js"></script>
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-DCRN1EHVS8"></script>
     <script>
@@ -887,96 +888,21 @@
         // ═══════════════════════════════════════════
         // 물리 업데이트
         // ═══════════════════════════════════════════
+        // Erin Catto Sequential Impulse Solver
+        const solver = new PhysicsSolver({
+            gravity: GRAVITY,
+            friction: FRICTION,
+            restitution: 0.15,        // 낮은 반발 → 빠른 안정화
+            velocityIterations: 8,     // 충분한 반복 → 정확한 수렴
+            positionIterations: 4,
+            slop: 0.015,               // 약간의 겹침 허용 → 접촉 안정
+            baumgarte: 0.2,            // 점진적 위치 보정
+            sleepVelocityThreshold: 0.008,
+            sleepTimeThreshold: 60,    // 60프레임 저속 → sleep
+        });
+
         function updatePhysics() {
-            state.prizes.forEach(p => {
-                if (p.grabbed || p.isHeld) return;
-                
-                // 중력
-                p.vy -= GRAVITY;
-                
-                // 위치 업데이트
-                p.x += p.vx;
-                p.y += p.vy;
-                p.z += p.vz;
-                
-                // 바닥 충돌
-                if (p.y < 0.1) {
-                    if (p.vy < -0.05) SFX.bounce(); // 충분히 빠르면 소리
-                    p.y = 0.1;
-                    p.vy *= -BOUNCE;
-                    p.vx *= FRICTION;
-                    p.vz *= FRICTION;
-                }
-                
-                // 벽 충돌
-                if (p.x < -2.3) { p.x = -2.3; p.vx *= -BOUNCE; }
-                if (p.x > 2.3) { p.x = 2.3; p.vx *= -BOUNCE; }
-                if (p.z < -1.9) { p.z = -1.9; p.vz *= -BOUNCE; }
-                if (p.z > 1.9) { p.z = 1.9; p.vz *= -BOUNCE; }
-                
-                // 마찰
-                p.vx *= FRICTION;
-                p.vz *= FRICTION;
-                
-                // 메시 업데이트
-                p.mesh.position.set(p.x, p.y, p.z);
-            });
-            
-            // 인형 간 충돌 처리
-            const activePrizes = state.prizes.filter(p => !p.grabbed && !p.isHeld);
-            for (let i = 0; i < activePrizes.length; i++) {
-                for (let j = i + 1; j < activePrizes.length; j++) {
-                    const p1 = activePrizes[i];
-                    const p2 = activePrizes[j];
-                    
-                    const dx = p2.x - p1.x;
-                    const dy = p2.y - p1.y;
-                    const dz = p2.z - p1.z;
-                    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                    
-                    // 인형 크기에 따른 충돌 반경 (타입별 크기 고려)
-                    const r1 = p1.type === 'cat' ? 0.35 : p1.type === 'duffy' ? 0.32 : 0.28;
-                    const r2 = p2.type === 'cat' ? 0.35 : p2.type === 'duffy' ? 0.32 : 0.28;
-                    const minDist = r1 + r2;
-                    
-                    if (dist < minDist && dist > 0.001) {
-                        // 겹침 해소 - 서로 밀어내기
-                        const overlap = minDist - dist;
-                        const nx = dx / dist;
-                        const ny = dy / dist;
-                        const nz = dz / dist;
-                        
-                        // 위치 분리 (각각 절반씩)
-                        const sep = overlap * 0.5;
-                        p1.x -= nx * sep;
-                        p1.y -= ny * sep;
-                        p1.z -= nz * sep;
-                        p2.x += nx * sep;
-                        p2.y += ny * sep;
-                        p2.z += nz * sep;
-                        
-                        // 속도 교환 (탄성 충돌)
-                        const relVx = p1.vx - p2.vx;
-                        const relVy = p1.vy - p2.vy;
-                        const relVz = p1.vz - p2.vz;
-                        const relVn = relVx * nx + relVy * ny + relVz * nz;
-                        
-                        if (relVn > 0) { // 서로 접근 중일 때만
-                            const impulse = relVn * BOUNCE;
-                            p1.vx -= impulse * nx;
-                            p1.vy -= impulse * ny;
-                            p1.vz -= impulse * nz;
-                            p2.vx += impulse * nx;
-                            p2.vy += impulse * ny;
-                            p2.vz += impulse * nz;
-                        }
-                        
-                        // 메시 위치 업데이트
-                        p1.mesh.position.set(p1.x, p1.y, p1.z);
-                        p2.mesh.position.set(p2.x, p2.y, p2.z);
-                    }
-                }
-            }
+            solver.step(state.prizes, () => SFX.bounce());
         }
 
         // ═══════════════════════════════════════════
@@ -1060,6 +986,8 @@
                 setGrip(finalGrip);
                 
                 grabbed.isHeld = true;
+                solver.wake(grabbed);
+                solver.wakeNear(state.prizes, grabbed.x, grabbed.z, 1.0);
                 state.grabbedPrize = grabbed;
                 
                 const typeEmoji = grabbed.type === 'duffy' ? '🧸✨' : grabbed.type === 'cat' ? '🐱' : grabbed.type === 'rabbit' ? '🐰' : '🧸';
@@ -1136,6 +1064,7 @@
                             if (!slipped && Math.random() < slipChance * 0.02) {
                                 slipped = true;
                                 grabbed.isHeld = false;
+                                solver.wake(grabbed);
                                 grabbed.vy = 0;
                                 grabbed.vx = (Math.random() - 0.5) * 0.1;
                                 grabbed.vz = (Math.random() - 0.5) * 0.1;
