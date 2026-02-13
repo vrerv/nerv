@@ -165,6 +165,7 @@
             </div>
             
             <button class="help-close" id="helpClose">닫기</button>
+            <button class="help-close" id="lunarNewYear" style="margin-top: 8px;">🧧 즐거운 설날!</button>
         </div>
     </div>
     
@@ -705,11 +706,12 @@
             return plushie;
         }
 
-        function spawnPrizes() {
+        function spawnPrizes(overrideCount) {
             state.prizes.forEach(p => scene.remove(p.mesh));
             state.prizes = [];
             
             const config = getLevelConfig(state.level);
+            if (overrideCount) config.prizeCount = overrideCount;
             
             const bearColors = [0xff9999, 0x99ff99, 0x9999ff, 0xffff99, 0xff99ff, 0x99ffff, 0xffcc99, 0xcc99ff];
             const rabbitColors = [0xffffff, 0xffddee, 0xeeddff, 0xffffee]; // 토끼는 밝은 색
@@ -1469,6 +1471,19 @@
         helpClose.addEventListener('click', () => {
             helpModal.classList.remove('visible');
             gtag('event', 'help_close', { help_close: true });
+        });
+
+        document.getElementById('lunarNewYear').addEventListener('click', () => {
+            helpModal.classList.remove('visible');
+            gtag('event', 'lunar_new_year', { lunar_new_year: true });
+            state.wins = 0;
+            state.coins += 200;
+            document.getElementById('wins').textContent = 0;
+            document.getElementById('coins').textContent = state.coins;
+            document.getElementById('collection').innerHTML = '';
+            spawnPrizes(100);
+            showFeedback('🧧 새해 복 많이 받으세요! 🎊', 'perfect');
+            setStatus('🧧 인형 100마리 등장!', '');
         });
         
         helpModal.addEventListener('click', (e) => {
