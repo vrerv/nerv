@@ -453,13 +453,12 @@
 
     // === Touch Gesture Controls on Game Canvas ===
     if (isMobile) {
-        let touchStartX, touchStartY, touchStartTime;
+        let touchStartX, touchStartY, touchStartTime, touchLastX, touchLastY;
         let touchMoveAccumX = 0, touchMoveAccumY = 0;
-        let touchMoved = false;
         let hardDropped = false;
-        const SWIPE_THRESHOLD = CELL * 0.7; // horizontal/vertical move threshold
-        const TAP_MAX_DIST = 15;
-        const TAP_MAX_TIME = 250;
+        const SWIPE_THRESHOLD = CELL * 0.7;
+        const TAP_MAX_DIST = 20;
+        const TAP_MAX_TIME = 300;
         const HARD_DROP_VELOCITY = 1.5; // px/ms threshold for fast downward swipe
 
         canvas.addEventListener('touchstart', e => {
@@ -468,9 +467,10 @@
             touchStartX = t.clientX;
             touchStartY = t.clientY;
             touchStartTime = performance.now();
+            touchLastX = touchStartX;
+            touchLastY = touchStartY;
             touchMoveAccumX = 0;
             touchMoveAccumY = 0;
-            touchMoved = false;
             hardDropped = false;
         }, { passive: false });
 
@@ -489,6 +489,9 @@
                 return;
             }
 
+            touchLastX = t.clientX;
+            touchLastY = t.clientY;
+
             // Horizontal movement: trigger per SWIPE_THRESHOLD px
             const cellsMovedX = Math.floor((dx - touchMoveAccumX) / SWIPE_THRESHOLD);
             if (cellsMovedX !== 0) {
@@ -496,7 +499,6 @@
                 const steps = Math.abs(cellsMovedX);
                 for (let i = 0; i < steps; i++) handleAction(dir);
                 touchMoveAccumX += cellsMovedX * SWIPE_THRESHOLD;
-                touchMoved = true;
             }
 
             // Vertical (downward) movement: soft drop per threshold
@@ -504,7 +506,6 @@
             if (cellsMovedY > 0) {
                 for (let i = 0; i < cellsMovedY; i++) handleAction('down');
                 touchMoveAccumY += cellsMovedY * SWIPE_THRESHOLD;
-                touchMoved = true;
             }
         }, { passive: false });
 
@@ -513,8 +514,10 @@
             if (hardDropped) return;
             // Tap = rotate (short touch, minimal movement)
             const elapsed = performance.now() - touchStartTime;
-            const dist = Math.sqrt(touchMoveAccumX ** 2 + touchMoveAccumY ** 2);
-            if (!touchMoved && elapsed < TAP_MAX_TIME && dist < TAP_MAX_DIST) {
+            const rawDx = touchLastX - touchStartX;
+            const rawDy = touchLastY - touchStartY;
+            const dist = Math.sqrt(rawDx * rawDx + rawDy * rawDy);
+            if (elapsed < TAP_MAX_TIME && dist < TAP_MAX_DIST) {
                 handleAction('rotate');
             }
         }, { passive: false });
