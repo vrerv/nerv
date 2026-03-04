@@ -152,6 +152,7 @@
             src.connect(gain);
             gain.connect(ac.destination);
             src.start();
+            src.stop(ac.currentTime + duration);
         } catch(e) {}
     }
     const sfx = {
@@ -200,7 +201,7 @@
     };
     const PIECE_NAMES = Object.keys(PIECES);
 
-    let board, current, next, score, level, lines, dropInterval, dropTimer, gameOver, animFrame;
+    let board, current, next, score, level, lines, dropInterval, dropTimer, gameOver, animFrame, gameOverSounded;
     // Line clear animation state
     let clearAnim = null; // { rows: [], startTime, duration, count }
 
@@ -354,7 +355,7 @@
 
     let lastTime = 0;
     function gameLoop(time) {
-        if (gameOver) { sfx.gameOver(); showOverlay('GAME OVER', true); return; }
+        if (gameOver) { if (!gameOverSounded) { sfx.gameOver(); gameOverSounded = true; } showOverlay('GAME OVER', true); return; }
 
         // Handle line clear animation
         if (clearAnim) {
@@ -451,7 +452,7 @@
     function startGame() {
         sfx.start();
         board = newBoard();
-        score = 0; level = 1; lines = 0; dropInterval = 1000; dropTimer = 0; gameOver = false;
+        score = 0; level = 1; lines = 0; dropInterval = 1000; dropTimer = 0; gameOver = false; gameOverSounded = false;
         bag = [];
         current = nextPieceFromBag(); next = nextPieceFromBag();
         updateUI();
