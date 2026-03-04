@@ -161,12 +161,24 @@
         hardDrop(){ playTone(100, 0.15, 'triangle', 0.2, -80); playNoise(0.08, 0.15); },
         lock()    { playTone(180, 0.1, 'triangle', 0.12); },
         clear(n)  {
-            // Escalating sound by line count
-            const base = 400;
-            for (let i = 0; i < n; i++) {
-                setTimeout(() => playTone(base + i * 150, 0.15, 'square', 0.15 + i * 0.03, 200), i * 60);
-            }
-            if (n >= 4) setTimeout(() => { playTone(800, 0.3, 'sawtooth', 0.18, 400); playNoise(0.15, 0.12); }, n * 60);
+            // Cheerful ascending arpeggio — more rewarding feel
+            const chords = [
+                [523, 659, 784],        // 1 line: C5-E5-G5
+                [523, 659, 784, 1047],   // 2 lines: C5-E5-G5-C6
+                [587, 740, 880, 1175],   // 3 lines: D5-F#5-A5-D6
+                [659, 831, 988, 1319, 1568], // 4 lines (tetris!): E5-G#5-B5-E6-G6
+            ];
+            const notes = chords[Math.min(n, 4) - 1];
+            notes.forEach((f, i) => {
+                setTimeout(() => playTone(f, 0.12 + n * 0.03, 'triangle', 0.12 + n * 0.02, 150), i * 50);
+            });
+            // Sparkle noise for 2+ lines
+            if (n >= 2) setTimeout(() => playNoise(0.08, 0.06), notes.length * 50);
+            // Bonus fanfare for tetris
+            if (n >= 4) setTimeout(() => {
+                playTone(1568, 0.2, 'square', 0.1, 300);
+                playTone(2093, 0.3, 'sine', 0.08, 500);
+            }, notes.length * 50 + 80);
         },
         gameOver() {
             [400,350,300,250,200].forEach((f,i) => setTimeout(() => playTone(f, 0.2, 'sawtooth', 0.12), i * 120));
