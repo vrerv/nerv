@@ -294,6 +294,7 @@
             if (progress >= 1) {
                 finishClearLines(clearAnim.count);
                 clearAnim = null;
+                lastTime = time; // prevent huge dt jump after animation
             }
             animFrame = requestAnimationFrame(gameLoop);
             return;
