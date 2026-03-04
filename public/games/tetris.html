@@ -131,6 +131,8 @@
     const PIECE_NAMES = Object.keys(PIECES);
 
     let board, current, next, score, level, lines, dropInterval, dropTimer, gameOver, animFrame;
+    // Line clear animation state
+    let clearAnim = null; // { rows: [], startTime, duration, count }
 
     function newBoard() {
         return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
@@ -186,23 +188,32 @@
     }
 
     function clearLines() {
-        let cleared = 0;
-        for (let r = ROWS - 1; r >= 0; r--) {
-            if (board[r].every(c => c)) {
-                board.splice(r, 1);
+        const fullRows = [];
+        for (let r = 0; r < ROWS; r++) {
+            if (board[r].every(c => c)) fullRows.push(r);
+        }
+        if (fullRows.length === 0) return;
+        // Start animation — duration and intensity scale with line count
+        const count = fullRows.length;
+        const duration = count === 1 ? 300 : count === 2 ? 400 : count === 3 ? 500 : 650;
+        clearAnim = { rows: fullRows, startTime: performance.now(), duration, count };
+    }
+
+    function finishClearLines(count) {
+        // Actually remove the rows after animation
+        for (let i = board.length - 1; i >= 0; i--) {
+            if (board[i].every(c => c)) {
+                board.splice(i, 1);
                 board.unshift(Array(COLS).fill(null));
-                cleared++;
-                r++; // re-check same row
+                i++; // re-check
             }
         }
-        if (cleared) {
-            const pts = [0, 100, 300, 500, 800];
-            score += (pts[cleared] || 800) * level;
-            lines += cleared;
-            level = Math.floor(lines / 10) + 1;
-            dropInterval = Math.max(50, 1000 - (level - 1) * 80);
-            updateUI();
-        }
+        const pts = [0, 100, 300, 500, 800];
+        score += (pts[count] || 800) * level;
+        lines += count;
+        level = Math.floor(lines / 10) + 1;
+        dropInterval = Math.max(50, 1000 - (level - 1) * 80);
+        updateUI();
     }
 
     function updateUI() {
@@ -273,6 +284,22 @@
     let lastTime = 0;
     function gameLoop(time) {
         if (gameOver) { showOverlay('GAME OVER', true); return; }
+
+        // Handle line clear animation
+        if (clearAnim) {
+            const elapsed = time - clearAnim.startTime;
+            const progress = Math.min(elapsed / clearAnim.duration, 1);
+            render();
+            drawClearEffect(clearAnim.rows, progress, clearAnim.count);
+            if (progress >= 1) {
+                finishClearLines(clearAnim.count);
+                clearAnim = null;
+                lastTime = time; // prevent huge dt jump after animation
+            }
+            animFrame = requestAnimationFrame(gameLoop);
+            return;
+        }
+
         const dt = time - lastTime;
         dropTimer += dt;
         lastTime = time;
@@ -286,6 +313,67 @@
         }
         render();
         animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    function drawClearEffect(rows, progress, count) {
+        // Phase 1 (0-0.6): flash white with pulses, intensity by count
+        // Phase 2 (0.6-1): shrink/fade out rows
+        const flashIntensity = count === 1 ? 0.7 : count === 2 ? 0.85 : count === 3 ? 0.95 : 1.0;
+        const shakeAmount = count === 1 ? 0 : count === 2 ? 1 : count === 3 ? 2 : 3;
+
+        // Screen shake for multi-line clears
+        if (shakeAmount > 0 && progress < 0.6) {
+            const shake = Math.sin(progress * 40) * shakeAmount * (1 - progress / 0.6);
+            ctx.save();
+            ctx.translate(shake, 0);
+        }
+
+        for (const r of rows) {
+            const y = r * CELL;
+            if (progress < 0.6) {
+                // Flash phase — pulsing white overlay
+                const pulsePhase = progress / 0.6;
+                const pulse = Math.sin(pulsePhase * Math.PI * (count + 1)) * 0.3 + 0.7;
+                const alpha = flashIntensity * pulse;
+                ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+                ctx.fillRect(0, y, COLS * CELL, CELL);
+                // Color tint for bigger clears
+                if (count >= 3) {
+                    const hue = (progress * 360 * 2) % 360;
+                    ctx.fillStyle = `hsla(${hue},100%,70%,${0.3 * pulse})`;
+                    ctx.fillRect(0, y, COLS * CELL, CELL);
+                }
+            } else {
+                // Collapse phase — rows shrink vertically and fade
+                const collapseProgress = (progress - 0.6) / 0.4;
+                const scaleY = 1 - collapseProgress;
+                const alpha = 1 - collapseProgress;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.translate(0, y + CELL * 0.5);
+                ctx.scale(1, scaleY);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(0, -CELL * 0.5, COLS * CELL, CELL);
+                ctx.restore();
+            }
+        }
+
+        // Particle burst for tetris (4 lines)
+        if (count >= 4 && progress < 0.8) {
+            const particleAlpha = 1 - progress / 0.8;
+            for (let i = 0; i < 20; i++) {
+                const px = (Math.sin(i * 7 + progress * 30) * 0.5 + 0.5) * COLS * CELL;
+                const py = rows[0] * CELL + progress * 200 * Math.sin(i * 3) - progress * 100;
+                const size = (1 - progress) * 4 + 1;
+                const hue = (i * 50 + progress * 500) % 360;
+                ctx.fillStyle = `hsla(${hue},100%,70%,${particleAlpha})`;
+                ctx.fillRect(px - size/2, py - size/2, size, size);
+            }
+        }
+
+        if (shakeAmount > 0 && progress < 0.6) {
+            ctx.restore();
+        }
     }
 
     function startGame() {
