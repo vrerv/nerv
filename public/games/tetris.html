@@ -446,10 +446,79 @@
         if (map[e.key]) { e.preventDefault(); handleAction(map[e.key]); }
     });
 
-    // Mobile buttons
+    // Mobile buttons (fallback)
     document.querySelectorAll('.mobile-btn').forEach(btn => {
         btn.addEventListener('touchstart', e => { e.preventDefault(); handleAction(btn.dataset.action); });
     });
+
+    // === Touch Gesture Controls on Game Canvas ===
+    if (isMobile) {
+        let touchStartX, touchStartY, touchStartTime;
+        let touchMoveAccumX = 0, touchMoveAccumY = 0;
+        let touchMoved = false;
+        let hardDropped = false;
+        const SWIPE_THRESHOLD = CELL * 0.7; // horizontal/vertical move threshold
+        const TAP_MAX_DIST = 15;
+        const TAP_MAX_TIME = 250;
+        const HARD_DROP_VELOCITY = 1.5; // px/ms threshold for fast downward swipe
+
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const t = e.touches[0];
+            touchStartX = t.clientX;
+            touchStartY = t.clientY;
+            touchStartTime = performance.now();
+            touchMoveAccumX = 0;
+            touchMoveAccumY = 0;
+            touchMoved = false;
+            hardDropped = false;
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if (hardDropped) return;
+            const t = e.touches[0];
+            const dx = t.clientX - touchStartX;
+            const dy = t.clientY - touchStartY;
+            const elapsed = performance.now() - touchStartTime;
+
+            // Check for fast downward swipe → hard drop
+            if (dy > CELL * 2 && elapsed > 0 && (dy / elapsed) > HARD_DROP_VELOCITY) {
+                handleAction('drop');
+                hardDropped = true;
+                return;
+            }
+
+            // Horizontal movement: trigger per SWIPE_THRESHOLD px
+            const cellsMovedX = Math.floor((dx - touchMoveAccumX) / SWIPE_THRESHOLD);
+            if (cellsMovedX !== 0) {
+                const dir = cellsMovedX > 0 ? 'right' : 'left';
+                const steps = Math.abs(cellsMovedX);
+                for (let i = 0; i < steps; i++) handleAction(dir);
+                touchMoveAccumX += cellsMovedX * SWIPE_THRESHOLD;
+                touchMoved = true;
+            }
+
+            // Vertical (downward) movement: soft drop per threshold
+            const cellsMovedY = Math.floor((dy - touchMoveAccumY) / SWIPE_THRESHOLD);
+            if (cellsMovedY > 0) {
+                for (let i = 0; i < cellsMovedY; i++) handleAction('down');
+                touchMoveAccumY += cellsMovedY * SWIPE_THRESHOLD;
+                touchMoved = true;
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', e => {
+            e.preventDefault();
+            if (hardDropped) return;
+            // Tap = rotate (short touch, minimal movement)
+            const elapsed = performance.now() - touchStartTime;
+            const dist = Math.sqrt(touchMoveAccumX ** 2 + touchMoveAccumY ** 2);
+            if (!touchMoved && elapsed < TAP_MAX_TIME && dist < TAP_MAX_DIST) {
+                handleAction('rotate');
+            }
+        }, { passive: false });
+    }
 
     // Initial state
     board = newBoard();
