@@ -8,10 +8,10 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a2e; font-family: system-ui, sans-serif; color: #fff; }
         
-        .container { display: flex; justify-content: center; align-items: center; height: 100%; gap: 20px; }
+        .container { display: flex; justify-content: center; align-items: stretch; height: 100%; gap: 20px; }
         
         /* Side panels */
-        .side-panel { display: flex; flex-direction: column; gap: 12px; width: 140px; }
+        .side-panel { display: flex; flex-direction: column; gap: 12px; width: 140px; justify-content: flex-start; padding-top: 20px; }
         
         .panel-box { background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; text-align: center; }
         .panel-box h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; color: #888; margin-bottom: 8px; }
@@ -33,9 +33,8 @@
         .btn { background: linear-gradient(180deg, #00dd66 0%, #00aa44 100%); border: 3px solid #00ff88; border-radius: 25px; color: #fff; font-size: 0.95rem; font-weight: bold; padding: 10px 28px; cursor: pointer; box-shadow: 0 4px 0 #007733, 0 6px 15px rgba(0,0,0,0.4); transition: transform 0.1s; }
         .btn:hover { transform: translateY(-1px); }
         .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #007733; }
-        .btn.secondary { background: linear-gradient(180deg, #555 0%, #333 100%); border-color: #666; box-shadow: 0 4px 0 #222; }
         
-        .controls-help { font-size: 0.65rem; color: #555; line-height: 1.6; text-align: center; }
+        .controls-help { font-size: 0.65rem; color: #555; line-height: 1.6; text-align: left; }
         .controls-help kbd { background: #222; border: 1px solid #444; border-radius: 3px; padding: 1px 5px; font-family: inherit; color: #aaa; }
 
         /* Mobile controls */
@@ -137,10 +136,19 @@
         return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
     }
 
-    function randomPiece() {
-        const name = PIECE_NAMES[Math.random() * 7 | 0];
+    // 7-bag randomizer
+    let bag = [];
+    function nextPieceFromBag() {
+        if (bag.length === 0) {
+            bag = [...PIECE_NAMES];
+            for (let i = bag.length - 1; i > 0; i--) {
+                const j = Math.random() * (i + 1) | 0;
+                [bag[i], bag[j]] = [bag[j], bag[i]];
+            }
+        }
+        const name = bag.pop();
         const p = PIECES[name];
-        return { cells: p.shape.map(c => [...c]), color: p.color, x: 3, y: 0 };
+        return { cells: p.shape.map(c => [...c]), color: p.color, name, x: 3, y: 0 };
     }
 
     function rotatedCells(cells) {
@@ -173,7 +181,7 @@
         clearLines();
         current = next;
         current.x = 3; current.y = 0;
-        next = randomPiece();
+        next = nextPieceFromBag();
         if (collides(current.cells, current.x, current.y)) gameOver = true;
     }
 
@@ -283,7 +291,8 @@
     function startGame() {
         board = newBoard();
         score = 0; level = 1; lines = 0; dropInterval = 1000; dropTimer = 0; gameOver = false;
-        current = randomPiece(); next = randomPiece();
+        bag = [];
+        current = nextPieceFromBag(); next = nextPieceFromBag();
         updateUI();
         hideOverlay();
         lastTime = performance.now();
@@ -321,8 +330,8 @@
                 if (!collides(current.cells, current.x, current.y + 1)) { current.y++; score += 1; dropTimer = 0; updateUI(); }
                 break;
             case 'rotate': {
+                if (current.name === 'O') break; // O-block doesn't rotate
                 const rotated = rotatedCells(current.cells);
-                // Try normal, then wall kicks (-1, +1, -2, +2)
                 for (const kick of [0, -1, 1, -2, 2]) {
                     if (!collides(rotated, current.x + kick, current.y)) {
                         current.cells = rotated;
