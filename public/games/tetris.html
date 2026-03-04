@@ -47,15 +47,17 @@
         .mobile-pause-btn { margin-top: 4px; }
 
         @media (max-width: 700px) {
-            html, body { overflow: hidden; height: 100dvh; }
-            .container { flex-direction: column; gap: 4px; padding: 6px 0 0; height: 100dvh; align-items: center; justify-content: flex-start; }
-            .side-panel { flex-direction: row; width: auto; flex-wrap: wrap; justify-content: center; gap: 4px; }
+            html, body { overflow: hidden; height: 100dvh; position: fixed; width: 100%; }
+            .container { flex-direction: column; gap: 0; padding: 0; height: 100dvh; align-items: center; justify-content: space-between; overflow: hidden; }
+            .side-panel { flex-direction: row; width: 100%; flex-wrap: nowrap; justify-content: center; gap: 4px; padding: 6px 8px; flex-shrink: 0; }
             .side-panel:last-child { display: none; }
-            .panel-box { padding: 4px 10px; }
-            .panel-box h3 { font-size: 0.6rem; margin-bottom: 2px; }
-            .panel-box .value { font-size: 0.9rem; }
-            #preview-canvas { width: 50px; height: 50px; }
-            .mobile-controls { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 340px; padding: 0 12px; margin: 0 auto; }
+            .panel-box { padding: 4px 10px; flex: 1; }
+            .panel-box h3 { font-size: 0.55rem; margin-bottom: 2px; }
+            .panel-box .value { font-size: 0.85rem; }
+            #preview-canvas { width: 40px; height: 40px; }
+            .board-wrapper { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; border: none; box-shadow: none; background: none; }
+            #game-canvas { border: 3px solid rgba(255,215,0,0.6); border-radius: 4px; box-shadow: 0 0 30px rgba(0,215,255,0.15); }
+            .mobile-controls { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 360px; padding: 8px 12px; margin: 0 auto; flex-shrink: 0; }
             .mobile-btn { width: 50px; height: 50px; }
             .controls-help { display: none; }
         }
@@ -108,9 +110,9 @@
 (() => {
     const COLS = 10, ROWS = 20;
     const isMobile = window.innerWidth <= 700;
-    // On mobile: fit to viewport considering info bar (~50px) + controls (~60px) + padding (~20px)
-    const mobileReserved = 130; // px for top info + bottom controls + gaps
-    const cellByWidth = Math.floor((window.innerWidth * 0.92) / COLS);
+    // On mobile: reserve space for info bar (~55px) + controls (~70px) + padding/gaps (~25px)
+    const mobileReserved = 150;
+    const cellByWidth = Math.floor((window.innerWidth * 0.90) / COLS);
     const cellByHeight = Math.floor((window.innerHeight - mobileReserved) / ROWS);
     const CELL = isMobile ? Math.min(cellByWidth, cellByHeight) : 30;
     const canvas = document.getElementById('game-canvas');
