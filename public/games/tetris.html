@@ -446,10 +446,92 @@
         if (map[e.key]) { e.preventDefault(); handleAction(map[e.key]); }
     });
 
-    // Mobile buttons
+    // Mobile buttons (fallback)
     document.querySelectorAll('.mobile-btn').forEach(btn => {
         btn.addEventListener('touchstart', e => { e.preventDefault(); handleAction(btn.dataset.action); });
     });
+
+    // === Touch Gesture Controls on Game Canvas ===
+    if (isMobile) {
+        let touchStartX, touchStartY, touchStartTime, touchLastX, touchLastY;
+        let touchMoveAccumX = 0, touchMoveAccumY = 0;
+        let hardDropped = false;
+        const SWIPE_THRESHOLD = CELL * 0.7;
+        const TAP_MAX_DIST = 20;
+        const TAP_MAX_TIME = 300;
+        const HARD_DROP_VELOCITY = 1.5; // px/ms threshold for fast downward swipe
+
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const t = e.touches[0];
+            touchStartX = t.clientX;
+            touchStartY = t.clientY;
+            touchStartTime = performance.now();
+            touchLastX = touchStartX;
+            touchLastY = touchStartY;
+            touchMoveAccumX = 0;
+            touchMoveAccumY = 0;
+            hardDropped = false;
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if (hardDropped) return;
+            const t = e.touches[0];
+            const dx = t.clientX - touchStartX;
+            const dy = t.clientY - touchStartY;
+            const elapsed = performance.now() - touchStartTime;
+
+            // Check for fast downward swipe → hard drop
+            if (dy > CELL * 2 && elapsed > 0 && (dy / elapsed) > HARD_DROP_VELOCITY) {
+                handleAction('drop');
+                hardDropped = true;
+                return;
+            }
+
+            touchLastX = t.clientX;
+            touchLastY = t.clientY;
+
+            // Dead zone: don't trigger movement until outside tap range
+            const rawDist = Math.sqrt(dx * dx + dy * dy);
+            if (rawDist < TAP_MAX_DIST) return;
+
+            // Reset accumulators on first exit from dead zone
+            if (touchMoveAccumX === 0 && touchMoveAccumY === 0) {
+                touchMoveAccumX = dx;
+                touchMoveAccumY = dy;
+            }
+
+            // Horizontal movement: trigger per SWIPE_THRESHOLD px
+            const cellsMovedX = Math.floor((dx - touchMoveAccumX) / SWIPE_THRESHOLD);
+            if (cellsMovedX !== 0) {
+                const dir = cellsMovedX > 0 ? 'right' : 'left';
+                const steps = Math.abs(cellsMovedX);
+                for (let i = 0; i < steps; i++) handleAction(dir);
+                touchMoveAccumX += cellsMovedX * SWIPE_THRESHOLD;
+            }
+
+            // Vertical (downward) movement: soft drop per threshold
+            const cellsMovedY = Math.floor((dy - touchMoveAccumY) / SWIPE_THRESHOLD);
+            if (cellsMovedY > 0) {
+                for (let i = 0; i < cellsMovedY; i++) handleAction('down');
+                touchMoveAccumY += cellsMovedY * SWIPE_THRESHOLD;
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', e => {
+            e.preventDefault();
+            if (hardDropped) return;
+            // Tap = rotate (short touch, minimal movement)
+            const elapsed = performance.now() - touchStartTime;
+            const rawDx = touchLastX - touchStartX;
+            const rawDy = touchLastY - touchStartY;
+            const dist = Math.sqrt(rawDx * rawDx + rawDy * rawDy);
+            if (elapsed < TAP_MAX_TIME && dist < TAP_MAX_DIST) {
+                handleAction('rotate');
+            }
+        }, { passive: false });
+    }
 
     // Initial state
     board = newBoard();
