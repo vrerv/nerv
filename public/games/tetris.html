@@ -492,6 +492,10 @@
             touchLastX = t.clientX;
             touchLastY = t.clientY;
 
+            // Dead zone: don't trigger movement until outside tap range
+            const rawDist = Math.sqrt(dx * dx + dy * dy);
+            if (rawDist < TAP_MAX_DIST) return;
+
             // Horizontal movement: trigger per SWIPE_THRESHOLD px
             const cellsMovedX = Math.floor((dx - touchMoveAccumX) / SWIPE_THRESHOLD);
             if (cellsMovedX !== 0) {
