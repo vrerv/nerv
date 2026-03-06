@@ -233,6 +233,28 @@
     let collapseMode = false;
     let collapseBodies = [];
 
+    // Floating text animations
+    let floatingTexts = [];
+    const MILESTONE_MESSAGES = [
+        '잘했어요! 🎉', '대단해요! ⭐', '멋져요! 🌟', '최고예요! 👏',
+        '와! 대박! 🏆', '천재! 🧠', '놀라워요! ✨', '짱이에요! 💪'
+    ];
+
+    function addFloatingText(text, size, color, duration) {
+        floatingTexts.push({
+            text,
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            alpha: 1,
+            scale: 0.3,
+            targetScale: 1,
+            size: size || 36,
+            color: color || '#FF6B6B',
+            startTime: performance.now(),
+            duration: duration || 1500
+        });
+    }
+
     // Matter.js (only for collapse)
     const Engine = Matter.Engine;
     const World = Matter.World;
@@ -378,10 +400,19 @@
         score += addScore;
         blockCount++;
 
+        // Show current floor (height from foundation)
+        const currentFloor = ROWS - 1 - minRow; // Foundation is at ROWS-1, so floor 1 = one above
+        if (currentFloor > 0) {
+            addFloatingText(`${currentFloor}층`, 32, '#4A90D9', 1200);
+        }
+
         // Check for milestone every 10 blocks — increase difficulty
         if (blockCount % 10 === 0) {
             sfx.milestone();
-            dropInterval = Math.max(400, dropInterval - 150); // Speed up like Tetris (min 400ms)
+            dropInterval = Math.max(400, dropInterval - 150);
+            // Show milestone message
+            const msg = MILESTONE_MESSAGES[Math.floor(Math.random() * MILESTONE_MESSAGES.length)];
+            setTimeout(() => addFloatingText(msg, 44, '#FF6B6B', 2000), 400);
         }
 
         // Physics-based balance check (may trigger collapse inside)
@@ -715,6 +746,36 @@
         if (wobbleAmplitude > 0.1 && !collapseMode) {
             ctx.restore();
         }
+
+        // Floating text animations
+        const now = performance.now();
+        floatingTexts = floatingTexts.filter(ft => {
+            const elapsed = now - ft.startTime;
+            if (elapsed >= ft.duration) return false;
+            const progress = elapsed / ft.duration;
+
+            // Scale: pop in then hold
+            ft.scale = ft.scale + (ft.targetScale - ft.scale) * 0.15;
+            // Fade out in last 40%
+            ft.alpha = progress > 0.6 ? 1 - (progress - 0.6) / 0.4 : 1;
+            // Float upward
+            const floatY = ft.y - progress * 40;
+
+            ctx.save();
+            ctx.globalAlpha = ft.alpha;
+            ctx.font = `bold ${Math.round(ft.size * ft.scale)}px system-ui`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            // Outline
+            ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+            ctx.lineWidth = 4;
+            ctx.strokeText(ft.text, ft.x, floatY);
+            // Fill
+            ctx.fillStyle = ft.color;
+            ctx.fillText(ft.text, ft.x, floatY);
+            ctx.restore();
+            return true;
+        });
 
         // Preview
         previewCtx.fillStyle = 'transparent';
