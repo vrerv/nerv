@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🏗️ 타워 게임</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 100%); font-family: system-ui, sans-serif; color: #333; }
+
+        .container { display: flex; justify-content: center; align-items: center; height: 100%; gap: 20px; }
+
+        /* Side panels */
+        .side-panel { display: flex; flex-direction: column; gap: 12px; width: 140px; }
+
+        .panel-box { background: rgba(255,255,255,0.9); border: 3px solid rgba(255,192,203,0.6); border-radius: 16px; padding: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .panel-box h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px; color: #666; margin-bottom: 8px; }
+        .panel-box .value { font-size: 1.6rem; font-weight: bold; color: #FF6B9D; font-variant-numeric: tabular-nums; }
+
+        /* Balance meter */
+        .balance-meter { position: relative; height: 30px; background: rgba(255,255,255,0.5); border-radius: 8px; overflow: hidden; margin-top: 4px; }
+        .balance-needle { position: absolute; top: 0; left: 50%; width: 4px; height: 100%; background: #FF1493; transform: translateX(-50%); transition: left 0.2s; }
+        .balance-zones { display: flex; height: 100%; }
+        .balance-zone { flex: 1; opacity: 0.5; }
+        .balance-zone.danger { background: #FFB5B5; }
+        .balance-zone.safe { background: #B4F8C8; }
+
+        /* Preview canvas */
+        #preview-canvas { display: block; margin: 0 auto; background: rgba(255,255,255,0.5); border-radius: 8px; }
+
+        /* Game board wrapper */
+        .board-wrapper { position: relative; border: 4px solid rgba(255,192,203,0.8); border-radius: 8px; box-shadow: 0 0 40px rgba(255,182,193,0.3), inset 0 0 30px rgba(255,255,255,0.3); background: rgba(255,255,255,0.4); }
+        #game-canvas { display: block; }
+
+        /* Overlay */
+        .overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; border-radius: 6px; z-index: 10; }
+        .overlay.hidden { display: none; }
+        .overlay h2 { font-size: 2rem; color: #FF6B9D; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+        .overlay .final-score { font-size: 1.2rem; color: #FF1493; font-weight: bold; }
+
+        .btn { background: linear-gradient(180deg, #FFB6C1 0%, #FF69B4 100%); border: 3px solid #FF1493; border-radius: 30px; color: #fff; font-size: 1rem; font-weight: bold; padding: 12px 32px; cursor: pointer; box-shadow: 0 4px 0 #C71585, 0 6px 15px rgba(0,0,0,0.2); transition: transform 0.1s; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #C71585; }
+
+        .controls-help { font-size: 0.65rem; color: #666; line-height: 1.8; text-align: left; }
+        .controls-help kbd { background: #fff; border: 1px solid #FFB6C1; border-radius: 4px; padding: 2px 6px; font-family: inherit; color: #FF69B4; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+        /* Mobile controls */
+        .mobile-controls { display: none; }
+        .mobile-row { display: flex; justify-content: space-around; align-items: center; gap: 8px; }
+        .mobile-btn { width: 60px; height: 60px; background: rgba(255,182,193,0.3); border: 3px solid rgba(255,105,180,0.5); border-radius: 16px; color: #FF1493; font-size: 1.6rem; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; flex-shrink: 0; font-weight: bold; }
+        .mobile-btn:active { background: rgba(255,105,180,0.6); border-color: #FF1493; transform: scale(0.95); }
+        .mobile-btn.wide { flex: 1; max-width: 100px; font-size: 1.1rem; }
+
+        /* Tower view mode */
+        .tower-view-controls { display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); gap: 10px; z-index: 20; }
+        .tower-view-controls.active { display: flex; }
+        .tower-view-controls .btn { padding: 10px 24px; font-size: 0.9rem; }
+
+        @media (max-width: 700px) {
+            html, body { overflow: hidden; height: 100dvh; position: fixed; width: 100%; }
+            .container { flex-direction: column; gap: 0; padding: 0; height: 100dvh; align-items: center; justify-content: space-between; overflow: hidden; }
+            .side-panel { flex-direction: row; width: 100%; flex-wrap: nowrap; justify-content: center; gap: 6px; padding: 8px; flex-shrink: 0; }
+            .side-panel:nth-of-type(2) { display: none; }
+            .panel-box { padding: 6px 12px; flex: 1; max-width: 110px; }
+            .panel-box h3 { font-size: 0.5rem; margin-bottom: 2px; }
+            .panel-box .value { font-size: 1rem; }
+            .balance-meter { height: 20px; margin-top: 2px; }
+            .balance-needle { width: 3px; }
+            #preview-canvas { width: 50px; height: 50px; }
+            .board-wrapper { flex: 0 0 auto; border: none; box-shadow: none; background: none; }
+            #game-canvas { border: 4px solid rgba(255,192,203,0.8); border-radius: 8px; box-shadow: 0 0 40px rgba(255,182,193,0.3); }
+            .mobile-controls { display: flex; flex-direction: column; gap: 4px; width: 100%; max-width: 400px; padding: 6px 8px; margin: 0 auto; flex-shrink: 0; }
+            .mobile-btn { width: 48px; height: 48px; font-size: 1.3rem; }
+            .mobile-row { gap: 6px; }
+            .controls-help { display: none; }
+            .tower-view-controls { bottom: 80px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="side-panel">
+        <div class="panel-box"><h3>Score</h3><div class="value" id="score">0</div></div>
+        <div class="panel-box"><h3>Blocks</h3><div class="value" id="blocks">0</div></div>
+        <div class="panel-box">
+            <h3>Balance</h3>
+            <div class="balance-meter">
+                <div class="balance-zones">
+                    <div class="balance-zone danger"></div>
+                    <div class="balance-zone safe"></div>
+                    <div class="balance-zone safe"></div>
+                    <div class="balance-zone danger"></div>
+                </div>
+                <div class="balance-needle" id="balance-needle"></div>
+            </div>
+        </div>
+        <div class="panel-box">
+            <h3>Next</h3>
+            <canvas id="preview-canvas" width="100" height="100"></canvas>
+        </div>
+    </div>
+
+    <div class="board-wrapper">
+        <canvas id="game-canvas"></canvas>
+        <div class="overlay" id="overlay">
+            <h2 id="overlay-title">🏗️ 타워 게임</h2>
+            <div class="final-score hidden" id="overlay-score"></div>
+            <button class="btn" id="start-btn">Start</button>
+        </div>
+        <div class="tower-view-controls" id="tower-view-controls">
+            <button class="btn" id="play-again-btn">Play Again</button>
+        </div>
+    </div>
+
+    <div class="side-panel">
+        <div class="controls-help">
+            <kbd>←</kbd> <kbd>→</kbd> Move<br>
+            <kbd>↑</kbd> Rotate<br>
+            <kbd>↓</kbd> Drop Faster<br>
+            <kbd>Space</kbd> Hard Drop
+        </div>
+    </div>
+
+    <div class="mobile-controls">
+        <div class="mobile-row">
+            <div class="mobile-btn" data-action="left">←</div>
+            <div class="mobile-btn" data-action="down">↓</div>
+            <div class="mobile-btn" data-action="rotate">↻</div>
+            <div class="mobile-btn" data-action="drop">⏬</div>
+            <div class="mobile-btn" data-action="right">→</div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
+<script>
+(() => {
+    const COLS = 10;
+    const ROWS = 20;
+    const isMobile = window.innerWidth <= 700;
+    const mobileReserved = 200;
+    const cellByWidth = Math.floor((window.innerWidth * 0.90) / COLS);
+    const cellByHeight = Math.floor((window.innerHeight - mobileReserved) / ROWS);
+    const CELL = isMobile ? Math.min(cellByWidth, cellByHeight) : 30;
+
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = COLS * CELL;
+    canvas.height = ROWS * CELL;
+
+    // === Sound System (Web Audio API, no external files) ===
+    let audioCtx;
+    function getAudioCtx() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        return audioCtx;
+    }
+    function playTone(freq, duration, type = 'square', vol = 0.15, slide = 0) {
+        try {
+            const ac = getAudioCtx();
+            const osc = ac.createOscillator();
+            const gain = ac.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, ac.currentTime);
+            if (slide) osc.frequency.linearRampToValueAtTime(freq + slide, ac.currentTime + duration);
+            gain.gain.setValueAtTime(vol, ac.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(ac.destination);
+            osc.start();
+            osc.stop(ac.currentTime + duration);
+        } catch(e) {}
+    }
+    function playNoise(duration, vol = 0.1) {
+        try {
+            const ac = getAudioCtx();
+            const buf = ac.createBuffer(1, ac.sampleRate * duration, ac.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+            const src = ac.createBufferSource();
+            src.buffer = buf;
+            const gain = ac.createGain();
+            gain.gain.setValueAtTime(vol, ac.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+            src.connect(gain);
+            gain.connect(ac.destination);
+            src.start();
+            src.stop(ac.currentTime + duration);
+        } catch(e) {}
+    }
+    const sfx = {
+        move()     { playTone(240, 0.05, 'square', 0.08); },
+        rotate()   { playTone(320, 0.08, 'square', 0.1, 120); },
+        land()     { playTone(200, 0.12, 'triangle', 0.14); playNoise(0.06, 0.08); },
+        wobble()   { playTone(150, 0.2, 'sine', 0.12, -40); },
+        collapse() {
+            [500,450,400,350,300,250,200].forEach((f,i) => setTimeout(() => playTone(f, 0.25, 'sawtooth', 0.15), i * 80));
+            setTimeout(() => playNoise(0.5, 0.2), 200);
+        },
+        milestone() {
+            [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playTone(f, 0.1, 'sine', 0.12, 100), i * 60));
+        },
+        start()    { playTone(500, 0.1, 'square', 0.1); setTimeout(() => playTone(750, 0.15, 'square', 0.1), 100); },
+        gameOver() { [400,300,200,100].forEach((f,i) => setTimeout(() => playTone(f, 0.2, 'sawtooth', 0.12), i * 120)); },
+    };
+
+    const previewCanvas = document.getElementById('preview-canvas');
+    const previewCtx = previewCanvas.getContext('2d');
+
+    // Tetris pieces (pastel colors)
+    const PIECES = {
+        I: { shape: [[0,0],[1,0],[2,0],[3,0]], color: '#FFB3D9' },
+        O: { shape: [[0,0],[1,0],[0,1],[1,1]], color: '#FFF4A3' },
+        T: { shape: [[0,0],[1,0],[2,0],[1,1]], color: '#D4B5FF' },
+        S: { shape: [[1,0],[2,0],[0,1],[1,1]], color: '#B4F8C8' },
+        Z: { shape: [[0,0],[1,0],[1,1],[2,1]], color: '#FFB5B5' },
+        J: { shape: [[0,0],[0,1],[1,1],[2,1]], color: '#A0D2FF' },
+        L: { shape: [[2,0],[0,1],[1,1],[2,1]], color: '#FFDAB3' },
+    };
+    const PIECE_NAMES = Object.keys(PIECES);
+
+    // Column score multipliers (outer columns = more points)
+    const COLUMN_MULTIPLIERS = [3, 2.5, 2, 1.5, 1, 1, 1.5, 2, 2.5, 3];
+
+    let board, current, next, score, blockCount, dropInterval, dropTimer, gameOver, animFrame;
+    let cameraY = 0; // Scrolling offset
+    let imbalance = 0; // Current center of mass deviation
+    let balanceThreshold = 2.5; // Starts lenient, tightens every 10 blocks
+    let wobblePhase = 0;
+    let wobbleAmplitude = 0;
+    let lastWobbleSound = 0;
+    let towerSnapshot = []; // Pre-collapse tower for viewing
+    let collapseMode = false;
+    let collapseBodies = [];
+
+    // Floating text animations
+    let floatingTexts = [];
+    const MILESTONE_MESSAGES = [
+        '잘했어요! 🎉', '대단해요! ⭐', '멋져요! 🌟', '최고예요! 👏',
+        '와! 대박! 🏆', '천재! 🧠', '놀라워요! ✨', '짱이에요! 💪'
+    ];
+
+    function addFloatingText(text, size, color, duration) {
+        floatingTexts.push({
+            text,
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            alpha: 1,
+            scale: 0.3,
+            targetScale: 1,
+            size: size || 36,
+            color: color || '#FF6B6B',
+            startTime: performance.now(),
+            duration: duration || 1500
+        });
+    }
+
+    // Matter.js (only for collapse)
+    const Engine = Matter.Engine;
+    const World = Matter.World;
+    const Bodies = Matter.Bodies;
+    let engine, world;
+
+    function newBoard() {
+        // Infinite height — just track occupied cells
+        return {};
+    }
+
+    function setBoardCell(col, row, color) {
+        if (!board[row]) board[row] = {};
+        board[row][col] = color;
+    }
+
+    function getBoardCell(col, row) {
+        return board[row] && board[row][col];
+    }
+
+    // 7-bag randomizer
+    let bag = [];
+    function nextPieceFromBag() {
+        if (bag.length === 0) {
+            bag = [...PIECE_NAMES];
+            for (let i = bag.length - 1; i > 0; i--) {
+                const j = Math.random() * (i + 1) | 0;
+                [bag[i], bag[j]] = [bag[j], bag[i]];
+            }
+        }
+        const name = bag.pop();
+        const p = PIECES[name];
+        return { cells: p.shape.map(c => [...c]), color: p.color, name, x: 3, y: 0 }; // y set at spawn time
+    }
+
+    const TOWER_PEEK_ROWS = 2; // Show this many rows of tower top when spawning new block
+
+    function getTowerTop() {
+        // Find highest occupied row in the board
+        let highestRow = ROWS; // ROWS = floor level
+        for (const row in board) {
+            const r = parseInt(row);
+            if (r < highestRow) {
+                for (const col in board[row]) {
+                    if (board[row][col]) { highestRow = r; break; }
+                }
+            }
+        }
+        return highestRow;
+    }
+
+    function getSpawnY() {
+        // Block starts at screen top (row 0 of visible area)
+        // Camera will be positioned so tower top + PEEK rows are at bottom of screen
+        // So spawn Y in world coords = camera world top = towerTop - (ROWS - TOWER_PEEK_ROWS)
+        const towerTop = getTowerTop();
+        return towerTop - (ROWS - TOWER_PEEK_ROWS);
+    }
+
+    function rotatedCells(cells) {
+        // Rotate 90° CW around center
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const [x, y] of cells) {
+            minX = Math.min(minX, x); minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+        }
+        const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+        const rotated = cells.map(([x, y]) => [Math.round(cy - y + cx), Math.round(x - cx + cy)]);
+        // Normalize to min 0,0
+        let rMinX = Infinity, rMinY = Infinity;
+        for (const [x, y] of rotated) {
+            rMinX = Math.min(rMinX, x); rMinY = Math.min(rMinY, y);
+        }
+        return rotated.map(([x, y]) => [x - rMinX, y - rMinY]);
+    }
+
+    function collides(cells, ox, oy) {
+        for (const [cx, cy] of cells) {
+            const x = cx + ox, y = cy + oy;
+            if (x < 0 || x >= COLS) return true; // Wall collision
+            if (y >= ROWS) return true; // Floor boundary (below foundation)
+            if (getBoardCell(x, y)) return true; // Block collision (including foundation)
+        }
+        return false;
+    }
+
+    // Check if locked block is connected to the tower (reachable from foundation)
+    function isConnectedToFoundation(cells, ox, oy) {
+        // BFS/flood fill from foundation to see if any new cell is adjacent to existing structure
+        for (const [cx, cy] of cells) {
+            const x = cx + ox, y = cy + oy;
+            // Check 4 neighbors for existing blocks (not including the current piece)
+            const neighbors = [[x-1,y],[x+1,y],[x,y-1],[x,y+1]];
+            for (const [nx, ny] of neighbors) {
+                if (ny >= ROWS) continue; // Floor doesn't count
+                // Check if neighbor is an existing board cell (not part of current piece)
+                const isCurrentPiece = cells.some(([ccx, ccy]) => ccx + ox === nx && ccy + oy === ny);
+                if (!isCurrentPiece && getBoardCell(nx, ny)) return true;
+            }
+        }
+        return false;
+    }
+
+    function lock() {
+        // Check if any cell would land on the ground floor row (ROWS-1) without being on the foundation
+        const foundationStartCol = Math.floor(COLS / 2) - Math.floor(FOUNDATION_WIDTH / 2);
+        for (const [cx, cy] of current.cells) {
+            const x = cx + current.x, y = cy + current.y;
+            if (y === ROWS - 1) {
+                // Landing on ground row — only allowed if it's a foundation cell
+                if (x < foundationStartCol || x >= foundationStartCol + FOUNDATION_WIDTH) {
+                    gameOver = true;
+                    sfx.gameOver();
+                    showOverlay('Landed on Ground!', true);
+                    return;
+                }
+            }
+        }
+
+        // Check if block is connected to existing tower/foundation
+        if (!isConnectedToFoundation(current.cells, current.x, current.y)) {
+            gameOver = true;
+            sfx.gameOver();
+            showOverlay('Block Missed!', true);
+            return;
+        }
+
+        let minRow = Infinity;
+        for (const [cx, cy] of current.cells) {
+            const x = cx + current.x, y = cy + current.y;
+            setBoardCell(x, y, current.color);
+            minRow = Math.min(minRow, y);
+        }
+
+        // Calculate score: height + position bonus
+        let addScore = 0;
+        for (const [cx, cy] of current.cells) {
+            const x = cx + current.x, y = cy + current.y;
+            const height = ROWS - y;
+            const colMultiplier = COLUMN_MULTIPLIERS[x];
+            addScore += Math.floor(height * colMultiplier);
+        }
+        score += addScore;
+        blockCount++;
+
+        // Show current floor (height from foundation)
+        const currentFloor = ROWS - 1 - minRow; // Foundation is at ROWS-1, so floor 1 = one above
+        if (currentFloor > 0) {
+            addFloatingText(`${currentFloor}층`, 32, '#4A90D9', 1200);
+        }
+
+        // Check for milestone every 10 blocks — increase difficulty
+        if (blockCount % 10 === 0) {
+            sfx.milestone();
+            dropInterval = Math.max(400, dropInterval - 150);
+            // Show milestone message
+            const msg = MILESTONE_MESSAGES[Math.floor(Math.random() * MILESTONE_MESSAGES.length)];
+            setTimeout(() => addFloatingText(msg, 44, '#FF6B6B', 2000), 400);
+        }
+
+        // Physics-based balance check (may trigger collapse inside)
+        calculateBalance();
+        if (collapseMode) return; // Collapse was triggered
+
+        sfx.land();
+        current = next;
+        current.x = 3; current.y = getSpawnY();
+        // Snap camera to show new block at screen row 0
+        cameraY = Math.max(0, -current.y * CELL);
+        next = nextPieceFromBag();
+        if (collides(current.cells, current.x, current.y)) gameOver = true;
+
+        updateUI();
+    }
+
+    // Adhesion strength: how many cells a block can cantilever without support below
+    // Decreases with block count for difficulty scaling
+    function getAdhesionStrength() {
+        return Math.max(0.8, 1.5 - blockCount * 0.02); // starts 1.5, min 0.8
+    }
+
+    function calculateBalance() {
+        // Physics-based balance: check each "slice" (row) of the tower
+        // 1. Find support base at each level
+        // 2. Calculate center of mass of everything above each level
+        // 3. If CoM is outside the support base → collapse
+
+        const rows = Object.keys(board).map(Number).sort((a, b) => b - a); // bottom to top
+        if (rows.length === 0) { imbalance = 0; return; }
+
+        const bottomRow = Math.max(...rows); // highest row number = lowest position
+        const topRow = Math.min(...rows);
+
+        // Build column occupancy per row
+        function getOccupiedCols(row) {
+            if (!board[row]) return [];
+            return Object.keys(board[row]).map(Number).filter(c => board[row][c]);
+        }
+
+        // For each row from bottom up, check if the structure above is supported
+        let worstImbalance = 0;
+        let collapseDetected = false;
+
+        for (let checkRow = bottomRow; checkRow >= topRow; checkRow--) {
+            // Support base at this row: columns that have a block at checkRow
+            // and are connected to the ground (or blocks below them)
+            const supportCols = getOccupiedCols(checkRow);
+            if (supportCols.length === 0) continue;
+
+            const supportMin = Math.min(...supportCols);
+            const supportMax = Math.max(...supportCols);
+            const supportCenter = (supportMin + supportMax) / 2;
+            const supportWidth = supportMax - supportMin + 1;
+
+            // Calculate center of mass of everything above this row (inclusive)
+            let massAbove = 0;
+            let weightedXAbove = 0;
+            for (let r = checkRow; r >= topRow; r--) {
+                const cols = getOccupiedCols(r);
+                for (const c of cols) {
+                    massAbove++;
+                    weightedXAbove += c + 0.5; // center of cell
+                }
+            }
+
+            if (massAbove === 0) continue;
+
+            const comX = weightedXAbove / massAbove;
+
+            // Check if center of mass is within support base + adhesion tolerance
+            const supportLeftEdge = supportMin - getAdhesionStrength();
+            const supportRightEdge = supportMax + 1 + getAdhesionStrength();
+
+            // How far is CoM from the nearest support edge?
+            let overhang = 0;
+            if (comX < supportMin + 0.5) {
+                overhang = (supportMin + 0.5) - comX;
+            } else if (comX > supportMax + 0.5) {
+                overhang = comX - (supportMax + 0.5);
+            }
+
+            // Normalize imbalance: 0 = perfectly centered, 1 = at collapse point
+            const maxOverhang = supportWidth / 2 + getAdhesionStrength();
+            const normalizedImbalance = overhang / Math.max(maxOverhang, 0.5);
+            worstImbalance = Math.max(worstImbalance, normalizedImbalance);
+
+            // Physical impossibility: CoM outside support + adhesion
+            if (comX < supportLeftEdge + 0.5 || comX > supportRightEdge - 0.5) {
+                collapseDetected = true;
+                break;
+            }
+
+            // Also check: any individual cell floating with no support below and no adjacent connection
+            if (checkRow < bottomRow) {
+                const belowCols = getOccupiedCols(checkRow + 1);
+                const currentCols = getOccupiedCols(checkRow);
+                for (const c of currentCols) {
+                    // A cell needs either: support directly below, or adjacent cell on same row that has support
+                    const hasDirectSupport = belowCols.includes(c);
+                    const hasAdjacentSupport = currentCols.includes(c - 1) && belowCols.includes(c - 1) ||
+                                               currentCols.includes(c + 1) && belowCols.includes(c + 1);
+                    const hasDiagonalSupport = belowCols.includes(c - 1) || belowCols.includes(c + 1);
+                    if (!hasDirectSupport && !hasAdjacentSupport && !hasDiagonalSupport) {
+                        // Floating cell — cantilever check
+                        // Find nearest supported cell on same row
+                        let minDist = Infinity;
+                        for (const sc of currentCols) {
+                            if (belowCols.includes(sc) || belowCols.includes(sc - 1) || belowCols.includes(sc + 1)) {
+                                minDist = Math.min(minDist, Math.abs(c - sc));
+                            }
+                        }
+                        if (minDist > getAdhesionStrength() + 0.5) {
+                            collapseDetected = true;
+                            break;
+                        }
+                    }
+                }
+                if (collapseDetected) break;
+            }
+        }
+
+        imbalance = worstImbalance;
+
+        // Difficulty scaling: reduce adhesion tolerance over time
+        const effectiveThreshold = 1.0; // Collapse at normalized imbalance >= 1.0
+
+        // Update wobble based on imbalance (0 to 1 range)
+        wobbleAmplitude = Math.min(imbalance * 12, 10);
+
+        // Update balance meter
+        const balanceNeedle = document.getElementById('balance-needle');
+        // Map overall center of mass to visual position
+        let totalMass = 0, totalWeightedX = 0;
+        for (const row in board) {
+            for (const col in board[row]) {
+                if (board[row][col]) { totalMass++; totalWeightedX += parseFloat(col) + 0.5; }
+            }
+        }
+        const overallComX = totalMass > 0 ? totalWeightedX / totalMass : COLS / 2;
+        const balancePercent = (overallComX / COLS) * 100;
+        balanceNeedle.style.left = `${Math.max(5, Math.min(95, balancePercent))}%`;
+
+        // Wobble sound when getting dangerous
+        const now = performance.now();
+        if (imbalance > 0.5 && now - lastWobbleSound > 1000) {
+            sfx.wobble();
+            lastWobbleSound = now;
+        }
+
+        // Trigger collapse if physically impossible
+        if (collapseDetected || imbalance >= effectiveThreshold) {
+            triggerCollapse();
+        }
+    }
+
+    function triggerCollapse() {
+        collapseMode = true;
+        sfx.collapse();
+
+        // Save tower snapshot for viewing
+        towerSnapshot = [];
+        for (const row in board) {
+            for (const col in board[row]) {
+                towerSnapshot.push({
+                    x: parseInt(col),
+                    y: parseInt(row),
+                    color: board[row][col]
+                });
+            }
+        }
+
+        // Convert grid cells to Matter.js bodies
+        engine = Engine.create({ gravity: { x: 0, y: 1 } });
+        world = engine.world;
+
+        collapseBodies = [];
+        for (const row in board) {
+            for (const col in board[row]) {
+                const x = parseInt(col) * CELL + CELL / 2;
+                const y = (parseInt(row) - cameraY / CELL) * CELL + CELL / 2;
+                const body = Bodies.rectangle(x, y, CELL - 1, CELL - 1, {
+                    friction: 0.8,
+                    restitution: 0.1,
+                });
+                World.add(world, body);
+                collapseBodies.push({ body, color: board[row][col] });
+            }
+        }
+
+        // Add floor and walls
+        const floorY = canvas.height + 100;
+        World.add(world, Bodies.rectangle(canvas.width / 2, floorY, canvas.width, 200, { isStatic: true }));
+        World.add(world, Bodies.rectangle(-50, canvas.height / 2, 100, canvas.height * 3, { isStatic: true }));
+        World.add(world, Bodies.rectangle(canvas.width + 50, canvas.height / 2, 100, canvas.height * 3, { isStatic: true }));
+
+        // Wait for collapse animation
+        setTimeout(() => {
+            gameOver = true;
+            showOverlay('Tower Collapsed!', true);
+        }, 3000);
+    }
+
+    function updateUI() {
+        document.getElementById('score').textContent = score;
+        document.getElementById('blocks').textContent = blockCount;
+    }
+
+    function drawCell(context, x, y, color, size) {
+        const px = x * size + 1, py = y * size + 1, w = size - 2, h = size - 2;
+        context.fillStyle = color;
+        context.fillRect(px, py, w, h);
+        // Highlight
+        context.fillStyle = 'rgba(255,255,255,0.3)';
+        context.fillRect(px, py, w, 4);
+        context.fillStyle = 'rgba(0,0,0,0.1)';
+        context.fillRect(px, py + h - 4, w, 4);
+        // Foundation special pattern (cross-hatch)
+        if (color === FOUNDATION_COLOR) {
+            context.strokeStyle = 'rgba(255,255,255,0.4)';
+            context.lineWidth = 1;
+            context.beginPath();
+            context.moveTo(px, py); context.lineTo(px + w, py + h);
+            context.moveTo(px + w, py); context.lineTo(px, py + h);
+            context.stroke();
+            // Border
+            context.strokeStyle = 'rgba(0,0,0,0.3)';
+            context.lineWidth = 2;
+            context.strokeRect(px, py, w, h);
+        }
+    }
+
+    function drawGhost() {
+        let gy = current.y;
+        while (!collides(current.cells, current.x, gy + 1)) gy++;
+        if (gy === current.y) return;
+        ctx.globalAlpha = 0.2;
+        for (const [cx, cy] of current.cells) {
+            const screenY = cy + gy + cameraY / CELL;
+            if (screenY >= 0 && screenY < ROWS) {
+                drawCell(ctx, cx + current.x, screenY, current.color, CELL);
+            }
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    // Background scenery drawing functions
+    function drawBackground() {
+        const W = canvas.width;
+        const H = canvas.height;
+
+        // Helper: convert world row to screen Y pixel
+        function worldToScreenY(worldRow) {
+            return (worldRow + cameraY / CELL) * CELL;
+        }
+
+        // Floor heights (world rows, lower number = higher position)
+        // Foundation is at ROWS-1. Floor N = ROWS-1-N
+        const floor10Row = ROWS - 1 - 10;
+        const floor20Row = ROWS - 1 - 20;
+        const floor50Row = ROWS - 1 - 50;
+        const floor100Row = ROWS - 1 - 100;
+
+        // === FOREST (ground to floor 10) — trees behind the tower ===
+        const forestBottomY = worldToScreenY(ROWS); // ground level
+        const forestTopY = worldToScreenY(floor10Row);
+        if (forestBottomY > 0 && forestTopY < H) {
+            const startY = Math.max(0, forestTopY);
+            const endY = Math.min(H, forestBottomY);
+            // Draw forest trees
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            const treeColors = ['#228B22', '#2E8B57', '#3CB371', '#006400'];
+            for (let i = 0; i < 15; i++) {
+                const tx = (i * W / 14) + ((i * 37) % 11) - 5;
+                const treeH = CELL * (3 + (i % 3));
+                const treeBase = endY - 4;
+                const treeTop = treeBase - treeH;
+                if (treeTop > endY || treeBase < startY) continue;
+                // Trunk
+                ctx.fillStyle = '#8B6914';
+                ctx.fillRect(tx + CELL * 0.3, treeBase - CELL, CELL * 0.4, CELL);
+                // Foliage (triangle layers)
+                ctx.fillStyle = treeColors[i % treeColors.length];
+                for (let layer = 0; layer < 3; layer++) {
+                    const ly = treeBase - CELL - layer * CELL * 0.7;
+                    const lw = CELL * (1.5 - layer * 0.3);
+                    ctx.beginPath();
+                    ctx.moveTo(tx + CELL * 0.5, ly - CELL * 0.8);
+                    ctx.lineTo(tx + CELL * 0.5 - lw / 2, ly);
+                    ctx.lineTo(tx + CELL * 0.5 + lw / 2, ly);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+
+        // === MOUNTAINS (floor 10-20 range) — distant mountains ===
+        const mtBottomY = worldToScreenY(floor10Row);
+        const mtTopY = worldToScreenY(floor20Row);
+        if (mtBottomY > -CELL * 5 && mtTopY < H + CELL * 5) {
+            ctx.save();
+            ctx.globalAlpha = 0.25;
+            const mtBase = Math.min(H, mtBottomY);
+            // Mountain range
+            const peaks = [
+                { x: W * 0.1, h: CELL * 8, color: '#6B7B8D' },
+                { x: W * 0.3, h: CELL * 12, color: '#5B6B7D' },
+                { x: W * 0.5, h: CELL * 10, color: '#7B8B9D' },
+                { x: W * 0.7, h: CELL * 14, color: '#4B5B6D' },
+                { x: W * 0.9, h: CELL * 9, color: '#6B7B8D' },
+            ];
+            for (const peak of peaks) {
+                const peakTop = mtBase - peak.h;
+                ctx.fillStyle = peak.color;
+                ctx.beginPath();
+                ctx.moveTo(peak.x - W * 0.15, mtBase);
+                ctx.lineTo(peak.x, peakTop);
+                ctx.lineTo(peak.x + W * 0.15, mtBase);
+                ctx.closePath();
+                ctx.fill();
+                // Snow cap
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.beginPath();
+                ctx.moveTo(peak.x - W * 0.03, peakTop + peak.h * 0.15);
+                ctx.lineTo(peak.x, peakTop);
+                ctx.lineTo(peak.x + W * 0.03, peakTop + peak.h * 0.15);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // === BIG TREES (floor 20-50 range) — giant ancient trees ===
+        const bigTreeBottomY = worldToScreenY(floor20Row);
+        const bigTreeTopY = worldToScreenY(floor50Row);
+        if (bigTreeBottomY > -CELL * 5 && bigTreeTopY < H + CELL * 5) {
+            ctx.save();
+            ctx.globalAlpha = 0.2;
+            const btBase = Math.min(H, bigTreeBottomY);
+            const bigTrees = [
+                { x: W * 0.15, h: CELL * 20, trunkW: CELL * 1.5 },
+                { x: W * 0.5, h: CELL * 25, trunkW: CELL * 2 },
+                { x: W * 0.85, h: CELL * 18, trunkW: CELL * 1.2 },
+            ];
+            for (const bt of bigTrees) {
+                // Giant trunk
+                ctx.fillStyle = '#5C4033';
+                ctx.fillRect(bt.x - bt.trunkW / 2, btBase - bt.h * 0.6, bt.trunkW, bt.h * 0.6);
+                // Massive canopy (overlapping circles)
+                ctx.fillStyle = '#1B5E20';
+                const canopyY = btBase - bt.h * 0.5;
+                const canopyR = bt.h * 0.35;
+                for (let cx = -1; cx <= 1; cx++) {
+                    for (let cy = -1; cy <= 0; cy++) {
+                        ctx.beginPath();
+                        ctx.arc(bt.x + cx * canopyR * 0.5, canopyY + cy * canopyR * 0.4, canopyR, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+            ctx.restore();
+        }
+
+        // === CLOUDS (floor 80-120 range) — fluffy clouds ===
+        const cloudBottomY = worldToScreenY(ROWS - 1 - 80);
+        const cloudTopY = worldToScreenY(ROWS - 1 - 120);
+        if (cloudBottomY > -CELL * 10 && cloudTopY < H + CELL * 10) {
+            ctx.save();
+            ctx.globalAlpha = 0.35;
+            const cloudBaseY = worldToScreenY(floor100Row);
+            const clouds = [
+                { x: W * 0.2, y: cloudBaseY, w: CELL * 6, h: CELL * 2 },
+                { x: W * 0.5, y: cloudBaseY - CELL * 5, w: CELL * 8, h: CELL * 2.5 },
+                { x: W * 0.8, y: cloudBaseY + CELL * 3, w: CELL * 5, h: CELL * 1.8 },
+                { x: W * 0.35, y: cloudBaseY - CELL * 10, w: CELL * 7, h: CELL * 2.2 },
+                { x: W * 0.65, y: cloudBaseY + CELL * 8, w: CELL * 6, h: CELL * 2 },
+            ];
+            ctx.fillStyle = '#FFFFFF';
+            for (const cloud of clouds) {
+                // Cloud = group of overlapping ellipses
+                for (let i = 0; i < 5; i++) {
+                    ctx.beginPath();
+                    const cx = cloud.x + (i - 2) * cloud.w * 0.2;
+                    const cy = cloud.y - Math.abs(i - 2) * cloud.h * 0.2;
+                    const rx = cloud.w * 0.25;
+                    const ry = cloud.h * (0.4 + Math.abs(i - 2) * 0.1);
+                    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+    }
+
+    function render() {
+        // Sky gradient — changes with height
+        const towerHeight = ROWS - 1 - getTowerTop();
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        if (towerHeight >= 80) {
+            // High altitude — deeper blue
+            gradient.addColorStop(0, '#1E3A5F');
+            gradient.addColorStop(1, '#87CEEB');
+        } else if (towerHeight >= 40) {
+            // Mid altitude
+            gradient.addColorStop(0, '#4A90D9');
+            gradient.addColorStop(1, '#B0E0FF');
+        } else {
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(1, '#E0F6FF');
+        }
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw background scenery
+        drawBackground();
+
+        // Apply wobble
+        if (wobbleAmplitude > 0.1 && !collapseMode) {
+            ctx.save();
+            wobblePhase += 0.05;
+            const shakeX = Math.sin(wobblePhase) * wobbleAmplitude;
+            const shakeY = Math.cos(wobblePhase * 1.3) * wobbleAmplitude * 0.3;
+            ctx.translate(shakeX, shakeY);
+        }
+
+        // Grid
+        ctx.strokeStyle = 'rgba(255,192,203,0.2)';
+        ctx.lineWidth = 1;
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                ctx.strokeRect(c * CELL, r * CELL, CELL, CELL);
+            }
+        }
+
+        // Draw locked cells (with camera scroll)
+        if (!collapseMode) {
+            for (const row in board) {
+                const screenY = parseInt(row) + cameraY / CELL;
+                if (screenY < -5 || screenY >= ROWS + 5) continue;
+                for (const col in board[row]) {
+                    drawCell(ctx, parseInt(col), screenY, board[row][col], CELL);
+                }
+            }
+
+            // Ghost + current piece
+            if (current && !gameOver) {
+                drawGhost();
+                for (const [cx, cy] of current.cells) {
+                    const screenY = cy + current.y + cameraY / CELL;
+                    if (screenY >= -2 && screenY < ROWS) {
+                        drawCell(ctx, cx + current.x, screenY, current.color, CELL);
+                    }
+                }
+            }
+        } else {
+            // Draw collapsing physics bodies
+            for (const { body, color } of collapseBodies) {
+                const { x, y } = body.position;
+                const angle = body.angle;
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.fillStyle = color;
+                ctx.fillRect(-CELL / 2 + 1, -CELL / 2 + 1, CELL - 2, CELL - 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.fillRect(-CELL / 2 + 1, -CELL / 2 + 1, CELL - 2, 4);
+                ctx.restore();
+            }
+        }
+
+        // Ground line — only draw when floor (world row ROWS) is visible
+        const floorScreenY = (ROWS + cameraY / CELL) * CELL;
+        if (floorScreenY > 0 && floorScreenY <= canvas.height + 10) {
+            ctx.fillStyle = '#90EE90';
+            ctx.fillRect(0, floorScreenY - 8, canvas.width, 8);
+            ctx.fillStyle = '#8B7355';
+            ctx.fillRect(0, floorScreenY - 4, canvas.width, 4);
+        }
+
+        // Height markers
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.font = '10px system-ui';
+        ctx.textAlign = 'right';
+        for (let h = 5; h < 200; h += 5) {
+            const screenY = (ROWS - h + cameraY / CELL) * CELL;
+            if (screenY > -10 && screenY < canvas.height + 10) {
+                ctx.fillText(`${h}`, canvas.width - 5, screenY + 3);
+                ctx.fillRect(canvas.width - 20, screenY, 15, 1);
+            }
+        }
+
+        if (wobbleAmplitude > 0.1 && !collapseMode) {
+            ctx.restore();
+        }
+
+        // Floating text animations
+        const now = performance.now();
+        floatingTexts = floatingTexts.filter(ft => {
+            const elapsed = now - ft.startTime;
+            if (elapsed >= ft.duration) return false;
+            const progress = elapsed / ft.duration;
+
+            // Scale: pop in then hold
+            ft.scale = ft.scale + (ft.targetScale - ft.scale) * 0.15;
+            // Fade out in last 40%
+            ft.alpha = progress > 0.6 ? 1 - (progress - 0.6) / 0.4 : 1;
+            // Float upward
+            const floatY = ft.y - progress * 40;
+
+            ctx.save();
+            ctx.globalAlpha = ft.alpha;
+            ctx.font = `bold ${Math.round(ft.size * ft.scale)}px system-ui`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            // Outline
+            ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+            ctx.lineWidth = 4;
+            ctx.strokeText(ft.text, ft.x, floatY);
+            // Fill
+            ctx.fillStyle = ft.color;
+            ctx.fillText(ft.text, ft.x, floatY);
+            ctx.restore();
+            return true;
+        });
+
+        // Preview
+        previewCtx.fillStyle = 'transparent';
+        previewCtx.clearRect(0, 0, 100, 100);
+        if (next) {
+            let maxX = 0, maxY = 0;
+            for (const [x, y] of next.cells) {
+                maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+            }
+            const ps = 20;
+            const ox = (100 - (maxX + 1) * ps) / 2;
+            const oy = (100 - (maxY + 1) * ps) / 2;
+            for (const [cx, cy] of next.cells) {
+                previewCtx.fillStyle = next.color;
+                previewCtx.fillRect(ox + cx * ps + 1, oy + cy * ps + 1, ps - 2, ps - 2);
+                previewCtx.fillStyle = 'rgba(255,255,255,0.3)';
+                previewCtx.fillRect(ox + cx * ps + 1, oy + cy * ps + 1, ps - 2, 4);
+            }
+        }
+    }
+
+    let lastTime = 0;
+    function gameLoop(time) {
+        if (gameOver) return;
+
+        const dt = time - lastTime;
+        lastTime = time;
+
+        if (collapseMode) {
+            Engine.update(engine, 1000 / 60);
+            render();
+            animFrame = requestAnimationFrame(gameLoop);
+            return;
+        }
+
+        dropTimer += dt;
+        if (dropTimer >= dropInterval) {
+            dropTimer = 0;
+            if (!collides(current.cells, current.x, current.y + 1)) {
+                current.y++;
+            } else {
+                lock();
+            }
+        }
+
+        // Camera system: screenY = worldRow + cameraY/CELL
+        // To show worldRow W at screenRow S: cameraY = (S - W) * CELL
+        if (current) {
+            // Keep falling block at screen row 0 (top of screen)
+            let targetCameraY = -current.y * CELL;
+            // Clamp: when floor (ROWS) is visible, stop scrolling down
+            // Floor at world row ROWS should be at screen bottom → cameraY >= 0
+            targetCameraY = Math.max(0, targetCameraY);
+            cameraY += (targetCameraY - cameraY) * 0.15;
+        }
+
+        // Decay wobble
+        wobbleAmplitude *= 0.95;
+
+        render();
+        animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    // Foundation: 2-wide, 1-tall support base at ground center
+    const FOUNDATION_WIDTH = 2;
+    const FOUNDATION_COLOR = '#A0522D'; // Sienna brown — distinct from blocks
+    function placeFoundation() {
+        const startCol = Math.floor(COLS / 2) - Math.floor(FOUNDATION_WIDTH / 2);
+        const row = ROWS - 1; // Bottom row (just above floor)
+        for (let c = startCol; c < startCol + FOUNDATION_WIDTH; c++) {
+            setBoardCell(c, row, FOUNDATION_COLOR);
+        }
+    }
+
+    function startGame() {
+        sfx.start();
+        board = newBoard();
+        placeFoundation(); // Place 2x1 support base
+        score = 0; blockCount = 0; dropInterval = 2000; dropTimer = 0; // Very slow for toddlers (~half of Tetris level 1)
+        gameOver = false; collapseMode = false;
+        cameraY = 0; imbalance = 0; balanceThreshold = 2.5;
+        wobblePhase = 0; wobbleAmplitude = 0;
+        bag = [];
+        current = nextPieceFromBag(); next = nextPieceFromBag();
+        current.x = 3; current.y = getSpawnY();
+        cameraY = Math.max(0, -current.y * CELL); // Snap camera for first block
+        updateUI();
+        hideOverlay();
+        lastTime = performance.now();
+        if (animFrame) cancelAnimationFrame(animFrame);
+        animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    function showOverlay(title, showScore) {
+        const ov = document.getElementById('overlay');
+        document.getElementById('overlay-title').textContent = title;
+        const sc = document.getElementById('overlay-score');
+        if (showScore) {
+            sc.textContent = `Score: ${score} | Blocks: ${blockCount}`;
+            sc.classList.remove('hidden');
+        } else {
+            sc.classList.add('hidden');
+        }
+        document.getElementById('start-btn').textContent = gameOver ? 'View Tower' : 'Start';
+        if (gameOver) {
+            document.getElementById('start-btn').onclick = enterTowerView;
+        } else {
+            document.getElementById('start-btn').onclick = startGame;
+        }
+        ov.classList.remove('hidden');
+    }
+
+    function hideOverlay() {
+        document.getElementById('overlay').classList.add('hidden');
+    }
+
+    let towerViewMode = false;
+    let towerViewScrollY = 0; // pixel offset for tower view scrolling
+
+    function enterTowerView() {
+        if (towerSnapshot.length === 0) return;
+        towerViewMode = true;
+        hideOverlay();
+        if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+        document.getElementById('tower-view-controls').classList.add('active');
+
+        // Calculate tower bounds
+        let minRow = Infinity, maxRow = -Infinity;
+        for (const cell of towerSnapshot) {
+            minRow = Math.min(minRow, cell.y);
+            maxRow = Math.max(maxRow, cell.y);
+        }
+        // Start scroll at tower top
+        towerViewScrollY = -(minRow - 2) * CELL; // show top with 2 rows margin
+        renderTowerView();
+
+        // Touch/mouse scroll for tower view
+        canvas.addEventListener('touchstart', towerViewTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', towerViewTouchMove, { passive: false });
+        canvas.addEventListener('wheel', towerViewWheel, { passive: false });
+    }
+
+    let tvTouchStartY = 0, tvScrollStart = 0;
+    function towerViewTouchStart(e) {
+        e.preventDefault();
+        tvTouchStartY = e.touches[0].clientY;
+        tvScrollStart = towerViewScrollY;
+    }
+    function towerViewTouchMove(e) {
+        e.preventDefault();
+        const dy = e.touches[0].clientY - tvTouchStartY;
+        towerViewScrollY = tvScrollStart + dy * (CELL / 10);
+        renderTowerView();
+    }
+    function towerViewWheel(e) {
+        e.preventDefault();
+        towerViewScrollY -= e.deltaY * 0.5;
+        renderTowerView();
+    }
+
+    function renderTowerView() {
+        // Background
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, '#87CEEB');
+        gradient.addColorStop(1, '#E0F6FF');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Grid
+        ctx.strokeStyle = 'rgba(0,0,0,0.04)';
+        ctx.lineWidth = 0.5;
+        for (let c = 0; c <= COLS; c++) {
+            ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, canvas.height); ctx.stroke();
+        }
+        for (let r = 0; r < ROWS; r++) {
+            ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(canvas.width, r * CELL); ctx.stroke();
+        }
+
+        // Draw tower snapshot with scroll offset
+        const offsetRows = towerViewScrollY / CELL;
+        for (const cell of towerSnapshot) {
+            const screenY = cell.y + offsetRows;
+            if (screenY >= -2 && screenY < ROWS + 2) {
+                drawCell(ctx, cell.x, screenY, cell.color, CELL);
+            }
+        }
+
+        // Ground
+        const floorScreenY = (ROWS + offsetRows) * CELL;
+        if (floorScreenY > 0 && floorScreenY <= canvas.height + 10) {
+            ctx.fillStyle = '#90EE90';
+            ctx.fillRect(0, floorScreenY - 8, canvas.width, 8);
+            ctx.fillStyle = '#8B7355';
+            ctx.fillRect(0, floorScreenY - 4, canvas.width, 4);
+        }
+
+        // Height markers
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.font = '10px system-ui';
+        ctx.textAlign = 'right';
+        for (let h = 5; h < 200; h += 5) {
+            const screenY = (ROWS - h + offsetRows) * CELL;
+            if (screenY > -10 && screenY < canvas.height + 10) {
+                ctx.fillText(`${h}`, canvas.width - 5, screenY + 3);
+                ctx.fillRect(canvas.width - 20, screenY, 15, 1);
+            }
+        }
+    }
+
+    function exitTowerView() {
+        towerViewMode = false;
+        canvas.removeEventListener('touchstart', towerViewTouchStart);
+        canvas.removeEventListener('touchmove', towerViewTouchMove);
+        canvas.removeEventListener('wheel', towerViewWheel);
+        document.getElementById('tower-view-controls').classList.remove('active');
+    }
+
+    // Controls
+    document.getElementById('start-btn').addEventListener('click', startGame);
+    document.getElementById('play-again-btn').addEventListener('click', () => {
+        exitTowerView();
+        startGame();
+    });
+
+    function handleAction(action) {
+        if (towerViewMode || gameOver || !current) return;
+        switch (action) {
+            case 'left':
+                if (!collides(current.cells, current.x - 1, current.y)) {
+                    current.x--; sfx.move();
+                }
+                break;
+            case 'right':
+                if (!collides(current.cells, current.x + 1, current.y)) {
+                    current.x++; sfx.move();
+                }
+                break;
+            case 'down':
+                if (!collides(current.cells, current.x, current.y + 1)) {
+                    current.y++; score += 1; dropTimer = 0; updateUI();
+                }
+                break;
+            case 'rotate': {
+                if (current.name === 'O') break;
+                const rotated = rotatedCells(current.cells);
+                for (const kick of [0, -1, 1, -2, 2]) {
+                    if (!collides(rotated, current.x + kick, current.y)) {
+                        current.cells = rotated;
+                        current.x += kick;
+                        sfx.rotate();
+                        return;
+                    }
+                }
+                break;
+            }
+            case 'drop': {
+                let d = 0;
+                while (!collides(current.cells, current.x, current.y + 1)) {
+                    current.y++; d++;
+                }
+                score += d * 2;
+                updateUI();
+                lock();
+                dropTimer = 0;
+                break;
+            }
+        }
+    }
+
+    document.addEventListener('keydown', e => {
+        const map = {
+            ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down',
+            ArrowUp: 'rotate', ' ': 'drop'
+        };
+        if (map[e.key]) { e.preventDefault(); handleAction(map[e.key]); }
+    });
+
+    // Mobile buttons
+    document.querySelectorAll('.mobile-btn').forEach(btn => {
+        btn.addEventListener('touchstart', e => {
+            e.preventDefault();
+            handleAction(btn.dataset.action);
+        });
+    });
+
+    // Touch gestures
+    if (isMobile) {
+        let touchStartX, touchStartY, touchStartTime, touchLastX, touchLastY;
+        let touchMoveAccumX = 0, touchMoveAccumY = 0;
+        let hardDropped = false;
+        const SWIPE_THRESHOLD = CELL * 0.7;
+        const TAP_MAX_DIST = 20;
+        const TAP_MAX_TIME = 300;
+        const HARD_DROP_VELOCITY = 1.5;
+
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const t = e.touches[0];
+            touchStartX = t.clientX;
+            touchStartY = t.clientY;
+            touchStartTime = performance.now();
+            touchLastX = touchStartX;
+            touchLastY = touchStartY;
+            touchMoveAccumX = 0;
+            touchMoveAccumY = 0;
+            hardDropped = false;
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if (hardDropped) return;
+            const t = e.touches[0];
+            const dx = t.clientX - touchStartX;
+            const dy = t.clientY - touchStartY;
+            const elapsed = performance.now() - touchStartTime;
+
+            // Fast downward swipe = hard drop
+            if (dy > CELL * 2 && elapsed > 0 && (dy / elapsed) > HARD_DROP_VELOCITY) {
+                handleAction('drop');
+                hardDropped = true;
+                return;
+            }
+
+            touchLastX = t.clientX;
+            touchLastY = t.clientY;
+
+            const rawDist = Math.sqrt(dx * dx + dy * dy);
+            if (rawDist < TAP_MAX_DIST) return;
+
+            if (touchMoveAccumX === 0 && touchMoveAccumY === 0) {
+                touchMoveAccumX = dx;
+                touchMoveAccumY = dy;
+            }
+
+            // Horizontal movement
+            const cellsMovedX = Math.floor((dx - touchMoveAccumX) / SWIPE_THRESHOLD);
+            if (cellsMovedX !== 0) {
+                const dir = cellsMovedX > 0 ? 'right' : 'left';
+                const steps = Math.abs(cellsMovedX);
+                for (let i = 0; i < steps; i++) handleAction(dir);
+                touchMoveAccumX += cellsMovedX * SWIPE_THRESHOLD;
+            }
+
+            // Vertical (downward) movement
+            const cellsMovedY = Math.floor((dy - touchMoveAccumY) / SWIPE_THRESHOLD);
+            if (cellsMovedY > 0) {
+                for (let i = 0; i < cellsMovedY; i++) handleAction('down');
+                touchMoveAccumY += cellsMovedY * SWIPE_THRESHOLD;
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', e => {
+            e.preventDefault();
+            if (hardDropped) return;
+            const elapsed = performance.now() - touchStartTime;
+            const rawDx = touchLastX - touchStartX;
+            const rawDy = touchLastY - touchStartY;
+            const dist = Math.sqrt(rawDx * rawDx + rawDy * rawDy);
+            if (elapsed < TAP_MAX_TIME && dist < TAP_MAX_DIST) {
+                handleAction('rotate');
+            }
+        }, { passive: false });
+    }
+
+    // Initial state
+    board = newBoard();
+    placeFoundation();
+    render();
+})();
+</script>
+</body>
+</html>
