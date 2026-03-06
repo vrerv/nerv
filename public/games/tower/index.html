@@ -406,137 +406,310 @@
     }
 
     function calculateBalance() {
-        // Physics-based balance: check each "slice" (row) of the tower
-        // 1. Find support base at each level
-        // 2. Calculate center of mass of everything above each level
-        // 3. If CoM is outside the support base → collapse
+        // Connection-point stress system:
+        // 1. Flood-fill from foundation to find "supported" cells
+        // 2. Detect disconnected islands → collapse those cells
+        // 3. For each horizontal connection, calculate torque from unsupported weight
+        // 4. If torque > adhesion at any joint → break there, collapse the broken piece
 
-        const rows = Object.keys(board).map(Number).sort((a, b) => b - a); // bottom to top
-        if (rows.length === 0) { imbalance = 0; return; }
+        const allCells = []; // {col, row}
+        for (const row in board) {
+            for (const col in board[row]) {
+                if (board[row][col]) allCells.push({ col: parseInt(col), row: parseInt(row) });
+            }
+        }
+        if (allCells.length === 0) { imbalance = 0; return; }
 
-        const bottomRow = Math.max(...rows); // highest row number = lowest position
-        const topRow = Math.min(...rows);
+        const foundationRow = ROWS - 1;
+        const foundationStartCol = Math.floor(COLS / 2) - Math.floor(FOUNDATION_WIDTH / 2);
 
-        // Build column occupancy per row
-        function getOccupiedCols(row) {
-            if (!board[row]) return [];
-            return Object.keys(board[row]).map(Number).filter(c => board[row][c]);
+        // --- Step 1: Find all cells connected to foundation via 4-neighbor adjacency ---
+        const key = (c, r) => `${c},${r}`;
+        const hasCell = (c, r) => getBoardCell(c, r);
+        const supported = new Set();
+        const queue = [];
+
+        // Seed: foundation cells
+        for (let c = foundationStartCol; c < foundationStartCol + FOUNDATION_WIDTH; c++) {
+            if (hasCell(c, foundationRow)) {
+                supported.add(key(c, foundationRow));
+                queue.push({ col: c, row: foundationRow });
+            }
         }
 
-        // For each row from bottom up, check if the structure above is supported
-        let worstImbalance = 0;
-        let collapseDetected = false;
-
-        for (let checkRow = bottomRow; checkRow >= topRow; checkRow--) {
-            // Support base at this row: columns that have a block at checkRow
-            // and are connected to the ground (or blocks below them)
-            const supportCols = getOccupiedCols(checkRow);
-            if (supportCols.length === 0) continue;
-
-            const supportMin = Math.min(...supportCols);
-            const supportMax = Math.max(...supportCols);
-            const supportCenter = (supportMin + supportMax) / 2;
-            const supportWidth = supportMax - supportMin + 1;
-
-            // Calculate center of mass of everything above this row (inclusive)
-            let massAbove = 0;
-            let weightedXAbove = 0;
-            for (let r = checkRow; r >= topRow; r--) {
-                const cols = getOccupiedCols(r);
-                for (const c of cols) {
-                    massAbove++;
-                    weightedXAbove += c + 0.5; // center of cell
+        // BFS flood fill (4-directional)
+        while (queue.length > 0) {
+            const { col: cc, row: rr } = queue.shift();
+            for (const [dc, dr] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+                const nc = cc + dc, nr = rr + dr;
+                const k = key(nc, nr);
+                if (!supported.has(k) && hasCell(nc, nr)) {
+                    supported.add(k);
+                    queue.push({ col: nc, row: nr });
                 }
             }
+        }
 
-            if (massAbove === 0) continue;
+        // --- Step 2: Detect disconnected cells (islands) ---
+        const disconnected = allCells.filter(c => !supported.has(key(c.col, c.row)));
+        if (disconnected.length > 0) {
+            // Remove disconnected cells from board and collapse them
+            triggerPartialCollapse(disconnected);
+            return;
+        }
 
-            const comX = weightedXAbove / massAbove;
+        // --- Step 3: Connection-point torque analysis ---
+        // For each cell, check if it's cantilevered (no direct support below)
+        // and calculate the torque at its nearest support joint
+        let worstImbalance = 0;
+        let breakPoint = null; // {col, row} where the connection breaks
 
-            // Check if center of mass is within support base + adhesion tolerance
-            const supportLeftEdge = supportMin - getAdhesionStrength();
-            const supportRightEdge = supportMax + 1 + getAdhesionStrength();
+        const rows = [...new Set(allCells.map(c => c.row))].sort((a, b) => a - b); // top to bottom
 
-            // How far is CoM from the nearest support edge?
-            let overhang = 0;
-            if (comX < supportMin + 0.5) {
-                overhang = (supportMin + 0.5) - comX;
-            } else if (comX > supportMax + 0.5) {
-                overhang = comX - (supportMax + 0.5);
-            }
+        for (const row of rows) {
+            if (row >= foundationRow) continue; // Skip foundation row
 
-            // Normalize imbalance: 0 = perfectly centered, 1 = at collapse point
-            const maxOverhang = supportWidth / 2 + getAdhesionStrength();
-            const normalizedImbalance = overhang / Math.max(maxOverhang, 0.5);
-            worstImbalance = Math.max(worstImbalance, normalizedImbalance);
+            const cols = allCells.filter(c => c.row === row).map(c => c.col).sort((a, b) => a - b);
 
-            // Physical impossibility: CoM outside support + adhesion
-            if (comX < supportLeftEdge + 0.5 || comX > supportRightEdge - 0.5) {
-                collapseDetected = true;
-                break;
-            }
+            // Find which cells in this row have direct support (cell below exists)
+            const supportedCols = cols.filter(c => hasCell(c, row + 1));
+            const unsupportedCols = cols.filter(c => !hasCell(c, row + 1));
 
-            // Also check: any individual cell floating with no support below and no adjacent connection
-            if (checkRow < bottomRow) {
-                const belowCols = getOccupiedCols(checkRow + 1);
-                const currentCols = getOccupiedCols(checkRow);
-                for (const c of currentCols) {
-                    // A cell needs either: support directly below, or adjacent cell on same row that has support
-                    const hasDirectSupport = belowCols.includes(c);
-                    const hasAdjacentSupport = currentCols.includes(c - 1) && belowCols.includes(c - 1) ||
-                                               currentCols.includes(c + 1) && belowCols.includes(c + 1);
-                    const hasDiagonalSupport = belowCols.includes(c - 1) || belowCols.includes(c + 1);
-                    if (!hasDirectSupport && !hasAdjacentSupport && !hasDiagonalSupport) {
-                        // Floating cell — cantilever check
-                        // Find nearest supported cell on same row
-                        let minDist = Infinity;
-                        for (const sc of currentCols) {
-                            if (belowCols.includes(sc) || belowCols.includes(sc - 1) || belowCols.includes(sc + 1)) {
-                                minDist = Math.min(minDist, Math.abs(c - sc));
-                            }
-                        }
-                        if (minDist > getAdhesionStrength() + 0.5) {
-                            collapseDetected = true;
-                            break;
+            for (const uc of unsupportedCols) {
+                // Find nearest supported cell on same row (horizontal chain)
+                let nearestSupportDist = Infinity;
+                let nearestSupportCol = null;
+                for (const sc of supportedCols) {
+                    // Must be connected via continuous horizontal chain
+                    const minC = Math.min(uc, sc);
+                    const maxC = Math.max(uc, sc);
+                    let connected = true;
+                    for (let c = minC; c <= maxC; c++) {
+                        if (!cols.includes(c)) { connected = false; break; }
+                    }
+                    if (connected) {
+                        const dist = Math.abs(uc - sc);
+                        if (dist < nearestSupportDist) {
+                            nearestSupportDist = dist;
+                            nearestSupportCol = sc;
                         }
                     }
                 }
-                if (collapseDetected) break;
+
+                if (nearestSupportCol === null) continue; // handled by BFS disconnection
+
+                // Calculate weight hanging from this unsupported cell upward
+                let hangingWeight = 0;
+                const visited = new Set();
+                const wQueue = [{ col: uc, row: row }];
+                while (wQueue.length > 0) {
+                    const { col: wc, row: wr } = wQueue.shift();
+                    const wk = key(wc, wr);
+                    if (visited.has(wk)) continue;
+                    if (!hasCell(wc, wr)) continue;
+                    // Only count cells above or at the same row, not below the connection
+                    if (wr > row) continue;
+                    visited.add(wk);
+                    hangingWeight++;
+                    // Expand upward and sideways (not downward past row)
+                    wQueue.push({ col: wc, row: wr - 1 });
+                    wQueue.push({ col: wc - 1, row: wr });
+                    wQueue.push({ col: wc + 1, row: wr });
+                }
+
+                // Torque = weight × distance from support point
+                const torque = hangingWeight * nearestSupportDist;
+                const adhesion = getAdhesionStrength();
+                // Max torque the joint can hold: adhesion strength × support factor
+                // (more support below = stronger joint)
+                const supportFactor = supportedCols.length;
+                const maxTorque = adhesion * (1 + supportFactor * 0.5);
+
+                const stressRatio = torque / Math.max(maxTorque, 0.1);
+                worstImbalance = Math.max(worstImbalance, stressRatio);
+
+                if (stressRatio >= 1.0) {
+                    // Find break point: the joint between the unsupported cell and its chain toward support
+                    const breakCol = uc > nearestSupportCol ? nearestSupportCol + 1 : nearestSupportCol - 1;
+                    breakPoint = { col: breakCol, row: row, direction: uc > nearestSupportCol ? 'right' : 'left' };
+                    break;
+                }
+            }
+            if (breakPoint) break;
+        }
+
+        // --- Step 4: Global center of mass check (whole tower) ---
+        if (!breakPoint) {
+            // Overall CoM vs foundation base
+            let totalMass = 0, totalWeightedX = 0;
+            for (const c of allCells) {
+                totalMass++;
+                totalWeightedX += c.col + 0.5;
+            }
+            const overallComX = totalWeightedX / totalMass;
+            const foundationCenter = foundationStartCol + FOUNDATION_WIDTH / 2;
+            const comOffset = Math.abs(overallComX - foundationCenter);
+            const maxOffset = FOUNDATION_WIDTH / 2 + getAdhesionStrength();
+            const globalStress = comOffset / Math.max(maxOffset, 0.5);
+            worstImbalance = Math.max(worstImbalance, globalStress);
+
+            if (globalStress >= 1.0) {
+                // Full tower collapse
+                breakPoint = { col: -1, row: -1, direction: 'full' };
             }
         }
 
-        imbalance = worstImbalance;
+        imbalance = Math.min(worstImbalance, 1.0);
 
-        // Difficulty scaling: reduce adhesion tolerance over time
-        const effectiveThreshold = 1.0; // Collapse at normalized imbalance >= 1.0
-
-        // Update wobble based on imbalance (0 to 1 range)
+        // Update wobble based on imbalance
         wobbleAmplitude = Math.min(imbalance * 12, 10);
 
         // Update balance meter
         const balanceNeedle = document.getElementById('balance-needle');
-        // Map overall center of mass to visual position
         let totalMass = 0, totalWeightedX = 0;
-        for (const row in board) {
-            for (const col in board[row]) {
-                if (board[row][col]) { totalMass++; totalWeightedX += parseFloat(col) + 0.5; }
-            }
-        }
+        for (const c of allCells) { totalMass++; totalWeightedX += c.col + 0.5; }
         const overallComX = totalMass > 0 ? totalWeightedX / totalMass : COLS / 2;
         const balancePercent = (overallComX / COLS) * 100;
         balanceNeedle.style.left = `${Math.max(5, Math.min(95, balancePercent))}%`;
 
-        // Wobble sound when getting dangerous
+        // Wobble sound
         const now = performance.now();
         if (imbalance > 0.5 && now - lastWobbleSound > 1000) {
             sfx.wobble();
             lastWobbleSound = now;
         }
 
-        // Trigger collapse if physically impossible
-        if (collapseDetected || imbalance >= effectiveThreshold) {
-            triggerCollapse();
+        // Trigger collapse
+        if (breakPoint) {
+            if (breakPoint.direction === 'full') {
+                triggerCollapse();
+            } else {
+                // Partial collapse: find cells on the broken side
+                const brokenCells = findBrokenCells(breakPoint);
+                if (brokenCells.length > 0) {
+                    triggerPartialCollapse(brokenCells);
+                } else {
+                    triggerCollapse();
+                }
+            }
         }
+    }
+
+    // Find cells that would fall off after a connection breaks
+    function findBrokenCells(breakPoint) {
+        const key = (c, r) => `${c},${r}`;
+        const foundationRow = ROWS - 1;
+        const foundationStartCol = Math.floor(COLS / 2) - Math.floor(FOUNDATION_WIDTH / 2);
+
+        // Temporarily "cut" the connection at breakPoint
+        // Re-do flood fill from foundation, skipping the break
+        const supported = new Set();
+        const queue = [];
+        const breakKey = key(breakPoint.col, breakPoint.row);
+        const adjacentKey = breakPoint.direction === 'right'
+            ? key(breakPoint.col - 1, breakPoint.row)
+            : key(breakPoint.col + 1, breakPoint.row);
+
+        // Seed from foundation
+        for (let c = foundationStartCol; c < foundationStartCol + FOUNDATION_WIDTH; c++) {
+            if (getBoardCell(c, foundationRow)) {
+                supported.add(key(c, foundationRow));
+                queue.push({ col: c, row: foundationRow });
+            }
+        }
+
+        // BFS but skip the broken connection
+        while (queue.length > 0) {
+            const { col: cc, row: rr } = queue.shift();
+            for (const [dc, dr] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+                const nc = cc + dc, nr = rr + dr;
+                const k = key(nc, nr);
+                if (supported.has(k)) continue;
+                if (!getBoardCell(nc, nr)) continue;
+                // Skip the broken connection
+                const curK = key(cc, rr);
+                if ((curK === breakKey && k === adjacentKey) ||
+                    (curK === adjacentKey && k === breakKey)) continue;
+                supported.add(k);
+                queue.push({ col: nc, row: nr });
+            }
+        }
+
+        // Cells not in supported set = broken off
+        const broken = [];
+        for (const row in board) {
+            for (const col in board[row]) {
+                if (board[row][col] && !supported.has(key(parseInt(col), parseInt(row)))) {
+                    broken.push({ col: parseInt(col), row: parseInt(row), color: board[row][col] });
+                }
+            }
+        }
+        return broken;
+    }
+
+    // Partial collapse: only some cells fall, rest stays
+    function triggerPartialCollapse(brokenCells) {
+        if (brokenCells.length === 0) return;
+
+        // Save full snapshot before collapse
+        towerSnapshot = [];
+        for (const row in board) {
+            for (const col in board[row]) {
+                towerSnapshot.push({ x: parseInt(col), y: parseInt(row), color: board[row][col] });
+            }
+        }
+
+        // Remove broken cells from board
+        for (const cell of brokenCells) {
+            if (board[cell.row] && board[cell.row][cell.col]) {
+                delete board[cell.row][cell.col];
+                if (Object.keys(board[cell.row]).length === 0) delete board[cell.row];
+            }
+        }
+
+        // Convert broken cells to Matter.js bodies
+        collapseMode = true;
+        sfx.collapse();
+        engine = Engine.create({ gravity: { x: 0, y: 1 } });
+        world = engine.world;
+        collapseBodies = [];
+
+        for (const cell of brokenCells) {
+            const x = cell.col * CELL + CELL / 2;
+            const screenRow = cell.row + cameraY / CELL;
+            const y = screenRow * CELL + CELL / 2;
+            const body = Bodies.rectangle(x, y, CELL - 1, CELL - 1, {
+                friction: 0.8, restitution: 0.1,
+                velocity: { x: (Math.random() - 0.5) * 2, y: 0 }
+            });
+            World.add(world, body);
+            collapseBodies.push({ body, color: cell.color || '#999' });
+        }
+
+        // Floor and walls for collapse physics
+        const floorY = canvas.height + 100;
+        World.add(world, Bodies.rectangle(canvas.width / 2, floorY, canvas.width * 2, 200, { isStatic: true }));
+        World.add(world, Bodies.rectangle(-50, canvas.height / 2, 100, canvas.height * 3, { isStatic: true }));
+        World.add(world, Bodies.rectangle(canvas.width + 50, canvas.height / 2, 100, canvas.height * 3, { isStatic: true }));
+
+        collapseTimer = 0;
+
+        // After partial collapse animation, continue game (don't game over)
+        setTimeout(() => {
+            collapseMode = false;
+            collapseBodies = [];
+            engine = null; world = null;
+            // Re-check balance after partial collapse
+            calculateBalance();
+            if (!collapseMode && !gameOver) {
+                // Continue playing — spawn next block
+                current = next;
+                current.x = 3; current.y = getSpawnY();
+                cameraY = Math.max(0, -current.y * CELL);
+                next = nextPieceFromBag();
+                updateUI();
+            }
+        }, 2500);
     }
 
     function triggerCollapse() {
@@ -655,16 +828,16 @@
             }
         }
 
-        // Draw locked cells (with camera scroll)
-        if (!collapseMode) {
-            for (const row in board) {
-                const screenY = parseInt(row) + cameraY / CELL;
-                if (screenY < -5 || screenY >= ROWS + 5) continue;
-                for (const col in board[row]) {
-                    drawCell(ctx, parseInt(col), screenY, board[row][col], CELL);
-                }
+        // Draw locked cells (with camera scroll) — always show remaining board
+        for (const row in board) {
+            const screenY = parseInt(row) + cameraY / CELL;
+            if (screenY < -5 || screenY >= ROWS + 5) continue;
+            for (const col in board[row]) {
+                drawCell(ctx, parseInt(col), screenY, board[row][col], CELL);
             }
+        }
 
+        if (!collapseMode) {
             // Ghost + current piece
             if (current && !gameOver) {
                 drawGhost();
