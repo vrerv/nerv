@@ -660,13 +660,177 @@
         ctx.globalAlpha = 1;
     }
 
+    // Background scenery drawing functions
+    function drawBackground() {
+        const W = canvas.width;
+        const H = canvas.height;
+
+        // Helper: convert world row to screen Y pixel
+        function worldToScreenY(worldRow) {
+            return (worldRow + cameraY / CELL) * CELL;
+        }
+
+        // Floor heights (world rows, lower number = higher position)
+        // Foundation is at ROWS-1. Floor N = ROWS-1-N
+        const floor10Row = ROWS - 1 - 10;
+        const floor20Row = ROWS - 1 - 20;
+        const floor50Row = ROWS - 1 - 50;
+        const floor100Row = ROWS - 1 - 100;
+
+        // === FOREST (ground to floor 10) — trees behind the tower ===
+        const forestBottomY = worldToScreenY(ROWS); // ground level
+        const forestTopY = worldToScreenY(floor10Row);
+        if (forestBottomY > 0 && forestTopY < H) {
+            const startY = Math.max(0, forestTopY);
+            const endY = Math.min(H, forestBottomY);
+            // Draw forest trees
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            const treeColors = ['#228B22', '#2E8B57', '#3CB371', '#006400'];
+            for (let i = 0; i < 15; i++) {
+                const tx = (i * W / 14) + ((i * 37) % 11) - 5;
+                const treeH = CELL * (3 + (i % 3));
+                const treeBase = endY - 4;
+                const treeTop = treeBase - treeH;
+                if (treeTop > endY || treeBase < startY) continue;
+                // Trunk
+                ctx.fillStyle = '#8B6914';
+                ctx.fillRect(tx + CELL * 0.3, treeBase - CELL, CELL * 0.4, CELL);
+                // Foliage (triangle layers)
+                ctx.fillStyle = treeColors[i % treeColors.length];
+                for (let layer = 0; layer < 3; layer++) {
+                    const ly = treeBase - CELL - layer * CELL * 0.7;
+                    const lw = CELL * (1.5 - layer * 0.3);
+                    ctx.beginPath();
+                    ctx.moveTo(tx + CELL * 0.5, ly - CELL * 0.8);
+                    ctx.lineTo(tx + CELL * 0.5 - lw / 2, ly);
+                    ctx.lineTo(tx + CELL * 0.5 + lw / 2, ly);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+
+        // === MOUNTAINS (floor 10-20 range) — distant mountains ===
+        const mtBottomY = worldToScreenY(floor10Row);
+        const mtTopY = worldToScreenY(floor20Row);
+        if (mtBottomY > -CELL * 5 && mtTopY < H + CELL * 5) {
+            ctx.save();
+            ctx.globalAlpha = 0.25;
+            const mtBase = Math.min(H, mtBottomY);
+            // Mountain range
+            const peaks = [
+                { x: W * 0.1, h: CELL * 8, color: '#6B7B8D' },
+                { x: W * 0.3, h: CELL * 12, color: '#5B6B7D' },
+                { x: W * 0.5, h: CELL * 10, color: '#7B8B9D' },
+                { x: W * 0.7, h: CELL * 14, color: '#4B5B6D' },
+                { x: W * 0.9, h: CELL * 9, color: '#6B7B8D' },
+            ];
+            for (const peak of peaks) {
+                const peakTop = mtBase - peak.h;
+                ctx.fillStyle = peak.color;
+                ctx.beginPath();
+                ctx.moveTo(peak.x - W * 0.15, mtBase);
+                ctx.lineTo(peak.x, peakTop);
+                ctx.lineTo(peak.x + W * 0.15, mtBase);
+                ctx.closePath();
+                ctx.fill();
+                // Snow cap
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.beginPath();
+                ctx.moveTo(peak.x - W * 0.03, peakTop + peak.h * 0.15);
+                ctx.lineTo(peak.x, peakTop);
+                ctx.lineTo(peak.x + W * 0.03, peakTop + peak.h * 0.15);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // === BIG TREES (floor 20-50 range) — giant ancient trees ===
+        const bigTreeBottomY = worldToScreenY(floor20Row);
+        const bigTreeTopY = worldToScreenY(floor50Row);
+        if (bigTreeBottomY > -CELL * 5 && bigTreeTopY < H + CELL * 5) {
+            ctx.save();
+            ctx.globalAlpha = 0.2;
+            const btBase = Math.min(H, bigTreeBottomY);
+            const bigTrees = [
+                { x: W * 0.15, h: CELL * 20, trunkW: CELL * 1.5 },
+                { x: W * 0.5, h: CELL * 25, trunkW: CELL * 2 },
+                { x: W * 0.85, h: CELL * 18, trunkW: CELL * 1.2 },
+            ];
+            for (const bt of bigTrees) {
+                // Giant trunk
+                ctx.fillStyle = '#5C4033';
+                ctx.fillRect(bt.x - bt.trunkW / 2, btBase - bt.h * 0.6, bt.trunkW, bt.h * 0.6);
+                // Massive canopy (overlapping circles)
+                ctx.fillStyle = '#1B5E20';
+                const canopyY = btBase - bt.h * 0.5;
+                const canopyR = bt.h * 0.35;
+                for (let cx = -1; cx <= 1; cx++) {
+                    for (let cy = -1; cy <= 0; cy++) {
+                        ctx.beginPath();
+                        ctx.arc(bt.x + cx * canopyR * 0.5, canopyY + cy * canopyR * 0.4, canopyR, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+            ctx.restore();
+        }
+
+        // === CLOUDS (floor 80-120 range) — fluffy clouds ===
+        const cloudBottomY = worldToScreenY(ROWS - 1 - 80);
+        const cloudTopY = worldToScreenY(ROWS - 1 - 120);
+        if (cloudBottomY > -CELL * 10 && cloudTopY < H + CELL * 10) {
+            ctx.save();
+            ctx.globalAlpha = 0.35;
+            const cloudBaseY = worldToScreenY(floor100Row);
+            const clouds = [
+                { x: W * 0.2, y: cloudBaseY, w: CELL * 6, h: CELL * 2 },
+                { x: W * 0.5, y: cloudBaseY - CELL * 5, w: CELL * 8, h: CELL * 2.5 },
+                { x: W * 0.8, y: cloudBaseY + CELL * 3, w: CELL * 5, h: CELL * 1.8 },
+                { x: W * 0.35, y: cloudBaseY - CELL * 10, w: CELL * 7, h: CELL * 2.2 },
+                { x: W * 0.65, y: cloudBaseY + CELL * 8, w: CELL * 6, h: CELL * 2 },
+            ];
+            ctx.fillStyle = '#FFFFFF';
+            for (const cloud of clouds) {
+                // Cloud = group of overlapping ellipses
+                for (let i = 0; i < 5; i++) {
+                    ctx.beginPath();
+                    const cx = cloud.x + (i - 2) * cloud.w * 0.2;
+                    const cy = cloud.y - Math.abs(i - 2) * cloud.h * 0.2;
+                    const rx = cloud.w * 0.25;
+                    const ry = cloud.h * (0.4 + Math.abs(i - 2) * 0.1);
+                    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+    }
+
     function render() {
-        // Sky gradient
+        // Sky gradient — changes with height
+        const towerHeight = ROWS - 1 - getTowerTop();
         const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        gradient.addColorStop(0, '#87CEEB');
-        gradient.addColorStop(1, '#E0F6FF');
+        if (towerHeight >= 80) {
+            // High altitude — deeper blue
+            gradient.addColorStop(0, '#1E3A5F');
+            gradient.addColorStop(1, '#87CEEB');
+        } else if (towerHeight >= 40) {
+            // Mid altitude
+            gradient.addColorStop(0, '#4A90D9');
+            gradient.addColorStop(1, '#B0E0FF');
+        } else {
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(1, '#E0F6FF');
+        }
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw background scenery
+        drawBackground();
 
         // Apply wobble
         if (wobbleAmplitude > 0.1 && !collapseMode) {
