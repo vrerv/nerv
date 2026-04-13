@@ -18,7 +18,7 @@
         .stat-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
         .stat-value { font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
         .stat-value.danger { color: #ff4757; }
-        .header-right { display: flex; align-items: center; gap: 16px; }
+        .header-right { display: flex; align-items: center; gap: 16px; position: relative; }
         .btn-menu { background: none; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #aaa; font-size: 1.2rem; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .btn-menu:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
@@ -109,6 +109,17 @@
             .grid { gap: 4px; }
             .header-left { gap: 8px; }
         }
+
+        .btn-more { display: none; }
+        .more-menu { display: none; position: absolute; top: 44px; right: 0; background: #1a1a3e; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 6px; z-index: 50; min-width: 140px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .more-menu.show { display: flex; flex-direction: column; gap: 2px; }
+        .more-item { background: none; border: none; color: #ccc; font-size: 0.9rem; padding: 10px 14px; border-radius: 8px; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+        .more-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        @media (max-width: 600px) {
+            .btn-more { display: flex; }
+            #btn-sound, #btn-restart { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -131,7 +142,12 @@
             <button class="btn-menu btn-potion no-potion" id="btn-potion" title="Reveal Potion">🧪<span class="potion-count" id="potion-count">0</span></button>
             <button class="btn-menu" id="btn-sound" title="Sound">🔊</button>
             <button class="btn-menu" id="btn-restart" title="Restart">↺</button>
+            <button class="btn-menu btn-more" id="btn-more" title="More">⋯</button>
             <button class="btn-menu" id="btn-levels" title="Level Select">☰</button>
+            <div class="more-menu" id="more-menu">
+                <button class="more-item" id="btn-sound-m">🔊 Sound</button>
+                <button class="more-item" id="btn-restart-m">↺ Restart</button>
+            </div>
         </div>
     </div>
     <div class="grid-container">
@@ -188,6 +204,8 @@ const I18N = {
         visionHint: 'Reveal ALL cards briefly (earned by early match streak)',
         visionInfo: '🔮 Vision potions: {n}',
         visionEarned: '🔮 +{n} vision potions! (early {n}-match streak)',
+        sound: 'Sound',
+        restart: 'Restart',
         resultSummaryWin: 'You matched {matched} pairs in {time} using {attempts} attempts. You scored {score} points. {phrase}',
         resultSummaryLose: 'You matched {matched} out of {total} pairs in {time}. {phrase}',
         resultPhrases: [
@@ -240,6 +258,8 @@ const I18N = {
         visionHint: '전체 카드를 잠시 공개합니다 (초반 연속 매치 보상)',
         visionInfo: '🔮 투시 물약: {n}개',
         visionEarned: '🔮 +{n} 투시 물약! (초반 {n}연속 매치)',
+        sound: '소리',
+        restart: '재시작',
         resultSummaryWin: '{time} 동안 {attempts}번 시도해서 {matched}개 짝을 맞췄습니다. 총 {score}점을 얻었네요. {phrase}',
         resultSummaryLose: '{time} 동안 {total}개 중 {matched}개 짝을 맞췄습니다. {phrase}',
         resultPhrases: [
@@ -525,6 +545,7 @@ function renderHeader() {
     const potionBtn = $('btn-potion');
     $('potion-count').textContent = state.potions;
     potionBtn.title = t('potionHint');
+    potionBtn.style.display = state.level < 6 ? 'none' : '';
     potionBtn.classList.toggle('no-potion', state.potions <= 0);
     if (state.potions <= 0) { potionBtn.classList.remove('active'); state.potionMode = false; document.querySelector('.grid-container').classList.remove('potion-mode'); }
 
@@ -581,7 +602,7 @@ function startLevel(level) {
     state.locked = true;
     state.revealing = true;
     state.consecutiveMisses = 0;
-    state.potions = loadWinStreak();
+    state.potions = state.level >= 6 ? loadWinStreak() : 0;
     state.potionMode = false;
     state.potionRevealed = new Set();
     state.visionPotions = loadVisionPotions();
@@ -839,7 +860,7 @@ function showWinModal() {
             <div class="sitem"><span class="slabel">${t('score')}</span><span class="sval score">${score.toLocaleString()}</span></div>
         </div>
         <p class="result-phrase">${phrase}</p>
-        ${streak > 0 ? `<p style="color:#9b59b6;font-size:0.85rem;margin-bottom:4px">🧪 ${t('potionInfo', { n: streak })}</p>` : ''}
+        ${streak > 0 && next >= 6 ? `<p style="color:#9b59b6;font-size:0.85rem;margin-bottom:4px">🧪 ${t('potionInfo', { n: streak })}</p>` : ''}
         ${state.visionPotions > 0 ? `<p style="color:#e67e22;font-size:0.85rem;margin-bottom:4px">${t('visionInfo', { n: state.visionPotions })}</p>` : ''}
         <p style="margin-bottom:16px">${t('next', { pairs: nc.pairs, attempts: nc.maxAttempts })}</p>
         <button class="btn-primary" onclick="startLevel(${next})">${t('nextLevel')}</button>
@@ -922,6 +943,28 @@ $('btn-potion').addEventListener('click', () => {
 $('btn-sound').addEventListener('click', () => { SFX.toggle(); updateSoundBtn(); });
 $('btn-restart').addEventListener('click', () => startLevel(state.level));
 $('btn-levels').addEventListener('click', showLevelSelect);
+
+$('btn-more').addEventListener('click', (e) => {
+    e.stopPropagation();
+    $('more-menu').classList.toggle('show');
+    updateMoreMenu();
+});
+$('btn-sound-m').addEventListener('click', () => {
+    SFX.toggle();
+    updateSoundBtn();
+    updateMoreMenu();
+});
+$('btn-restart-m').addEventListener('click', () => {
+    $('more-menu').classList.remove('show');
+    startLevel(state.level);
+});
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.more-menu') && !e.target.closest('#btn-more')) $('more-menu').classList.remove('show');
+});
+function updateMoreMenu() {
+    $('btn-sound-m').textContent = (SFX.enabled ? '🔊 ' : '🔇 ') + t('sound');
+    $('btn-restart-m').textContent = '↺ ' + t('restart');
+}
 updateSoundBtn();
 
 let resizeTimer;
