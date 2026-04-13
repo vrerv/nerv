@@ -81,19 +81,13 @@
         .result-phrase { color: #f8d56b; font-size: 0.95rem; font-style: italic; margin: 12px 0 4px; line-height: 1.5; }
 
         .btn-potion { width: auto !important; padding: 0 10px; display: flex; align-items: center; gap: 4px; }
-        .btn-potion.active { border-color: #9b59b6; background: rgba(155,89,182,0.25); box-shadow: 0 0 10px rgba(155,89,182,0.3); color: #d4a5ff; }
         .btn-potion.no-potion { opacity: 0.3; pointer-events: none; }
         .potion-count { font-weight: 700; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
-        .grid-container.potion-mode .card:not(.matched):not(.flipped):not(.potion-revealed) { cursor: crosshair; }
-        .grid-container.potion-mode .card:not(.matched):not(.flipped):not(.potion-revealed) .card-back { border-color: rgba(155,89,182,0.4); transition: border-color 0.2s, box-shadow 0.2s; }
-        .grid-container.potion-mode .card:not(.matched):not(.flipped):not(.potion-revealed):hover .card-back { border-color: rgba(155,89,182,0.6); box-shadow: 0 0 15px rgba(155,89,182,0.35); }
-        .potion-overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; border-radius: 10px; z-index: 2; pointer-events: none; opacity: 0.35; }
-        .card.potion-revealed .potion-overlay { display: flex; }
-        .card.potion-revealed .card-back { border-color: rgba(150,100,255,0.4); }
-        .card.potion-revealed .card-back::after { opacity: 0; }
-        .card.flipped .potion-overlay, .card.matched .potion-overlay { display: none; }
-        @keyframes potionReveal { 0% { opacity: 0; transform: scale(1.5); } 100% { opacity: 0.35; transform: scale(1); } }
-        .card.potion-anim .potion-overlay { animation: potionReveal 0.4s ease-out; }
+        .card.potion-reveal-all .card-inner { transform: rotateY(180deg); }
+        .card.potion-reveal-all .card-front { border-color: rgba(155,89,182,0.5); box-shadow: 0 0 15px rgba(155,89,182,0.3); }
+        .streak-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.75rem; color: #ffaa00; font-weight: 700; }
+        @keyframes potionPop { 0% { transform: scale(1.6); } 100% { transform: scale(1); } }
+        .potion-pop { animation: potionPop 0.4s ease; }
 
         @media (max-width: 400px) {
             .card-back::after { font-size: 1.1em; }
@@ -146,7 +140,7 @@ const CONFIG = {
     LANG_KEY: 'memory-game-lang',
     WARN_STREAK: 3,
     GAMEOVER_STREAK: 5,
-    STREAK_KEY: 'memory-game-win-streak',
+    POTIONS_KEY: 'memory-game-potions',
 };
 
 const I18N = {
@@ -171,8 +165,9 @@ const I18N = {
         streakOver: 'Too many random guesses!',
         streakOverMsg: 'You missed {n} times in a row. Try to remember the card positions before clicking.',
         potion: 'Potion',
-        potionHint: 'Reveal a card (earned by consecutive wins)',
-        potionInfo: 'Win streak {n}: {n} potions next round',
+        potionHint: 'Reveal all cards briefly (earned by early match streak)',
+        potionInfo: '🧪 {n} potions',
+        potionEarned: '+{n} potions! ({streak} streak)',
         resultSummaryWin: 'You matched {matched} pairs in {time} using {attempts} attempts. You scored {score} points. {phrase}',
         resultSummaryLose: 'You matched {matched} out of {total} pairs in {time}. {phrase}',
         resultPhrases: [
@@ -219,8 +214,9 @@ const I18N = {
         streakOver: '랜덤 클릭은 안 돼요!',
         streakOverMsg: '{n}번 연속으로 틀렸습니다. 카드 위치를 기억한 후에 클릭하세요.',
         potion: '물약',
-        potionHint: '카드 한 장을 투시합니다 (연속 클리어 보상)',
-        potionInfo: '연속 {n}승 보상: 투시 물약 {n}개',
+        potionHint: '모든 카드를 잠시 공개합니다 (초반 연속 매치 보상)',
+        potionInfo: '🧪 투시 물약 {n}개',
+        potionEarned: '+{n} 물약 획득! ({streak}연속 매치)',
         resultSummaryWin: '{time} 동안 {attempts}번 시도해서 {matched}개 짝을 맞췄습니다. 총 {score}점을 얻었네요. {phrase}',
         resultSummaryLose: '{time} 동안 {total}개 중 {matched}개 짝을 맞췄습니다. {phrase}',
         resultPhrases: [
@@ -436,12 +432,12 @@ function saveBestLevel(level) {
     if (level > best) localStorage.setItem(CONFIG.STORAGE_KEY, level);
 }
 
-function loadWinStreak() {
-    return parseInt(localStorage.getItem(CONFIG.STREAK_KEY)) || 0;
+function loadPotions() {
+    return parseInt(localStorage.getItem(CONFIG.POTIONS_KEY)) || 0;
 }
 
-function saveWinStreak(streak) {
-    localStorage.setItem(CONFIG.STREAK_KEY, streak);
+function savePotions(n) {
+    localStorage.setItem(CONFIG.POTIONS_KEY, n);
 }
 
 const state = {
@@ -457,8 +453,8 @@ const state = {
     startTime: 0,
     consecutiveMisses: 0,
     potions: 0,
-    potionMode: false,
-    potionRevealed: new Set(),
+    initialStreak: 0,
+    initialStreakDone: false,
 };
 
 const $ = id => document.getElementById(id);
@@ -484,7 +480,6 @@ function renderHeader() {
     $('potion-count').textContent = state.potions;
     potionBtn.title = t('potionHint');
     potionBtn.classList.toggle('no-potion', state.potions <= 0);
-    if (state.potions <= 0) { potionBtn.classList.remove('active'); state.potionMode = false; document.querySelector('.grid-container').classList.remove('potion-mode'); }
 }
 
 function calcCardSize() {
@@ -513,8 +508,7 @@ function buildGrid() {
         if (state.matched.has(i)) card.classList.add('matched');
         if (state.flipped.includes(i)) card.classList.add('flipped');
         card.dataset.index = i;
-        if (state.potionRevealed.has(i)) card.classList.add('potion-revealed');
-        card.innerHTML = `<div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front" style="font-size:${fontSize}px">${emoji}</div></div><div class="potion-overlay" style="font-size:${fontSize}px">${emoji}</div>`;
+        card.innerHTML = `<div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front" style="font-size:${fontSize}px">${emoji}</div></div>`;
         card.addEventListener('click', () => onCardClick(i));
         $grid.appendChild(card);
     });
@@ -534,10 +528,9 @@ function startLevel(level) {
     state.locked = true;
     state.revealing = true;
     state.consecutiveMisses = 0;
-    state.potions = loadWinStreak();
-    state.potionMode = false;
-    state.potionRevealed = new Set();
-    document.querySelector('.grid-container').classList.remove('potion-mode');
+    state.potions = loadPotions();
+    state.initialStreak = 0;
+    state.initialStreakDone = false;
 
     hideModal();
     renderHeader();
@@ -557,22 +550,6 @@ function startLevel(level) {
 
 function onCardClick(index) {
     if (state.locked || state.revealing) return;
-
-    if (state.potionMode) {
-        if (!state.matched.has(index) && !state.flipped.includes(index) && !state.potionRevealed.has(index)) {
-            state.potionRevealed.add(index);
-            state.potions--;
-            state.potionMode = false;
-            document.querySelector('.grid-container').classList.remove('potion-mode');
-            $('btn-potion').classList.remove('active');
-            const card = getCard(index);
-            card.classList.add('potion-revealed', 'potion-anim');
-            SFX.play('potion');
-            renderHeader();
-            setTimeout(() => card.classList.remove('potion-anim'), 500);
-        }
-        return;
-    }
 
     if (state.matched.has(index) || state.flipped.includes(index)) return;
     if (state.flipped.length >= 2) return;
@@ -594,15 +571,29 @@ function onCardClick(index) {
             state.flipped = [];
             state.locked = false;
             state.consecutiveMisses = 0;
+            if (!state.initialStreakDone) state.initialStreak++;
             renderHeader();
 
             if (state.matched.size === state.config.pairs * 2) {
+                if (!state.initialStreakDone && state.initialStreak >= 2) {
+                    state.potions += state.initialStreak;
+                    savePotions(state.potions);
+                    state.initialStreakDone = true;
+                }
                 saveBestLevel(state.level + 1);
                 setTimeout(() => { SFX.play('win'); showWinModal(); }, 400);
             }
         } else {
             state.attemptsLeft--;
             state.consecutiveMisses++;
+            if (!state.initialStreakDone) {
+                state.initialStreakDone = true;
+                if (state.initialStreak >= 2) {
+                    state.potions += state.initialStreak;
+                    savePotions(state.potions);
+                    SFX.play('potion');
+                }
+            }
             renderHeader();
 
             setTimeout(() => {
@@ -696,7 +687,6 @@ function showWarning() {
 
 function showStreakGameOver() {
     state.locked = true;
-    saveWinStreak(0);
     const elapsed = (Date.now() - state.startTime) / 1000;
     const matched = state.matched.size / 2;
     const attemptsUsed = state.config.maxAttempts - state.attemptsLeft;
@@ -720,8 +710,6 @@ function showStreakGameOver() {
 }
 
 function showWinModal() {
-    const streak = loadWinStreak() + 1;
-    saveWinStreak(streak);
     const next = state.level + 1;
     const nc = getLevelConfig(next);
     const elapsed = (Date.now() - state.startTime) / 1000;
@@ -740,7 +728,7 @@ function showWinModal() {
             <div class="sitem"><span class="slabel">${t('score')}</span><span class="sval score">${score.toLocaleString()}</span></div>
         </div>
         <p class="result-phrase">${phrase}</p>
-        ${streak > 0 ? `<p style="color:#9b59b6;font-size:0.85rem;margin-bottom:4px">🧪 ${t('potionInfo', { n: streak })}</p>` : ''}
+        ${state.potions > 0 ? `<p style="color:#9b59b6;font-size:0.85rem;margin-bottom:4px">${t('potionInfo', { n: state.potions })}</p>` : ''}
         <p style="margin-bottom:16px">${t('next', { pairs: nc.pairs, attempts: nc.maxAttempts })}</p>
         <button class="btn-primary" onclick="startLevel(${next})">${t('nextLevel')}</button>
         <button class="btn-secondary" onclick="showLevelSelect()">${t('levelSelect')}</button>
@@ -748,7 +736,6 @@ function showWinModal() {
 }
 
 function showLoseModal() {
-    saveWinStreak(0);
     const elapsed = (Date.now() - state.startTime) / 1000;
     const matched = state.matched.size / 2;
     const attemptsUsed = state.config.maxAttempts;
@@ -780,7 +767,7 @@ function langButtons() {
 
 function showLevelSelect() {
     const best = loadBestLevel();
-    const streak = loadWinStreak();
+    const potions = loadPotions();
     showModal(`
         <h2>${t('title')}</h2>
         <p>${t('subtitle')}</p>
@@ -791,7 +778,7 @@ function showLevelSelect() {
                 <button onclick="adjustLevel(1)">+</button>
             </div>
             <div class="best-level">${t('best')}: Level ${best}</div>
-            ${streak > 0 ? `<div class="best-level" style="color:#9b59b6">🧪 ${t('potionInfo', { n: streak })}</div>` : ''}
+            ${potions > 0 ? `<div class="best-level" style="color:#9b59b6">${t('potionInfo', { n: potions })}</div>` : ''}
         </div>
         <button class="btn-primary" onclick="startFromInput()">${t('start')}</button>
         ${langButtons()}
@@ -813,9 +800,18 @@ function startFromInput() {
 
 $('btn-potion').addEventListener('click', () => {
     if (state.potions <= 0 || state.locked || state.revealing) return;
-    state.potionMode = !state.potionMode;
-    $('btn-potion').classList.toggle('active', state.potionMode);
-    document.querySelector('.grid-container').classList.toggle('potion-mode', state.potionMode);
+    state.potions--;
+    savePotions(state.potions);
+    state.locked = true;
+    renderHeader();
+    SFX.play('potion');
+    const cards = $grid.querySelectorAll('.card:not(.matched):not(.flipped)');
+    cards.forEach(c => c.classList.add('potion-reveal-all'));
+    const revealMs = state.level / 10 * 1000;
+    setTimeout(() => {
+        cards.forEach(c => c.classList.remove('potion-reveal-all'));
+        state.locked = false;
+    }, revealMs + 400);
 });
 $('btn-sound').addEventListener('click', () => { SFX.toggle(); updateSoundBtn(); });
 $('btn-restart').addEventListener('click', () => startLevel(state.level));
