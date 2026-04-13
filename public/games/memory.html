@@ -13,6 +13,7 @@
         .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(0,0,0,0.4); border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
         .header-left { display: flex; align-items: center; gap: 12px; }
         .level-badge { background: linear-gradient(135deg, #667eea, #764ba2); padding: 4px 14px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.5px; }
+        .theme-badge { font-size: 1.1rem; opacity: 0.85; min-width: 24px; text-align: center; }
         .stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .stat-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
         .stat-value { font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -68,6 +69,7 @@
             .card-back::after { font-size: 1.1em; }
             .header { padding: 8px 10px; }
             .grid { gap: 4px; }
+            .header-left { gap: 8px; }
         }
     </style>
 </head>
@@ -76,6 +78,7 @@
     <div class="header">
         <div class="header-left">
             <div class="level-badge" id="level-display">Lv. 1</div>
+            <div class="theme-badge" id="theme-display"></div>
             <div class="stat">
                 <span class="stat-label">Matched</span>
                 <span class="stat-value" id="match-display">0/2</span>
@@ -86,6 +89,7 @@
             </div>
         </div>
         <div class="header-right">
+            <button class="btn-menu" id="btn-sound" title="Sound">🔊</button>
             <button class="btn-menu" id="btn-restart" title="Restart">↺</button>
             <button class="btn-menu" id="btn-levels" title="Level Select">☰</button>
         </div>
@@ -107,27 +111,137 @@ const CONFIG = {
     MAX_MULTIPLIER: 3.0,
     MISMATCH_DELAY: 500,
     STORAGE_KEY: 'memory-game-best-level',
+    SOUND_KEY: 'memory-game-sound',
 };
 
-const EMOJI_POOLS = {
-    easy: ['●','▲','■','◆','★','♥','♣','♠','◀','▶','▼','△','□','◇','☆','♦','♧','♤','◁','▷','▽','○','⬟','⬡','⬢','⬣','⏣','⎔','◈','◉'],
-    medium: ['◇','◈','◉','◎','⬡','⬢','⬣','⏣','⎔','●','▲','■','◆','★','♥','♣','♠','◀','▶','▼','△','□','☆','♦','♧','♤','◁','▷','⬟','○'],
-    hard: ['⬠','⬡','⬢','⬣','⏣','⎔','◇','◈','◉','◎','⬮','⬯','▰','▱','◆','◇','⬥','⬦','⬧','⬨','⬩','▲','△','▴','▵','▶','▷','▸','▹','●'],
+const THEMES = {
+    shapes: {
+        name: 'Shapes', icon: '⬡',
+        easy: ['●','▲','■','◆','★','♥','♣','♠','◀','▶','▼','△','□','◇','☆','♦','♧','♤','◁','▷','▽','○','⬟','⬡','⬢','⬣','⏣','⎔','◈','◉'],
+        medium: ['◇','◈','◉','◎','⬡','⬢','⬣','⏣','⎔','●','▲','■','◆','★','♥','♣','♠','◀','▶','▼','△','□','☆','♦','♧','♤','◁','▷','⬟','○'],
+        hard: ['⬠','⬡','⬢','⬣','⏣','⎔','◇','◈','◉','◎','⬮','⬯','▰','▱','◆','◇','⬥','⬦','⬧','⬨','⬩','▲','△','▴','▵','▶','▷','▸','▹','●'],
+    },
+    animals: {
+        name: 'Animals', icon: '🐾',
+        pool: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌'],
+    },
+    faces: {
+        name: 'Faces', icon: '😊',
+        pool: ['😀','😢','😡','😱','🥰','😎','🤮','😴','🤑','😇','🥳','🤯','😈','🤡','👻','💀','🤖','👽','🎃','😺','🤠','😵','🥶','🥵','🤧','😷','🤒','😤','🫠','🫡'],
+    },
+    food: {
+        name: 'Food', icon: '🍕',
+        pool: ['🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🥑','🌽','🥕','🍕','🍔','🌭','🍟','🍿','🧁','🍩','🍪','🎂','🍫','🍭'],
+    },
+    nature: {
+        name: 'Nature', icon: '🌿',
+        pool: ['🌸','🌷','🌹','🌺','🌻','🌼','💐','🌿','🍀','🍁','🍂','🍃','🌵','🌴','🌲','🌳','🎋','🌾','🌱','🌊','🌙','⭐','🌈','❄️','🔥','💧','🪨','🍄','🐚','🪸'],
+    },
+    sports: {
+        name: 'Sports', icon: '⚽',
+        pool: ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🏓','🏸','🏒','🥊','🥋','⛳','⛸️','🎯','🪁','🏄','🚴','🏊','🤸','⛷️','🏂','🏋️','🤺','🏇','🧗','🤼'],
+    },
 };
+
+const SFX = {
+    _ctx: null,
+    enabled: localStorage.getItem(CONFIG.SOUND_KEY) !== 'off',
+
+    _getCtx() {
+        if (!this._ctx) this._ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (this._ctx.state === 'suspended') this._ctx.resume();
+        return this._ctx;
+    },
+
+    toggle() {
+        this.enabled = !this.enabled;
+        localStorage.setItem(CONFIG.SOUND_KEY, this.enabled ? 'on' : 'off');
+        return this.enabled;
+    },
+
+    _tone(freq, type, start, dur, vol) {
+        const ctx = this._getCtx();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.type = type;
+        o.frequency.setValueAtTime(freq, start);
+        g.gain.setValueAtTime(vol, start);
+        g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+        o.start(start);
+        o.stop(start + dur);
+    },
+
+    play(name) {
+        if (!this.enabled) return;
+        const t = this._getCtx().currentTime;
+        switch (name) {
+            case 'flip':
+                this._tone(880, 'sine', t, 0.06, 0.1);
+                break;
+            case 'match':
+                this._tone(523, 'sine', t, 0.25, 0.15);
+                this._tone(659, 'sine', t + 0.1, 0.25, 0.15);
+                this._tone(784, 'sine', t + 0.2, 0.3, 0.12);
+                break;
+            case 'mismatch': {
+                const ctx = this._getCtx();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g);
+                g.connect(ctx.destination);
+                o.type = 'triangle';
+                o.frequency.setValueAtTime(300, t);
+                o.frequency.exponentialRampToValueAtTime(200, t + 0.2);
+                g.gain.setValueAtTime(0.12, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+                o.start(t);
+                o.stop(t + 0.25);
+                break;
+            }
+            case 'win':
+                [523, 659, 784, 1047].forEach((f, i) => this._tone(f, 'sine', t + i * 0.12, 0.35, 0.15));
+                break;
+            case 'lose':
+                [400, 320, 260].forEach((f, i) => this._tone(f, 'sine', t + i * 0.2, 0.4, 0.1));
+                break;
+            case 'reveal':
+                this._tone(300, 'sine', t, 0.5, 0.06);
+                this._tone(500, 'sine', t + 0.15, 0.35, 0.06);
+                break;
+        }
+    },
+};
+
+const THEME_KEYS = Object.keys(THEMES);
+
+function pickTheme(level) {
+    const shapesWeight = Math.min(0.3 + level * 0.02, 0.7);
+    if (Math.random() < shapesWeight) return 'shapes';
+    const others = THEME_KEYS.filter(k => k !== 'shapes');
+    return others[Math.floor(Math.random() * others.length)];
+}
+
+function getEmojiPool(themeKey, level) {
+    const theme = THEMES[themeKey];
+    if (themeKey === 'shapes') {
+        return theme[level < 8 ? 'easy' : level < 18 ? 'medium' : 'hard'];
+    }
+    return theme.pool;
+}
 
 function getLevelConfig(level) {
     const pairs = Math.min(Math.floor(level * 1.2 + 1), CONFIG.MAX_PAIRS);
     const multiplier = Math.max(CONFIG.MAX_MULTIPLIER - level * 0.055, CONFIG.MIN_MULTIPLIER);
     const maxAttempts = Math.floor(pairs * multiplier);
     const revealTime = Math.max(3.0 - level * 0.15, CONFIG.MIN_REVEAL_TIME);
-    const poolName = level < 8 ? 'easy' : level < 18 ? 'medium' : 'hard';
-    const emojiPool = EMOJI_POOLS[poolName];
 
     const totalCards = pairs * 2;
     const cols = Math.ceil(Math.sqrt(totalCards * 1.3));
     const rows = Math.ceil(totalCards / cols);
 
-    return { pairs, maxAttempts, revealTime, emojiPool, rows, cols, totalCards, poolName };
+    return { pairs, maxAttempts, revealTime, rows, cols, totalCards };
 }
 
 function shuffle(arr) {
@@ -139,8 +253,8 @@ function shuffle(arr) {
     return a;
 }
 
-function generateBoard(config) {
-    const selected = shuffle(config.emojiPool).slice(0, config.pairs);
+function generateBoard(config, pool) {
+    const selected = shuffle(pool).slice(0, config.pairs);
     return shuffle([...selected, ...selected]);
 }
 
@@ -156,6 +270,7 @@ function saveBestLevel(level) {
 const state = {
     level: 1,
     config: null,
+    themeKey: 'shapes',
     board: [],
     matched: new Set(),
     attemptsLeft: 0,
@@ -163,7 +278,6 @@ const state = {
     locked: false,
     revealing: false,
     startTime: 0,
-    elapsedTime: 0,
 };
 
 const $ = id => document.getElementById(id);
@@ -171,9 +285,15 @@ const $grid = $('grid');
 const $modal = $('modal');
 const $modalContent = $('modal-content');
 
+function updateSoundBtn() {
+    $('btn-sound').textContent = SFX.enabled ? '🔊' : '🔇';
+}
+
 function renderHeader() {
     $('level-display').textContent = `Lv. ${state.level}`;
-    $('match-display').textContent = `${state.matched.size}/${state.config.pairs}`;
+    $('theme-display').textContent = THEMES[state.themeKey].icon;
+    $('theme-display').title = THEMES[state.themeKey].name;
+    $('match-display').textContent = `${state.matched.size / 2}/${state.config.pairs}`;
     const $att = $('attempts-display');
     $att.textContent = state.attemptsLeft;
     $att.className = 'stat-value' + (state.attemptsLeft / state.config.maxAttempts <= 0.25 ? ' danger' : '');
@@ -216,7 +336,9 @@ function getCard(i) { return $grid.children[i]; }
 function startLevel(level) {
     state.level = level;
     state.config = getLevelConfig(level);
-    state.board = generateBoard(state.config);
+    state.themeKey = pickTheme(level);
+    const pool = getEmojiPool(state.themeKey, level);
+    state.board = generateBoard(state.config, pool);
     state.matched = new Set();
     state.attemptsLeft = state.config.maxAttempts;
     state.flipped = [];
@@ -227,6 +349,7 @@ function startLevel(level) {
     renderHeader();
     buildGrid();
 
+    SFX.play('reveal');
     const cards = $grid.querySelectorAll('.card');
     cards.forEach(c => c.classList.add('revealing'));
 
@@ -243,6 +366,7 @@ function onCardClick(index) {
     if (state.matched.has(index) || state.flipped.includes(index)) return;
     if (state.flipped.length >= 2) return;
 
+    SFX.play('flip');
     getCard(index).classList.add('flipped');
     state.flipped.push(index);
 
@@ -251,6 +375,7 @@ function onCardClick(index) {
         const [a, b] = state.flipped;
 
         if (state.board[a] === state.board[b]) {
+            SFX.play('match');
             state.matched.add(a);
             state.matched.add(b);
             getCard(a).classList.add('matched');
@@ -261,13 +386,14 @@ function onCardClick(index) {
 
             if (state.matched.size === state.config.pairs * 2) {
                 saveBestLevel(state.level + 1);
-                setTimeout(showWinModal, 400);
+                setTimeout(() => { SFX.play('win'); showWinModal(); }, 400);
             }
         } else {
             state.attemptsLeft--;
             renderHeader();
 
             setTimeout(() => {
+                SFX.play('mismatch');
                 getCard(a).classList.add('shake');
                 getCard(b).classList.add('shake');
             }, 200);
@@ -278,7 +404,7 @@ function onCardClick(index) {
                 state.flipped = [];
                 state.locked = false;
 
-                if (state.attemptsLeft <= 0) showLoseModal();
+                if (state.attemptsLeft <= 0) { SFX.play('lose'); showLoseModal(); }
             }, CONFIG.MISMATCH_DELAY + 200);
         }
     }
@@ -310,9 +436,10 @@ function showWinModal() {
     const elapsed = (Date.now() - state.startTime) / 1000;
     const attemptsUsed = state.config.maxAttempts - state.attemptsLeft;
     const score = calcScore(state.config, state.attemptsLeft, elapsed);
+    const themeIcon = THEMES[state.themeKey].icon;
     showModal(`
         <div class="result-icon">🎉</div>
-        <h2>Level ${state.level} Clear!</h2>
+        <h2>${themeIcon} Level ${state.level} Clear!</h2>
         <div class="stats-box">
             <div class="sitem"><span class="slabel">Attempts</span><span class="sval attempts">${attemptsUsed}/${state.config.maxAttempts}</span></div>
             <div class="sitem"><span class="slabel">Time</span><span class="sval time">${formatTime(elapsed)}</span></div>
@@ -327,9 +454,10 @@ function showWinModal() {
 function showLoseModal() {
     const elapsed = (Date.now() - state.startTime) / 1000;
     const matched = state.matched.size / 2;
+    const themeIcon = THEMES[state.themeKey].icon;
     showModal(`
         <div class="result-icon">😵</div>
-        <h2>Game Over</h2>
+        <h2>${themeIcon} Game Over</h2>
         <div class="stats-box">
             <div class="sitem"><span class="slabel">Matched</span><span class="sval attempts">${matched}/${state.config.pairs}</span></div>
             <div class="sitem"><span class="slabel">Time</span><span class="sval time">${formatTime(elapsed)}</span></div>
@@ -369,8 +497,10 @@ function startFromInput() {
     startLevel(Math.max(1, parseInt($('level-input').value) || 1));
 }
 
+$('btn-sound').addEventListener('click', () => { SFX.toggle(); updateSoundBtn(); });
 $('btn-restart').addEventListener('click', () => startLevel(state.level));
 $('btn-levels').addEventListener('click', showLevelSelect);
+updateSoundBtn();
 
 let resizeTimer;
 window.addEventListener('resize', () => {
