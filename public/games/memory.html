@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🧠 Memory Game</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0f0f23; font-family: system-ui, -apple-system, sans-serif; color: #fff; }
+
+        .app { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(0,0,0,0.4); border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .level-badge { background: linear-gradient(135deg, #667eea, #764ba2); padding: 4px 14px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.5px; }
+        .stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .stat-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+        .stat-value { font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .stat-value.danger { color: #ff4757; }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .btn-menu { background: none; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #aaa; font-size: 1.2rem; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-menu:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        .grid-container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 12px; overflow: hidden; }
+        .grid { display: grid; gap: 6px; }
+
+        .card { position: relative; cursor: pointer; perspective: 600px; -webkit-tap-highlight-color: transparent; }
+        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.35s ease; transform-style: preserve-3d; }
+        .card.flipped .card-inner, .card.matched .card-inner { transform: rotateY(180deg); }
+        .card-face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+        .card-back { background: linear-gradient(145deg, #1e3a5f, #162d4a); border: 2px solid rgba(100,150,255,0.2); box-shadow: inset 0 0 20px rgba(0,100,255,0.05); }
+        .card-back::after { content: '?'; font-size: 1.4em; color: rgba(100,180,255,0.25); font-weight: 700; }
+        .card-front { background: linear-gradient(145deg, #1a1a3e, #12122e); border: 2px solid rgba(255,255,255,0.1); transform: rotateY(180deg); }
+        .card.matched .card-front { border-color: rgba(46,213,115,0.5); background: linear-gradient(145deg, #0d2818, #0a1f14); box-shadow: 0 0 15px rgba(46,213,115,0.15); }
+        .card.revealing .card-inner { transform: rotateY(180deg); }
+        .card.shake { animation: shake 0.4s ease; }
+        @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
+        .modal-overlay.hidden { display: none; }
+        .modal { background: #1a1a3e; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px; text-align: center; max-width: 380px; width: 90%; box-shadow: 0 25px 60px rgba(0,0,0,0.5); }
+        .modal h2 { font-size: 1.6rem; margin-bottom: 8px; }
+        .modal p { color: #999; font-size: 0.9rem; margin-bottom: 20px; line-height: 1.5; }
+        .modal .result-icon { font-size: 3rem; margin-bottom: 12px; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); border: none; color: #fff; font-size: 1rem; font-weight: 700; padding: 12px 32px; border-radius: 25px; cursor: pointer; width: 100%; margin-bottom: 8px; transition: transform 0.1s, box-shadow 0.1s; box-shadow: 0 4px 15px rgba(102,126,234,0.3); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+        .btn-primary:active { transform: translateY(1px); }
+        .btn-secondary { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #ccc; font-size: 0.9rem; font-weight: 600; padding: 10px 24px; border-radius: 25px; cursor: pointer; width: 100%; margin-bottom: 8px; transition: background 0.2s; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+
+        .level-select { margin: 16px 0; }
+        .level-input-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 10px; }
+        .level-input-row button { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: #fff; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .level-input-row button:hover { background: rgba(255,255,255,0.2); }
+        .level-input-row input { width: 64px; text-align: center; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; color: #fff; font-size: 1.2rem; font-weight: 700; padding: 6px; font-variant-numeric: tabular-nums; }
+        .level-input-row input:focus { outline: none; border-color: #667eea; }
+        .best-level { color: #667eea; font-size: 0.8rem; margin-top: 6px; }
+
+        @media (max-width: 400px) {
+            .card-back::after { font-size: 1.1em; }
+            .header { padding: 8px 10px; }
+            .grid { gap: 4px; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <div class="header-left">
+            <div class="level-badge" id="level-display">Lv. 1</div>
+            <div class="stat">
+                <span class="stat-label">Matched</span>
+                <span class="stat-value" id="match-display">0/2</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Attempts</span>
+                <span class="stat-value" id="attempts-display">6</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="btn-menu" id="btn-restart" title="Restart">↺</button>
+            <button class="btn-menu" id="btn-levels" title="Level Select">☰</button>
+        </div>
+    </div>
+    <div class="grid-container">
+        <div class="grid" id="grid"></div>
+    </div>
+</div>
+
+<div class="modal-overlay hidden" id="modal">
+    <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+const CONFIG = {
+    MIN_REVEAL_TIME: 0.1,
+    MAX_PAIRS: 30,
+    MIN_MULTIPLIER: 1.4,
+    MAX_MULTIPLIER: 3.0,
+    MISMATCH_DELAY: 500,
+    STORAGE_KEY: 'memory-game-best-level',
+};
+
+const EMOJI_POOLS = {
+    easy: ['●','▲','■','◆','★','♥','♣','♠','◀','▶','▼','△','□','◇','☆','♦','♧','♤','◁','▷','▽','○','⬟','⬡','⬢','⬣','⏣','⎔','◈','◉'],
+    medium: ['◇','◈','◉','◎','⬡','⬢','⬣','⏣','⎔','●','▲','■','◆','★','♥','♣','♠','◀','▶','▼','△','□','☆','♦','♧','♤','◁','▷','⬟','○'],
+    hard: ['⬠','⬡','⬢','⬣','⏣','⎔','◇','◈','◉','◎','⬮','⬯','▰','▱','◆','◇','⬥','⬦','⬧','⬨','⬩','▲','△','▴','▵','▶','▷','▸','▹','●'],
+};
+
+function getLevelConfig(level) {
+    const pairs = Math.min(Math.floor(level * 1.2 + 1), CONFIG.MAX_PAIRS);
+    const multiplier = Math.max(CONFIG.MAX_MULTIPLIER - level * 0.055, CONFIG.MIN_MULTIPLIER);
+    const maxAttempts = Math.floor(pairs * multiplier);
+    const revealTime = Math.max(3.0 - level * 0.15, CONFIG.MIN_REVEAL_TIME);
+    const poolName = level < 8 ? 'easy' : level < 18 ? 'medium' : 'hard';
+    const emojiPool = EMOJI_POOLS[poolName];
+
+    const totalCards = pairs * 2;
+    const cols = Math.ceil(Math.sqrt(totalCards * 1.3));
+    const rows = Math.ceil(totalCards / cols);
+
+    return { pairs, maxAttempts, revealTime, emojiPool, rows, cols, totalCards, poolName };
+}
+
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function generateBoard(config) {
+    const selected = shuffle(config.emojiPool).slice(0, config.pairs);
+    return shuffle([...selected, ...selected]);
+}
+
+function loadBestLevel() {
+    return parseInt(localStorage.getItem(CONFIG.STORAGE_KEY)) || 1;
+}
+
+function saveBestLevel(level) {
+    const best = loadBestLevel();
+    if (level > best) localStorage.setItem(CONFIG.STORAGE_KEY, level);
+}
+
+const state = {
+    level: 1,
+    config: null,
+    board: [],
+    matched: new Set(),
+    attemptsLeft: 0,
+    flipped: [],
+    locked: false,
+    revealing: false,
+};
+
+const $ = id => document.getElementById(id);
+const $grid = $('grid');
+const $modal = $('modal');
+const $modalContent = $('modal-content');
+
+function renderHeader() {
+    $('level-display').textContent = `Lv. ${state.level}`;
+    $('match-display').textContent = `${state.matched.size}/${state.config.pairs}`;
+    const $att = $('attempts-display');
+    $att.textContent = state.attemptsLeft;
+    $att.className = 'stat-value' + (state.attemptsLeft / state.config.maxAttempts <= 0.25 ? ' danger' : '');
+}
+
+function calcCardSize() {
+    const container = document.querySelector('.grid-container');
+    const gap = window.innerWidth <= 400 ? 4 : 6;
+    const availW = container.clientWidth - 24;
+    const availH = container.clientHeight - 24;
+    const w = (availW - gap * (state.config.cols - 1)) / state.config.cols;
+    const h = (availH - gap * (state.config.rows - 1)) / state.config.rows;
+    return Math.floor(Math.min(w, h, 120));
+}
+
+function buildGrid() {
+    const size = calcCardSize();
+    const gap = window.innerWidth <= 400 ? 4 : 6;
+    const fontSize = Math.max(size * 0.45, 14);
+
+    $grid.style.gridTemplateColumns = `repeat(${state.config.cols}, ${size}px)`;
+    $grid.style.gridTemplateRows = `repeat(${state.config.rows}, ${size}px)`;
+    $grid.style.gap = `${gap}px`;
+    $grid.innerHTML = '';
+
+    state.board.forEach((emoji, i) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        if (state.matched.has(i)) card.classList.add('matched');
+        if (state.flipped.includes(i)) card.classList.add('flipped');
+        card.dataset.index = i;
+        card.innerHTML = `<div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front" style="font-size:${fontSize}px">${emoji}</div></div>`;
+        card.addEventListener('click', () => onCardClick(i));
+        $grid.appendChild(card);
+    });
+}
+
+function getCard(i) { return $grid.children[i]; }
+
+function startLevel(level) {
+    state.level = level;
+    state.config = getLevelConfig(level);
+    state.board = generateBoard(state.config);
+    state.matched = new Set();
+    state.attemptsLeft = state.config.maxAttempts;
+    state.flipped = [];
+    state.locked = true;
+    state.revealing = true;
+
+    hideModal();
+    renderHeader();
+    buildGrid();
+
+    const cards = $grid.querySelectorAll('.card');
+    cards.forEach(c => c.classList.add('revealing'));
+
+    setTimeout(() => {
+        cards.forEach(c => c.classList.remove('revealing'));
+        state.locked = false;
+        state.revealing = false;
+    }, state.config.revealTime * 1000);
+}
+
+function onCardClick(index) {
+    if (state.locked || state.revealing) return;
+    if (state.matched.has(index) || state.flipped.includes(index)) return;
+    if (state.flipped.length >= 2) return;
+
+    getCard(index).classList.add('flipped');
+    state.flipped.push(index);
+
+    if (state.flipped.length === 2) {
+        state.locked = true;
+        const [a, b] = state.flipped;
+
+        if (state.board[a] === state.board[b]) {
+            state.matched.add(a);
+            state.matched.add(b);
+            getCard(a).classList.add('matched');
+            getCard(b).classList.add('matched');
+            state.flipped = [];
+            state.locked = false;
+            renderHeader();
+
+            if (state.matched.size === state.config.pairs * 2) {
+                saveBestLevel(state.level + 1);
+                setTimeout(showWinModal, 400);
+            }
+        } else {
+            state.attemptsLeft--;
+            renderHeader();
+
+            setTimeout(() => {
+                getCard(a).classList.add('shake');
+                getCard(b).classList.add('shake');
+            }, 200);
+
+            setTimeout(() => {
+                getCard(a).classList.remove('flipped', 'shake');
+                getCard(b).classList.remove('flipped', 'shake');
+                state.flipped = [];
+                state.locked = false;
+
+                if (state.attemptsLeft <= 0) showLoseModal();
+            }, CONFIG.MISMATCH_DELAY + 200);
+        }
+    }
+}
+
+function showModal(html) {
+    $modalContent.innerHTML = html;
+    $modal.classList.remove('hidden');
+}
+
+function hideModal() { $modal.classList.add('hidden'); }
+
+function showWinModal() {
+    const next = state.level + 1;
+    const nc = getLevelConfig(next);
+    showModal(`
+        <div class="result-icon">🎉</div>
+        <h2>Level ${state.level} Clear!</h2>
+        <p>Remaining attempts: ${state.attemptsLeft}<br>Next: ${nc.pairs} pairs, ${nc.maxAttempts} attempts</p>
+        <button class="btn-primary" onclick="startLevel(${next})">Next Level →</button>
+        <button class="btn-secondary" onclick="showLevelSelect()">Level Select</button>
+    `);
+}
+
+function showLoseModal() {
+    showModal(`
+        <div class="result-icon">😵</div>
+        <h2>Game Over</h2>
+        <p>Matched ${state.matched.size / 2}/${state.config.pairs} pairs</p>
+        <button class="btn-primary" onclick="startLevel(${state.level})">Retry Level ${state.level}</button>
+        <button class="btn-secondary" onclick="showLevelSelect()">Level Select</button>
+    `);
+}
+
+function showLevelSelect() {
+    const best = loadBestLevel();
+    showModal(`
+        <h2>🧠 Memory Game</h2>
+        <p>Match all emoji pairs before running out of attempts!</p>
+        <div class="level-select">
+            <div class="level-input-row">
+                <button onclick="adjustLevel(-1)">−</button>
+                <input type="number" id="level-input" value="${state.level}" min="1" max="999">
+                <button onclick="adjustLevel(1)">+</button>
+            </div>
+            <div class="best-level">Best: Level ${best}</div>
+        </div>
+        <button class="btn-primary" onclick="startFromInput()">Start</button>
+    `);
+    const input = $('level-input');
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') startFromInput(); });
+    input.focus();
+    input.select();
+}
+
+function adjustLevel(delta) {
+    const input = $('level-input');
+    input.value = Math.max(1, parseInt(input.value || 1) + delta);
+}
+
+function startFromInput() {
+    startLevel(Math.max(1, parseInt($('level-input').value) || 1));
+}
+
+$('btn-restart').addEventListener('click', () => startLevel(state.level));
+$('btn-levels').addEventListener('click', showLevelSelect);
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+        if (!state.revealing && state.config) buildGrid();
+    }, 150);
+});
+
+showLevelSelect();
+</script>
+</body>
+</html>
