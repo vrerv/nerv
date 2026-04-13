@@ -56,6 +56,14 @@
         .level-input-row input:focus { outline: none; border-color: #667eea; }
         .best-level { color: #667eea; font-size: 0.8rem; margin-top: 6px; }
 
+        .stats-box { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 18px; margin: 16px 0; display: flex; justify-content: space-around; gap: 8px; }
+        .stats-box .sitem { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .stats-box .sitem .slabel { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+        .stats-box .sitem .sval { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .stats-box .sitem .sval.score { color: #f8d56b; }
+        .stats-box .sitem .sval.time { color: #74b9ff; }
+        .stats-box .sitem .sval.attempts { color: #a29bfe; }
+
         @media (max-width: 400px) {
             .card-back::after { font-size: 1.1em; }
             .header { padding: 8px 10px; }
@@ -154,6 +162,8 @@ const state = {
     flipped: [],
     locked: false,
     revealing: false,
+    startTime: 0,
+    elapsedTime: 0,
 };
 
 const $ = id => document.getElementById(id);
@@ -224,6 +234,7 @@ function startLevel(level) {
         cards.forEach(c => c.classList.remove('revealing'));
         state.locked = false;
         state.revealing = false;
+        state.startTime = Date.now();
     }, state.config.revealTime * 1000);
 }
 
@@ -280,23 +291,49 @@ function showModal(html) {
 
 function hideModal() { $modal.classList.add('hidden'); }
 
+function calcScore(config, attemptsLeft, elapsedSec) {
+    const efficiency = attemptsLeft / config.maxAttempts;
+    const refTime = config.pairs * 3;
+    const timeFactor = Math.max(0.3, Math.min(2, refTime / Math.max(elapsedSec, 1)));
+    return Math.round(config.pairs * 100 * (1 + efficiency) * timeFactor);
+}
+
+function formatTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = (sec % 60).toFixed(1);
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
 function showWinModal() {
     const next = state.level + 1;
     const nc = getLevelConfig(next);
+    const elapsed = (Date.now() - state.startTime) / 1000;
+    const attemptsUsed = state.config.maxAttempts - state.attemptsLeft;
+    const score = calcScore(state.config, state.attemptsLeft, elapsed);
     showModal(`
         <div class="result-icon">🎉</div>
         <h2>Level ${state.level} Clear!</h2>
-        <p>Remaining attempts: ${state.attemptsLeft}<br>Next: ${nc.pairs} pairs, ${nc.maxAttempts} attempts</p>
+        <div class="stats-box">
+            <div class="sitem"><span class="slabel">Attempts</span><span class="sval attempts">${attemptsUsed}/${state.config.maxAttempts}</span></div>
+            <div class="sitem"><span class="slabel">Time</span><span class="sval time">${formatTime(elapsed)}</span></div>
+            <div class="sitem"><span class="slabel">Score</span><span class="sval score">${score.toLocaleString()}</span></div>
+        </div>
+        <p style="margin-bottom:16px">Next: ${nc.pairs} pairs, ${nc.maxAttempts} attempts</p>
         <button class="btn-primary" onclick="startLevel(${next})">Next Level →</button>
         <button class="btn-secondary" onclick="showLevelSelect()">Level Select</button>
     `);
 }
 
 function showLoseModal() {
+    const elapsed = (Date.now() - state.startTime) / 1000;
+    const matched = state.matched.size / 2;
     showModal(`
         <div class="result-icon">😵</div>
         <h2>Game Over</h2>
-        <p>Matched ${state.matched.size / 2}/${state.config.pairs} pairs</p>
+        <div class="stats-box">
+            <div class="sitem"><span class="slabel">Matched</span><span class="sval attempts">${matched}/${state.config.pairs}</span></div>
+            <div class="sitem"><span class="slabel">Time</span><span class="sval time">${formatTime(elapsed)}</span></div>
+        </div>
         <button class="btn-primary" onclick="startLevel(${state.level})">Retry Level ${state.level}</button>
         <button class="btn-secondary" onclick="showLevelSelect()">Level Select</button>
     `);
