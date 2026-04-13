@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🧠 Memory Game</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0f0f23; font-family: system-ui, -apple-system, sans-serif; color: #fff; }
+
+        .app { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(0,0,0,0.4); border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .level-badge { background: linear-gradient(135deg, #667eea, #764ba2); padding: 4px 14px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.5px; }
+        .theme-badge { font-size: 1.1rem; opacity: 0.85; min-width: 24px; text-align: center; }
+        .stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .stat-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+        .stat-value { font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .stat-value.danger { color: #ff4757; }
+        .header-right { display: flex; align-items: center; gap: 16px; position: relative; }
+        .btn-menu { background: none; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #aaa; font-size: 1.2rem; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-menu:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        .grid-container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 12px; overflow: hidden; }
+        .grid { display: grid; gap: 6px; }
+
+        .card { position: relative; cursor: pointer; perspective: 600px; -webkit-tap-highlight-color: transparent; }
+        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.35s ease; transform-style: preserve-3d; }
+        .card.flipped .card-inner, .card.matched .card-inner { transform: rotateY(180deg); }
+        .card-face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+        .card-back { background: linear-gradient(145deg, #1e3a5f, #162d4a); border: 2px solid rgba(100,150,255,0.2); box-shadow: inset 0 0 20px rgba(0,100,255,0.05); }
+        .card-back::after { content: '?'; font-size: 1.4em; color: rgba(100,180,255,0.25); font-weight: 700; }
+        .card-front { background: linear-gradient(145deg, #1a1a3e, #12122e); border: 2px solid rgba(255,255,255,0.1); transform: rotateY(180deg); }
+        .card.matched .card-front { border-color: rgba(46,213,115,0.5); background: linear-gradient(145deg, #0d2818, #0a1f14); box-shadow: 0 0 15px rgba(46,213,115,0.15); }
+        .card.revealing .card-inner { transform: rotateY(180deg); }
+        .card.shake { animation: shake 0.4s ease; }
+        @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
+        .modal-overlay.hidden { display: none; }
+        .modal { background: #1a1a3e; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px; text-align: center; max-width: 380px; width: 90%; box-shadow: 0 25px 60px rgba(0,0,0,0.5); }
+        .modal h2 { font-size: 1.6rem; margin-bottom: 8px; }
+        .modal p { color: #999; font-size: 0.9rem; margin-bottom: 20px; line-height: 1.5; }
+        .modal .result-icon { font-size: 3rem; margin-bottom: 12px; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); border: none; color: #fff; font-size: 1rem; font-weight: 700; padding: 12px 32px; border-radius: 25px; cursor: pointer; width: 100%; margin-bottom: 8px; transition: transform 0.1s, box-shadow 0.1s; box-shadow: 0 4px 15px rgba(102,126,234,0.3); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+        .btn-primary:active { transform: translateY(1px); }
+        .btn-secondary { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #ccc; font-size: 0.9rem; font-weight: 600; padding: 10px 24px; border-radius: 25px; cursor: pointer; width: 100%; margin-bottom: 8px; transition: background 0.2s; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+
+        .level-select { margin: 16px 0; }
+        .level-input-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 10px; }
+        .level-input-row button { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: #fff; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .level-input-row button:hover { background: rgba(255,255,255,0.2); }
+        .level-input-row input { width: 64px; text-align: center; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; color: #fff; font-size: 1.2rem; font-weight: 700; padding: 6px; font-variant-numeric: tabular-nums; }
+        .level-input-row input:focus { outline: none; border-color: #667eea; }
+        .best-level { color: #667eea; font-size: 0.8rem; margin-top: 6px; }
+
+        .stats-box { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 18px; margin: 16px 0; display: flex; justify-content: space-around; gap: 8px; }
+        .stats-box .sitem { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .stats-box .sitem .slabel { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+        .stats-box .sitem .sval { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .stats-box .sitem .sval.score { color: #f8d56b; }
+        .stats-box .sitem .sval.time { color: #74b9ff; }
+        .stats-box .sitem .sval.attempts { color: #a29bfe; }
+
+        .warning-overlay { position: fixed; inset: 0; background: rgba(180,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200; backdrop-filter: blur(6px); animation: pulseWarn 0.5s ease; }
+        @keyframes pulseWarn { 0% { opacity: 0; } 50% { opacity: 1; } }
+        .warning-modal { background: linear-gradient(145deg, #3a0a0a, #2a0505); border: 2px solid rgba(255,80,80,0.4); border-radius: 20px; padding: 32px; text-align: center; max-width: 380px; width: 90%; box-shadow: 0 25px 60px rgba(200,0,0,0.4); }
+        .warning-modal .warn-icon { font-size: 3.5rem; margin-bottom: 12px; animation: shakeWarn 0.5s ease; }
+        @keyframes shakeWarn { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+        .warning-modal h2 { color: #ff6b6b; font-size: 1.4rem; margin-bottom: 10px; }
+        .warning-modal p { color: #ffaaaa; font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px; }
+        .warning-modal .btn-primary { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+
+        .lang-select { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+        .lang-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #999; font-size: 0.8rem; padding: 5px 14px; border-radius: 15px; cursor: pointer; transition: all 0.2s; }
+        .lang-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+        .lang-btn.active { background: rgba(102,126,234,0.25); border-color: #667eea; color: #fff; }
+        .result-phrase { color: #f8d56b; font-size: 0.95rem; font-style: italic; margin: 12px 0 4px; line-height: 1.5; }
+
+        .btn-potion { width: auto !important; padding: 0 10px; display: flex; align-items: center; gap: 4px; }
+        .btn-potion.active { border-color: #9b59b6; background: rgba(155,89,182,0.25); box-shadow: 0 0 10px rgba(155,89,182,0.3); color: #d4a5ff; }
+        .btn-potion.no-potion { opacity: 0.3; pointer-events: none; }
+        .potion-count { font-weight: 700; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+        .grid-container.potion-mode .card:not(.matched):not(.flipped):not(.potion-revealed) { cursor: crosshair; }
+        .grid-container.potion-mode .card:not(.matched):not(.flipped):not(.potion-revealed) .card-back { border-color: rgba(155,89,182,0.4); transition: border-color 0.2s, box-shadow 0.2s; }
+        .grid-container.potion-mode .card:not(.matched):not(.flipped):not(.potion-revealed):hover .card-back { border-color: rgba(155,89,182,0.6); box-shadow: 0 0 15px rgba(155,89,182,0.35); }
+
+        .btn-vision { width: auto !important; padding: 0 10px; display: flex; align-items: center; gap: 4px; }
+        .btn-vision.active { border-color: #e67e22; background: rgba(230,126,34,0.25); box-shadow: 0 0 10px rgba(230,126,34,0.3); color: #f5c77e; }
+        .btn-vision.no-potion { opacity: 0.3; pointer-events: none; }
+        .grid-container.vision-reveal .card:not(.matched) .card-inner { transform: rotateY(180deg); }
+        .grid-container.vision-reveal .card:not(.matched) .card-front { border-color: rgba(230,126,34,0.5); box-shadow: 0 0 15px rgba(230,126,34,0.25); }
+        @keyframes visionPulse { 0%,100% { box-shadow: 0 0 10px rgba(230,126,34,0.3); } 50% { box-shadow: 0 0 25px rgba(230,126,34,0.6); } }
+        .grid-container.vision-reveal { animation: visionPulse 0.5s ease infinite; border-radius: 12px; }
+        .potion-overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; border-radius: 10px; z-index: 2; pointer-events: none; opacity: 0.35; }
+        .card.potion-revealed .potion-overlay { display: flex; }
+        .card.potion-revealed .card-back { border-color: rgba(150,100,255,0.4); }
+        .card.potion-revealed .card-back::after { opacity: 0; }
+        .card.flipped .potion-overlay, .card.matched .potion-overlay { display: none; }
+        @keyframes potionReveal { 0% { opacity: 0; transform: scale(1.5); } 100% { opacity: 0.35; transform: scale(1); } }
+        .card.potion-anim .potion-overlay { animation: potionReveal 0.4s ease-out; }
+
+        @media (max-width: 400px) {
+            .card-back::after { font-size: 1.1em; }
+            .header { padding: 8px 10px; }
+            .grid { gap: 4px; }
+            .header-left { gap: 8px; }
+        }
+
+        .btn-more { display: none; }
+        .more-menu { display: none; position: absolute; top: 44px; right: 0; background: #1a1a3e; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 6px; z-index: 50; min-width: 140px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .more-menu.show { display: flex; flex-direction: column; gap: 2px; }
+        .more-item { background: none; border: none; color: #ccc; font-size: 0.9rem; padding: 10px 14px; border-radius: 8px; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+        .more-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        @media (max-width: 600px) {
+            .btn-more { display: flex; }
+            #btn-sound, #btn-restart { display: none; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <div class="header-left">
+            <div class="level-badge" id="level-display">Lv. 1</div>
+            <div class="theme-badge" id="theme-display"></div>
+            <div class="stat">
+                <span class="stat-label" id="match-label">Matched</span>
+                <span class="stat-value" id="match-display">0/2</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label" id="attempts-label">Attempts</span>
+                <span class="stat-value" id="attempts-display">6</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="btn-menu btn-vision no-potion" id="btn-vision" title="Vision Potion">🔮<span class="potion-count" id="vision-count">0</span></button>
+            <button class="btn-menu btn-potion no-potion" id="btn-potion" title="Reveal Potion">🧪<span class="potion-count" id="potion-count">0</span></button>
+            <button class="btn-menu" id="btn-sound" title="Sound">🔊</button>
+            <button class="btn-menu" id="btn-restart" title="Restart">↺</button>
+            <button class="btn-menu btn-more" id="btn-more" title="More">⋯</button>
+            <button class="btn-menu" id="btn-levels" title="Level Select">☰</button>
+            <div class="more-menu" id="more-menu">
+                <button class="more-item" id="btn-sound-m">🔊 Sound</button>
+                <button class="more-item" id="btn-restart-m">↺ Restart</button>
+            </div>
+        </div>
+    </div>
+    <div class="grid-container">
+        <div class="grid" id="grid"></div>
+    </div>
+</div>
+
+<div class="modal-overlay hidden" id="modal">
+    <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+const CONFIG = {
+    MIN_REVEAL_TIME: 0.1,
+    MAX_PAIRS: 30,
+    MIN_MULTIPLIER: 1.4,
+    MAX_MULTIPLIER: 3.0,
+    MISMATCH_DELAY: 500,
+    STORAGE_KEY: 'memory-game-best-level',
+    SOUND_KEY: 'memory-game-sound',
+    LANG_KEY: 'memory-game-lang',
+    WARN_STREAK: 3,
+    GAMEOVER_STREAK: 5,
+    STREAK_KEY: 'memory-game-win-streak',
+    VISION_KEY: 'memory-game-vision-potions',
+    VISION_MIN_STREAK: 2,
+};
+
+const I18N = {
+    en: {
+        title: '🧠 Memory Game',
+        subtitle: 'Match all emoji pairs before running out of attempts!',
+        matched: 'Matched',
+        attempts: 'Attempts',
+        best: 'Best',
+        start: 'Start',
+        levelSelect: 'Level Select',
+        levelClear: 'Level {n} Clear!',
+        next: 'Next: {pairs} pairs, {attempts} attempts',
+        nextLevel: 'Next Level →',
+        gameOver: 'Game Over',
+        retry: 'Retry Level {n}',
+        score: 'Score',
+        time: 'Time',
+        warnTitle: '⚠️ Slow down!',
+        warnMsg: 'You\'ve missed {n} times in a row. Take a moment to think carefully before clicking.',
+        warnBtn: 'I\'ll be careful',
+        streakOver: 'Too many random guesses!',
+        streakOverMsg: 'You missed {n} times in a row. Try to remember the card positions before clicking.',
+        potion: 'Potion',
+        potionHint: 'Reveal a card (earned by consecutive wins)',
+        potionInfo: 'Win streak {n}: {n} potions next round',
+        vision: 'Vision',
+        visionHint: 'Reveal ALL cards briefly (earned by early match streak)',
+        visionInfo: '🔮 Vision potions: {n}',
+        visionEarned: '🔮 +{n} vision potions! (early {n}-match streak)',
+        sound: 'Sound',
+        restart: 'Restart',
+        resultSummaryWin: 'You matched {matched} pairs in {time} using {attempts} attempts. You scored {score} points. {phrase}',
+        resultSummaryLose: 'You matched {matched} out of {total} pairs in {time}. {phrase}',
+        resultPhrases: [
+            'Keep trying, you can do better!',
+            'Focus a little more next time!',
+            'Try observing the cards more carefully.',
+            'Your memory is starting to warm up!',
+            'Not a bad attempt at all!',
+            'You\'re getting the hang of it!',
+            'Decent memory skills showing!',
+            'Above average memory power!',
+            'You\'ve got quite a good memory!',
+            'Excellent focus and concentration!',
+            'A memory master in the making!',
+            'Truly impressive memory skills!',
+            'You have a collector\'s memory!',
+            'Outstanding pattern recognition!',
+            'Almost photographic memory!',
+            'You possess an amazing memory!',
+            'Memory champion level!',
+            'Genius-level memory!',
+            'Legendary memory power!',
+            'Perfect! Your memory is superhuman!',
+        ],
+    },
+    ko: {
+        title: '🧠 메모리 게임',
+        subtitle: '시도 횟수가 다 떨어지기 전에 모든 이모지 짝을 맞추세요!',
+        matched: '매치',
+        attempts: '시도',
+        best: '최고',
+        start: '시작',
+        levelSelect: '레벨 선택',
+        levelClear: '레벨 {n} 클리어!',
+        next: '다음: {pairs}쌍, {attempts}번 시도',
+        nextLevel: '다음 레벨 →',
+        gameOver: '게임 오버',
+        retry: '레벨 {n} 재시도',
+        score: '점수',
+        time: '시간',
+        warnTitle: '⚠️ 천천히!',
+        warnMsg: '{n}번 연속으로 틀렸습니다. 잠시 멈추고 카드 위치를 잘 생각해보세요.',
+        warnBtn: '알겠습니다',
+        streakOver: '랜덤 클릭은 안 돼요!',
+        streakOverMsg: '{n}번 연속으로 틀렸습니다. 카드 위치를 기억한 후에 클릭하세요.',
+        potion: '물약',
+        potionHint: '카드 한 장을 투시합니다 (연속 클리어 보상)',
+        potionInfo: '연속 {n}승 보상: 투명 물약 {n}개',
+        vision: '투시',
+        visionHint: '전체 카드를 잠시 공개합니다 (초반 연속 매치 보상)',
+        visionInfo: '🔮 투시 물약: {n}개',
+        visionEarned: '🔮 +{n} 투시 물약! (초반 {n}연속 매치)',
+        sound: '소리',
+        restart: '재시작',
+        resultSummaryWin: '{time} 동안 {attempts}번 시도해서 {matched}개 짝을 맞췄습니다. 총 {score}점을 얻었네요. {phrase}',
+        resultSummaryLose: '{time} 동안 {total}개 중 {matched}개 짝을 맞췄습니다. {phrase}',
+        resultPhrases: [
+            '다음에는 더 잘할 수 있을 거예요!',
+            '조금만 더 집중하면 돼요!',
+            '카드 위치를 좀 더 관찰해보세요.',
+            '기억력이 서서히 발동하고 있어요!',
+            '꽤 괜찮은 시도였어요!',
+            '점점 감이 오고 있네요!',
+            '나쁘지 않은 기억력이에요!',
+            '평균 이상의 기억력을 보여주고 있어요!',
+            '제법 기억력이 좋으시네요!',
+            '훌륭해요! 집중력이 대단해요!',
+            '기억력 마스터의 기질이 보여요!',
+            '정말 인상적인 기억력이에요!',
+            '수집가같은 기억력을 지니고 있네요!',
+            '뛰어난 패턴 인식 능력이에요!',
+            '거의 사진처럼 기억하시네요!',
+            '놀라운 기억력의 소유자시네요!',
+            '기억력 챔피언 수준이에요!',
+            '천재적인 기억력이에요!',
+            '전설적인 기억력의 소유자시군요!',
+            '완벽합니다! 당신의 기억력은 초인적이에요!',
+        ],
+    },
+};
+
+let currentLang = (() => {
+    const saved = localStorage.getItem(CONFIG.LANG_KEY);
+    if (saved && I18N[saved]) return saved;
+    const nav = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+    return nav.startsWith('ko') ? 'ko' : 'en';
+})();
+
+function t(key, params) {
+    let s = I18N[currentLang][key] || I18N.en[key] || key;
+    if (params) Object.entries(params).forEach(([k, v]) => { s = s.replaceAll(`{${k}}`, v); });
+    return s;
+}
+
+function setLang(lang) {
+    currentLang = lang;
+    localStorage.setItem(CONFIG.LANG_KEY, lang);
+    document.documentElement.lang = lang;
+}
+
+function speakTTS(text) {
+    if (!SFX.enabled) return;
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = currentLang === 'ko' ? 'ko-KR' : 'en-US';
+    utter.rate = 0.9;
+    utter.volume = 0.8;
+    speechSynthesis.speak(utter);
+}
+
+const THEMES = {
+    shapes: {
+        name: 'Shapes', icon: '⬡',
+        easy: ['●','▲','■','◆','★','♥','♣','♠','◀','▶','▼','△','□','◇','☆','♦','♧','♤','◁','▷','▽','○','⬟','⬡','⬢','⬣','⏣','⎔','◈','◉'],
+        medium: ['◇','◈','◉','◎','⬡','⬢','⬣','⏣','⎔','●','▲','■','◆','★','♥','♣','♠','◀','▶','▼','△','□','☆','♦','♧','♤','◁','▷','⬟','○'],
+        hard: ['⬠','⬡','⬢','⬣','⏣','⎔','◇','◈','◉','◎','⬮','⬯','▰','▱','◆','◇','⬥','⬦','⬧','⬨','⬩','▲','△','▴','▵','▶','▷','▸','▹','●'],
+    },
+    animals: {
+        name: 'Animals', icon: '🐾',
+        pool: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌'],
+    },
+    faces: {
+        name: 'Faces', icon: '😊',
+        pool: ['😀','😢','😡','😱','🥰','😎','🤮','😴','🤑','😇','🥳','🤯','😈','🤡','👻','💀','🤖','👽','🎃','😺','🤠','😵','🥶','🥵','🤧','😷','🤒','😤','🫠','🫡'],
+    },
+    food: {
+        name: 'Food', icon: '🍕',
+        pool: ['🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🥑','🌽','🥕','🍕','🍔','🌭','🍟','🍿','🧁','🍩','🍪','🎂','🍫','🍭'],
+    },
+    nature: {
+        name: 'Nature', icon: '🌿',
+        pool: ['🌸','🌷','🌹','🌺','🌻','🌼','💐','🌿','🍀','🍁','🍂','🍃','🌵','🌴','🌲','🌳','🎋','🌾','🌱','🌊','🌙','⭐','🌈','❄️','🔥','💧','🪨','🍄','🐚','🪸'],
+    },
+    sports: {
+        name: 'Sports', icon: '⚽',
+        pool: ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🏓','🏸','🏒','🥊','🥋','⛳','⛸️','🎯','🪁','🏄','🚴','🏊','🤸','⛷️','🏂','🏋️','🤺','🏇','🧗','🤼'],
+    },
+};
+
+const SFX = {
+    _ctx: null,
+    enabled: localStorage.getItem(CONFIG.SOUND_KEY) !== 'off',
+
+    _getCtx() {
+        if (!this._ctx) this._ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (this._ctx.state === 'suspended') this._ctx.resume();
+        return this._ctx;
+    },
+
+    toggle() {
+        this.enabled = !this.enabled;
+        localStorage.setItem(CONFIG.SOUND_KEY, this.enabled ? 'on' : 'off');
+        return this.enabled;
+    },
+
+    _tone(freq, type, start, dur, vol) {
+        const ctx = this._getCtx();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.type = type;
+        o.frequency.setValueAtTime(freq, start);
+        g.gain.setValueAtTime(vol, start);
+        g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+        o.start(start);
+        o.stop(start + dur);
+    },
+
+    play(name) {
+        if (!this.enabled) return;
+        const t = this._getCtx().currentTime;
+        switch (name) {
+            case 'flip':
+                this._tone(880, 'sine', t, 0.06, 0.1);
+                break;
+            case 'match':
+                this._tone(523, 'sine', t, 0.25, 0.15);
+                this._tone(659, 'sine', t + 0.1, 0.25, 0.15);
+                this._tone(784, 'sine', t + 0.2, 0.3, 0.12);
+                break;
+            case 'mismatch': {
+                const ctx = this._getCtx();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g);
+                g.connect(ctx.destination);
+                o.type = 'triangle';
+                o.frequency.setValueAtTime(300, t);
+                o.frequency.exponentialRampToValueAtTime(200, t + 0.2);
+                g.gain.setValueAtTime(0.12, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+                o.start(t);
+                o.stop(t + 0.25);
+                break;
+            }
+            case 'win':
+                [523, 659, 784, 1047].forEach((f, i) => this._tone(f, 'sine', t + i * 0.12, 0.35, 0.15));
+                break;
+            case 'lose':
+                [400, 320, 260].forEach((f, i) => this._tone(f, 'sine', t + i * 0.2, 0.4, 0.1));
+                break;
+            case 'reveal':
+                this._tone(300, 'sine', t, 0.5, 0.06);
+                this._tone(500, 'sine', t + 0.15, 0.35, 0.06);
+                break;
+            case 'potion':
+                this._tone(600, 'sine', t, 0.3, 0.12);
+                this._tone(900, 'sine', t + 0.1, 0.3, 0.1);
+                this._tone(1200, 'sine', t + 0.2, 0.4, 0.08);
+                break;
+            case 'vision':
+                this._tone(400, 'sine', t, 0.5, 0.1);
+                this._tone(600, 'sine', t + 0.05, 0.5, 0.1);
+                this._tone(800, 'sine', t + 0.1, 0.5, 0.08);
+                this._tone(1000, 'sine', t + 0.15, 0.6, 0.06);
+                this._tone(1200, 'sine', t + 0.2, 0.7, 0.05);
+                break;
+            case 'visionEarn':
+                this._tone(523, 'triangle', t, 0.2, 0.12);
+                this._tone(784, 'triangle', t + 0.15, 0.3, 0.1);
+                break;
+        }
+    },
+};
+
+const THEME_KEYS = Object.keys(THEMES);
+
+function pickTheme(level) {
+    const shapesWeight = Math.min(0.3 + level * 0.02, 0.7);
+    if (Math.random() < shapesWeight) return 'shapes';
+    const others = THEME_KEYS.filter(k => k !== 'shapes');
+    return others[Math.floor(Math.random() * others.length)];
+}
+
+function getEmojiPool(themeKey, level) {
+    const theme = THEMES[themeKey];
+    if (themeKey === 'shapes') {
+        return theme[level < 8 ? 'easy' : level < 18 ? 'medium' : 'hard'];
+    }
+    return theme.pool;
+}
+
+function getLevelConfig(level) {
+    const pairs = Math.min(Math.floor(level * 1.2 + 1), CONFIG.MAX_PAIRS);
+    const multiplier = Math.max(CONFIG.MAX_MULTIPLIER - level * 0.055, CONFIG.MIN_MULTIPLIER);
+    const maxAttempts = Math.floor(pairs * multiplier);
+    const revealTime = Math.max(3.0 - level * 0.15, CONFIG.MIN_REVEAL_TIME);
+
+    const totalCards = pairs * 2;
+    const cols = Math.ceil(Math.sqrt(totalCards * 1.3));
+    const rows = Math.ceil(totalCards / cols);
+
+    return { pairs, maxAttempts, revealTime, rows, cols, totalCards };
+}
+
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function generateBoard(config, pool) {
+    const selected = shuffle(pool).slice(0, config.pairs);
+    return shuffle([...selected, ...selected]);
+}
+
+function loadBestLevel() {
+    return parseInt(localStorage.getItem(CONFIG.STORAGE_KEY)) || 1;
+}
+
+function saveBestLevel(level) {
+    const best = loadBestLevel();
+    if (level > best) localStorage.setItem(CONFIG.STORAGE_KEY, level);
+}
+
+function loadWinStreak() {
+    return parseInt(localStorage.getItem(CONFIG.STREAK_KEY)) || 0;
+}
+
+function saveWinStreak(streak) {
+    localStorage.setItem(CONFIG.STREAK_KEY, streak);
+}
+
+function loadVisionPotions() {
+    return parseInt(localStorage.getItem(CONFIG.VISION_KEY)) || 0;
+}
+
+function saveVisionPotions(count) {
+    localStorage.setItem(CONFIG.VISION_KEY, Math.max(0, count));
+}
+
+const state = {
+    level: 1,
+    config: null,
+    themeKey: 'shapes',
+    board: [],
+    matched: new Set(),
+    attemptsLeft: 0,
+    flipped: [],
+    locked: false,
+    revealing: false,
+    startTime: 0,
+    consecutiveMisses: 0,
+    potions: 0,
+    potionMode: false,
+    potionRevealed: new Set(),
+    visionPotions: 0,
+    visionActive: false,
+    earlyMatchStreak: 0,
+    earlyStreakEnded: false,
+};
+
+const $ = id => document.getElementById(id);
+const $grid = $('grid');
+const $modal = $('modal');
+const $modalContent = $('modal-content');
+
+function updateSoundBtn() {
+    $('btn-sound').textContent = SFX.enabled ? '🔊' : '🔇';
+}
+
+function renderHeader() {
+    $('level-display').textContent = `Lv. ${state.level}`;
+    $('theme-display').textContent = THEMES[state.themeKey].icon;
+    $('theme-display').title = THEMES[state.themeKey].name;
+    $('match-label').textContent = t('matched');
+    $('match-display').textContent = `${state.matched.size / 2}/${state.config.pairs}`;
+    $('attempts-label').textContent = t('attempts');
+    const $att = $('attempts-display');
+    $att.textContent = state.attemptsLeft;
+    $att.className = 'stat-value' + (state.attemptsLeft / state.config.maxAttempts <= 0.25 ? ' danger' : '');
+    const potionBtn = $('btn-potion');
+    $('potion-count').textContent = state.potions;
+    potionBtn.title = t('potionHint');
+    potionBtn.style.display = state.level < 6 ? 'none' : '';
+    potionBtn.classList.toggle('no-potion', state.potions <= 0);
+    if (state.potions <= 0) { potionBtn.classList.remove('active'); state.potionMode = false; document.querySelector('.grid-container').classList.remove('potion-mode'); }
+
+    const visionBtn = $('btn-vision');
+    $('vision-count').textContent = state.visionPotions;
+    visionBtn.title = t('visionHint');
+    visionBtn.classList.toggle('no-potion', state.visionPotions <= 0 || state.visionActive);
+}
+
+function calcCardSize() {
+    const container = document.querySelector('.grid-container');
+    const gap = window.innerWidth <= 400 ? 4 : 6;
+    const availW = container.clientWidth - 24;
+    const availH = container.clientHeight - 24;
+    const w = (availW - gap * (state.config.cols - 1)) / state.config.cols;
+    const h = (availH - gap * (state.config.rows - 1)) / state.config.rows;
+    return Math.floor(Math.min(w, h, 120));
+}
+
+function buildGrid() {
+    const size = calcCardSize();
+    const gap = window.innerWidth <= 400 ? 4 : 6;
+    const fontSize = Math.max(size * 0.45, 14);
+
+    $grid.style.gridTemplateColumns = `repeat(${state.config.cols}, ${size}px)`;
+    $grid.style.gridTemplateRows = `repeat(${state.config.rows}, ${size}px)`;
+    $grid.style.gap = `${gap}px`;
+    $grid.innerHTML = '';
+
+    state.board.forEach((emoji, i) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        if (state.matched.has(i)) card.classList.add('matched');
+        if (state.flipped.includes(i)) card.classList.add('flipped');
+        card.dataset.index = i;
+        if (state.potionRevealed.has(i)) card.classList.add('potion-revealed');
+        card.innerHTML = `<div class="card-inner"><div class="card-face card-back"></div><div class="card-face card-front" style="font-size:${fontSize}px">${emoji}</div></div><div class="potion-overlay" style="font-size:${fontSize}px">${emoji}</div>`;
+        card.addEventListener('click', () => onCardClick(i));
+        $grid.appendChild(card);
+    });
+}
+
+function getCard(i) { return $grid.children[i]; }
+
+function startLevel(level) {
+    state.level = level;
+    state.config = getLevelConfig(level);
+    state.themeKey = pickTheme(level);
+    const pool = getEmojiPool(state.themeKey, level);
+    state.board = generateBoard(state.config, pool);
+    state.matched = new Set();
+    state.attemptsLeft = state.config.maxAttempts;
+    state.flipped = [];
+    state.locked = true;
+    state.revealing = true;
+    state.consecutiveMisses = 0;
+    state.potions = state.level >= 6 ? loadWinStreak() : 0;
+    state.potionMode = false;
+    state.potionRevealed = new Set();
+    state.visionPotions = loadVisionPotions();
+    state.visionActive = false;
+    state.earlyMatchStreak = 0;
+    state.earlyStreakEnded = false;
+    document.querySelector('.grid-container').classList.remove('potion-mode');
+    document.querySelector('.grid-container').classList.remove('vision-reveal');
+
+    hideModal();
+    renderHeader();
+    buildGrid();
+
+    SFX.play('reveal');
+    const cards = $grid.querySelectorAll('.card');
+    cards.forEach(c => c.classList.add('revealing'));
+
+    setTimeout(() => {
+        cards.forEach(c => c.classList.remove('revealing'));
+        state.locked = false;
+        state.revealing = false;
+        state.startTime = Date.now();
+    }, state.config.revealTime * 1000);
+}
+
+function onCardClick(index) {
+    if (state.locked || state.revealing) return;
+
+    if (state.potionMode) {
+        if (!state.matched.has(index) && !state.flipped.includes(index) && !state.potionRevealed.has(index)) {
+            state.potionRevealed.add(index);
+            state.potions--;
+            state.potionMode = false;
+            document.querySelector('.grid-container').classList.remove('potion-mode');
+            $('btn-potion').classList.remove('active');
+            const card = getCard(index);
+            card.classList.add('potion-revealed', 'potion-anim');
+            SFX.play('potion');
+            renderHeader();
+            setTimeout(() => card.classList.remove('potion-anim'), 500);
+        }
+        return;
+    }
+
+    if (state.matched.has(index) || state.flipped.includes(index)) return;
+    if (state.flipped.length >= 2) return;
+
+    SFX.play('flip');
+    getCard(index).classList.add('flipped');
+    state.flipped.push(index);
+
+    if (state.flipped.length === 2) {
+        state.locked = true;
+        const [a, b] = state.flipped;
+
+        if (state.board[a] === state.board[b]) {
+            SFX.play('match');
+            state.matched.add(a);
+            state.matched.add(b);
+            getCard(a).classList.add('matched');
+            getCard(b).classList.add('matched');
+            state.flipped = [];
+            state.locked = false;
+            state.consecutiveMisses = 0;
+            if (!state.earlyStreakEnded) state.earlyMatchStreak++;
+            renderHeader();
+
+            if (state.matched.size === state.config.pairs * 2) {
+                awardVisionPotions();
+                saveBestLevel(state.level + 1);
+                setTimeout(() => { SFX.play('win'); showWinModal(); }, 400);
+            }
+        } else {
+            if (!state.earlyStreakEnded) {
+                state.earlyStreakEnded = true;
+                awardVisionPotions();
+            }
+            state.attemptsLeft--;
+            state.consecutiveMisses++;
+            renderHeader();
+
+            setTimeout(() => {
+                SFX.play('mismatch');
+                getCard(a).classList.add('shake');
+                getCard(b).classList.add('shake');
+            }, 200);
+
+            setTimeout(() => {
+                getCard(a).classList.remove('flipped', 'shake');
+                getCard(b).classList.remove('flipped', 'shake');
+                state.flipped = [];
+                state.locked = false;
+
+                if (state.attemptsLeft <= 0) {
+                    SFX.play('lose');
+                    showLoseModal();
+                } else if (state.consecutiveMisses >= CONFIG.GAMEOVER_STREAK) {
+                    SFX.play('lose');
+                    showStreakGameOver();
+                } else if (state.consecutiveMisses >= CONFIG.WARN_STREAK) {
+                    showWarning();
+                }
+            }, CONFIG.MISMATCH_DELAY + 200);
+        }
+    }
+}
+
+function showModal(html) {
+    $modalContent.innerHTML = html;
+    $modal.classList.remove('hidden');
+}
+
+function hideModal() { $modal.classList.add('hidden'); }
+
+function calcScore(config, attemptsLeft, elapsedSec) {
+    const efficiency = attemptsLeft / config.maxAttempts;
+    const refTime = config.pairs * 3;
+    const timeFactor = Math.max(0.3, Math.min(2, refTime / Math.max(elapsedSec, 1)));
+    return Math.round(config.pairs * 100 * (1 + efficiency) * timeFactor);
+}
+
+function formatTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = (sec % 60).toFixed(1);
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function formatTimeForSpeech(sec) {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    if (currentLang === 'ko') return m > 0 ? `${m}분 ${s}초` : `${s}초`;
+    const mp = m === 1 ? '1 minute' : m > 1 ? `${m} minutes` : '';
+    const sp = s === 1 ? '1 second' : `${s} seconds`;
+    return m > 0 ? `${mp} ${sp}` : sp;
+}
+
+function getResultPhrase(score, pairs) {
+    const maxScore = pairs * 400;
+    const normalized = Math.min(score / Math.max(maxScore, 1) * 100, 100);
+    const index = Math.min(Math.floor(normalized / 5), 19);
+    const phrases = I18N[currentLang].resultPhrases || I18N.en.resultPhrases;
+    return phrases[index];
+}
+
+function buildResultTTS(isWin, elapsed, attemptsUsed, matched, total, score) {
+    const phrase = getResultPhrase(score, total);
+    const timeStr = formatTimeForSpeech(elapsed);
+    const key = isWin ? 'resultSummaryWin' : 'resultSummaryLose';
+    return t(key, { time: timeStr, attempts: attemptsUsed, matched, total, score: score.toLocaleString(), phrase });
+}
+
+function awardVisionPotions() {
+    if (state.earlyMatchStreak >= CONFIG.VISION_MIN_STREAK) {
+        const earned = state.earlyMatchStreak;
+        state.visionPotions += earned;
+        saveVisionPotions(state.visionPotions);
+        SFX.play('visionEarn');
+        renderHeader();
+        const msg = t('visionEarned', { n: earned });
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(230,126,34,0.9);color:#fff;padding:8px 20px;border-radius:20px;font-weight:700;font-size:0.9rem;z-index:150;pointer-events:none;animation:visionToast 2s ease forwards;';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        if (!document.getElementById('vision-toast-style')) {
+            const s = document.createElement('style');
+            s.id = 'vision-toast-style';
+            s.textContent = '@keyframes visionToast{0%{opacity:0;transform:translateX(-50%) translateY(-10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-20px)}}';
+            document.head.appendChild(s);
+        }
+        setTimeout(() => toast.remove(), 2000);
+    }
+}
+
+function useVisionPotion() {
+    if (state.visionPotions <= 0 || state.locked || state.revealing || state.visionActive) return;
+    state.visionPotions--;
+    state.visionActive = true;
+    saveVisionPotions(state.visionPotions);
+    SFX.play('vision');
+    const container = document.querySelector('.grid-container');
+    container.classList.add('vision-reveal');
+    state.locked = true;
+    renderHeader();
+    const duration = state.level / 10 * 1000;
+    setTimeout(() => {
+        container.classList.remove('vision-reveal');
+        state.visionActive = false;
+        state.locked = false;
+        renderHeader();
+    }, duration);
+}
+
+function showWarning() {
+    state.locked = true;
+    const msg = t('warnMsg', { n: state.consecutiveMisses });
+    const el = document.createElement('div');
+    el.className = 'warning-overlay';
+    el.innerHTML = `<div class="warning-modal">
+        <div class="warn-icon">🛑</div>
+        <h2>${t('warnTitle')}</h2>
+        <p>${msg}</p>
+        <button class="btn-primary" id="btn-warn-ok">${t('warnBtn')}</button>
+    </div>`;
+    document.body.appendChild(el);
+    speakTTS(msg);
+    document.getElementById('btn-warn-ok').addEventListener('click', () => {
+        el.remove();
+        state.locked = false;
+    });
+}
+
+function showStreakGameOver() {
+    state.locked = true;
+    saveWinStreak(0);
+    const elapsed = (Date.now() - state.startTime) / 1000;
+    const matched = state.matched.size / 2;
+    const attemptsUsed = state.config.maxAttempts - state.attemptsLeft;
+    const score = calcScore({ pairs: matched || 1, maxAttempts: state.config.maxAttempts }, 0, elapsed);
+    const phrase = getResultPhrase(score, state.config.pairs);
+    const themeIcon = THEMES[state.themeKey].icon;
+    const ttsMsg = buildResultTTS(false, elapsed, attemptsUsed, matched, state.config.pairs, score);
+    speakTTS(ttsMsg);
+    showModal(`
+        <div class="result-icon">🚫</div>
+        <h2>${themeIcon} ${t('streakOver')}</h2>
+        <div class="stats-box">
+            <div class="sitem"><span class="slabel">${t('matched')}</span><span class="sval attempts">${matched}/${state.config.pairs}</span></div>
+            <div class="sitem"><span class="slabel">${t('time')}</span><span class="sval time">${formatTime(elapsed)}</span></div>
+            <div class="sitem"><span class="slabel">${t('score')}</span><span class="sval score">${score.toLocaleString()}</span></div>
+        </div>
+        <p class="result-phrase">${phrase}</p>
+        <button class="btn-primary" onclick="startLevel(${state.level})">${t('retry', { n: state.level })}</button>
+        <button class="btn-secondary" onclick="showLevelSelect()">${t('levelSelect')}</button>
+    `);
+}
+
+function showWinModal() {
+    const streak = loadWinStreak() + 1;
+    saveWinStreak(streak);
+    const next = state.level + 1;
+    const nc = getLevelConfig(next);
+    const elapsed = (Date.now() - state.startTime) / 1000;
+    const attemptsUsed = state.config.maxAttempts - state.attemptsLeft;
+    const score = calcScore(state.config, state.attemptsLeft, elapsed);
+    const phrase = getResultPhrase(score, state.config.pairs);
+    const themeIcon = THEMES[state.themeKey].icon;
+    const ttsMsg = buildResultTTS(true, elapsed, attemptsUsed, state.config.pairs, state.config.pairs, score);
+    speakTTS(ttsMsg);
+    showModal(`
+        <div class="result-icon">🎉</div>
+        <h2>${themeIcon} ${t('levelClear', { n: state.level })}</h2>
+        <div class="stats-box">
+            <div class="sitem"><span class="slabel">${t('attempts')}</span><span class="sval attempts">${attemptsUsed}/${state.config.maxAttempts}</span></div>
+            <div class="sitem"><span class="slabel">${t('time')}</span><span class="sval time">${formatTime(elapsed)}</span></div>
+            <div class="sitem"><span class="slabel">${t('score')}</span><span class="sval score">${score.toLocaleString()}</span></div>
+        </div>
+        <p class="result-phrase">${phrase}</p>
+        ${streak > 0 && next >= 6 ? `<p style="color:#9b59b6;font-size:0.85rem;margin-bottom:4px">🧪 ${t('potionInfo', { n: streak })}</p>` : ''}
+        ${state.visionPotions > 0 ? `<p style="color:#e67e22;font-size:0.85rem;margin-bottom:4px">${t('visionInfo', { n: state.visionPotions })}</p>` : ''}
+        <p style="margin-bottom:16px">${t('next', { pairs: nc.pairs, attempts: nc.maxAttempts })}</p>
+        <button class="btn-primary" onclick="startLevel(${next})">${t('nextLevel')}</button>
+        <button class="btn-secondary" onclick="showLevelSelect()">${t('levelSelect')}</button>
+    `);
+}
+
+function showLoseModal() {
+    saveWinStreak(0);
+    const elapsed = (Date.now() - state.startTime) / 1000;
+    const matched = state.matched.size / 2;
+    const attemptsUsed = state.config.maxAttempts;
+    const score = calcScore({ pairs: matched || 1, maxAttempts: state.config.maxAttempts }, 0, elapsed);
+    const phrase = getResultPhrase(score, state.config.pairs);
+    const themeIcon = THEMES[state.themeKey].icon;
+    const ttsMsg = buildResultTTS(false, elapsed, attemptsUsed, matched, state.config.pairs, score);
+    speakTTS(ttsMsg);
+    showModal(`
+        <div class="result-icon">😵</div>
+        <h2>${themeIcon} ${t('gameOver')}</h2>
+        <div class="stats-box">
+            <div class="sitem"><span class="slabel">${t('matched')}</span><span class="sval attempts">${matched}/${state.config.pairs}</span></div>
+            <div class="sitem"><span class="slabel">${t('time')}</span><span class="sval time">${formatTime(elapsed)}</span></div>
+            <div class="sitem"><span class="slabel">${t('score')}</span><span class="sval score">${score.toLocaleString()}</span></div>
+        </div>
+        <p class="result-phrase">${phrase}</p>
+        <button class="btn-primary" onclick="startLevel(${state.level})">${t('retry', { n: state.level })}</button>
+        <button class="btn-secondary" onclick="showLevelSelect()">${t('levelSelect')}</button>
+    `);
+}
+
+function langButtons() {
+    return `<div class="lang-select">
+        <button class="lang-btn${currentLang === 'en' ? ' active' : ''}" onclick="setLang('en');showLevelSelect()">English</button>
+        <button class="lang-btn${currentLang === 'ko' ? ' active' : ''}" onclick="setLang('ko');showLevelSelect()">한국어</button>
+    </div>`;
+}
+
+function showLevelSelect() {
+    const best = loadBestLevel();
+    const streak = loadWinStreak();
+    showModal(`
+        <h2>${t('title')}</h2>
+        <p>${t('subtitle')}</p>
+        <div class="level-select">
+            <div class="level-input-row">
+                <button onclick="adjustLevel(-1)">−</button>
+                <input type="number" id="level-input" value="${state.level}" min="1" max="999">
+                <button onclick="adjustLevel(1)">+</button>
+            </div>
+            <div class="best-level">${t('best')}: Level ${best}</div>
+            ${streak > 0 ? `<div class="best-level" style="color:#9b59b6">🧪 ${t('potionInfo', { n: streak })}</div>` : ''}
+            ${loadVisionPotions() > 0 ? `<div class="best-level" style="color:#e67e22">${t('visionInfo', { n: loadVisionPotions() })}</div>` : ''}
+        </div>
+        <button class="btn-primary" onclick="startFromInput()">${t('start')}</button>
+        ${langButtons()}
+    `);
+    const input = $('level-input');
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') startFromInput(); });
+    input.focus();
+    input.select();
+}
+
+function adjustLevel(delta) {
+    const input = $('level-input');
+    input.value = Math.max(1, parseInt(input.value || 1) + delta);
+}
+
+function startFromInput() {
+    startLevel(Math.max(1, parseInt($('level-input').value) || 1));
+}
+
+$('btn-vision').addEventListener('click', useVisionPotion);
+$('btn-potion').addEventListener('click', () => {
+    if (state.potions <= 0 || state.locked || state.revealing) return;
+    state.potionMode = !state.potionMode;
+    $('btn-potion').classList.toggle('active', state.potionMode);
+    document.querySelector('.grid-container').classList.toggle('potion-mode', state.potionMode);
+});
+$('btn-sound').addEventListener('click', () => { SFX.toggle(); updateSoundBtn(); });
+$('btn-restart').addEventListener('click', () => startLevel(state.level));
+$('btn-levels').addEventListener('click', showLevelSelect);
+
+$('btn-more').addEventListener('click', (e) => {
+    e.stopPropagation();
+    $('more-menu').classList.toggle('show');
+    updateMoreMenu();
+});
+$('btn-sound-m').addEventListener('click', () => {
+    SFX.toggle();
+    updateSoundBtn();
+    updateMoreMenu();
+});
+$('btn-restart-m').addEventListener('click', () => {
+    $('more-menu').classList.remove('show');
+    startLevel(state.level);
+});
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.more-menu') && !e.target.closest('#btn-more')) $('more-menu').classList.remove('show');
+});
+function updateMoreMenu() {
+    $('btn-sound-m').textContent = (SFX.enabled ? '🔊 ' : '🔇 ') + t('sound');
+    $('btn-restart-m').textContent = '↺ ' + t('restart');
+}
+updateSoundBtn();
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+        if (!state.revealing && state.config) buildGrid();
+    }, 150);
+});
+
+showLevelSelect();
+</script>
+</body>
+</html>
