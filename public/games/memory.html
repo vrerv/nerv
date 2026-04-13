@@ -78,6 +78,7 @@
         .lang-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #999; font-size: 0.8rem; padding: 5px 14px; border-radius: 15px; cursor: pointer; transition: all 0.2s; }
         .lang-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
         .lang-btn.active { background: rgba(102,126,234,0.25); border-color: #667eea; color: #fff; }
+        .result-phrase { color: #f8d56b; font-size: 0.95rem; font-style: italic; margin: 12px 0 4px; line-height: 1.5; }
 
         @media (max-width: 400px) {
             .card-back::after { font-size: 1.1em; }
@@ -152,6 +153,30 @@ const I18N = {
         warnBtn: 'I\'ll be careful',
         streakOver: 'Too many random guesses!',
         streakOverMsg: 'You missed {n} times in a row. Try to remember the card positions before clicking.',
+        resultSummaryWin: 'You matched {matched} pairs in {time} using {attempts} attempts. You scored {score} points. {phrase}',
+        resultSummaryLose: 'You matched {matched} out of {total} pairs in {time}. {phrase}',
+        resultPhrases: [
+            'Keep trying, you can do better!',
+            'Focus a little more next time!',
+            'Try observing the cards more carefully.',
+            'Your memory is starting to warm up!',
+            'Not a bad attempt at all!',
+            'You\'re getting the hang of it!',
+            'Decent memory skills showing!',
+            'Above average memory power!',
+            'You\'ve got quite a good memory!',
+            'Excellent focus and concentration!',
+            'A memory master in the making!',
+            'Truly impressive memory skills!',
+            'You have a collector\'s memory!',
+            'Outstanding pattern recognition!',
+            'Almost photographic memory!',
+            'You possess an amazing memory!',
+            'Memory champion level!',
+            'Genius-level memory!',
+            'Legendary memory power!',
+            'Perfect! Your memory is superhuman!',
+        ],
     },
     ko: {
         title: '🧠 메모리 게임',
@@ -173,6 +198,30 @@ const I18N = {
         warnBtn: '알겠습니다',
         streakOver: '랜덤 클릭은 안 돼요!',
         streakOverMsg: '{n}번 연속으로 틀렸습니다. 카드 위치를 기억한 후에 클릭하세요.',
+        resultSummaryWin: '{time} 동안 {attempts}번 시도해서 {matched}개 짝을 맞췄습니다. 총 {score}점을 얻었네요. {phrase}',
+        resultSummaryLose: '{time} 동안 {total}개 중 {matched}개 짝을 맞췄습니다. {phrase}',
+        resultPhrases: [
+            '다음에는 더 잘할 수 있을 거예요!',
+            '조금만 더 집중하면 돼요!',
+            '카드 위치를 좀 더 관찰해보세요.',
+            '기억력이 서서히 발동하고 있어요!',
+            '꽤 괜찮은 시도였어요!',
+            '점점 감이 오고 있네요!',
+            '나쁘지 않은 기억력이에요!',
+            '평균 이상의 기억력을 보여주고 있어요!',
+            '제법 기억력이 좋으시네요!',
+            '훌륭해요! 집중력이 대단해요!',
+            '기억력 마스터의 기질이 보여요!',
+            '정말 인상적인 기억력이에요!',
+            '수집가같은 기억력을 지니고 있네요!',
+            '뛰어난 패턴 인식 능력이에요!',
+            '거의 사진처럼 기억하시네요!',
+            '놀라운 기억력의 소유자시네요!',
+            '기억력 챔피언 수준이에요!',
+            '천재적인 기억력이에요!',
+            '전설적인 기억력의 소유자시군요!',
+            '완벽합니다! 당신의 기억력은 초인적이에요!',
+        ],
     },
 };
 
@@ -536,6 +585,30 @@ function formatTime(sec) {
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
+function formatTimeForSpeech(sec) {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    if (currentLang === 'ko') return m > 0 ? `${m}분 ${s}초` : `${s}초`;
+    const mp = m === 1 ? '1 minute' : m > 1 ? `${m} minutes` : '';
+    const sp = s === 1 ? '1 second' : `${s} seconds`;
+    return m > 0 ? `${mp} ${sp}` : sp;
+}
+
+function getResultPhrase(score, pairs) {
+    const maxScore = pairs * 400;
+    const normalized = Math.min(score / Math.max(maxScore, 1) * 100, 100);
+    const index = Math.min(Math.floor(normalized / 5), 19);
+    const phrases = I18N[currentLang].resultPhrases || I18N.en.resultPhrases;
+    return phrases[index];
+}
+
+function buildResultTTS(isWin, elapsed, attemptsUsed, matched, total, score) {
+    const phrase = getResultPhrase(score, total);
+    const timeStr = formatTimeForSpeech(elapsed);
+    const key = isWin ? 'resultSummaryWin' : 'resultSummaryLose';
+    return t(key, { time: timeStr, attempts: attemptsUsed, matched, total, score: score.toLocaleString(), phrase });
+}
+
 function showWarning() {
     state.locked = true;
     const msg = t('warnMsg', { n: state.consecutiveMisses });
@@ -559,17 +632,21 @@ function showStreakGameOver() {
     state.locked = true;
     const elapsed = (Date.now() - state.startTime) / 1000;
     const matched = state.matched.size / 2;
-    const msg = t('streakOverMsg', { n: state.consecutiveMisses });
+    const attemptsUsed = state.config.maxAttempts - state.attemptsLeft;
+    const score = calcScore({ pairs: matched || 1, maxAttempts: state.config.maxAttempts }, 0, elapsed);
+    const phrase = getResultPhrase(score, state.config.pairs);
     const themeIcon = THEMES[state.themeKey].icon;
-    speakTTS(msg);
+    const ttsMsg = buildResultTTS(false, elapsed, attemptsUsed, matched, state.config.pairs, score);
+    speakTTS(ttsMsg);
     showModal(`
         <div class="result-icon">🚫</div>
         <h2>${themeIcon} ${t('streakOver')}</h2>
-        <p>${msg}</p>
         <div class="stats-box">
             <div class="sitem"><span class="slabel">${t('matched')}</span><span class="sval attempts">${matched}/${state.config.pairs}</span></div>
             <div class="sitem"><span class="slabel">${t('time')}</span><span class="sval time">${formatTime(elapsed)}</span></div>
+            <div class="sitem"><span class="slabel">${t('score')}</span><span class="sval score">${score.toLocaleString()}</span></div>
         </div>
+        <p class="result-phrase">${phrase}</p>
         <button class="btn-primary" onclick="startLevel(${state.level})">${t('retry', { n: state.level })}</button>
         <button class="btn-secondary" onclick="showLevelSelect()">${t('levelSelect')}</button>
     `);
@@ -581,7 +658,10 @@ function showWinModal() {
     const elapsed = (Date.now() - state.startTime) / 1000;
     const attemptsUsed = state.config.maxAttempts - state.attemptsLeft;
     const score = calcScore(state.config, state.attemptsLeft, elapsed);
+    const phrase = getResultPhrase(score, state.config.pairs);
     const themeIcon = THEMES[state.themeKey].icon;
+    const ttsMsg = buildResultTTS(true, elapsed, attemptsUsed, state.config.pairs, state.config.pairs, score);
+    speakTTS(ttsMsg);
     showModal(`
         <div class="result-icon">🎉</div>
         <h2>${themeIcon} ${t('levelClear', { n: state.level })}</h2>
@@ -590,6 +670,7 @@ function showWinModal() {
             <div class="sitem"><span class="slabel">${t('time')}</span><span class="sval time">${formatTime(elapsed)}</span></div>
             <div class="sitem"><span class="slabel">${t('score')}</span><span class="sval score">${score.toLocaleString()}</span></div>
         </div>
+        <p class="result-phrase">${phrase}</p>
         <p style="margin-bottom:16px">${t('next', { pairs: nc.pairs, attempts: nc.maxAttempts })}</p>
         <button class="btn-primary" onclick="startLevel(${next})">${t('nextLevel')}</button>
         <button class="btn-secondary" onclick="showLevelSelect()">${t('levelSelect')}</button>
@@ -599,14 +680,21 @@ function showWinModal() {
 function showLoseModal() {
     const elapsed = (Date.now() - state.startTime) / 1000;
     const matched = state.matched.size / 2;
+    const attemptsUsed = state.config.maxAttempts;
+    const score = calcScore({ pairs: matched || 1, maxAttempts: state.config.maxAttempts }, 0, elapsed);
+    const phrase = getResultPhrase(score, state.config.pairs);
     const themeIcon = THEMES[state.themeKey].icon;
+    const ttsMsg = buildResultTTS(false, elapsed, attemptsUsed, matched, state.config.pairs, score);
+    speakTTS(ttsMsg);
     showModal(`
         <div class="result-icon">😵</div>
         <h2>${themeIcon} ${t('gameOver')}</h2>
         <div class="stats-box">
             <div class="sitem"><span class="slabel">${t('matched')}</span><span class="sval attempts">${matched}/${state.config.pairs}</span></div>
             <div class="sitem"><span class="slabel">${t('time')}</span><span class="sval time">${formatTime(elapsed)}</span></div>
+            <div class="sitem"><span class="slabel">${t('score')}</span><span class="sval score">${score.toLocaleString()}</span></div>
         </div>
+        <p class="result-phrase">${phrase}</p>
         <button class="btn-primary" onclick="startLevel(${state.level})">${t('retry', { n: state.level })}</button>
         <button class="btn-secondary" onclick="showLevelSelect()">${t('levelSelect')}</button>
     `);
