@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -65,6 +65,20 @@
         .stats-box .sitem .sval.time { color: #74b9ff; }
         .stats-box .sitem .sval.attempts { color: #a29bfe; }
 
+        .warning-overlay { position: fixed; inset: 0; background: rgba(180,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200; backdrop-filter: blur(6px); animation: pulseWarn 0.5s ease; }
+        @keyframes pulseWarn { 0% { opacity: 0; } 50% { opacity: 1; } }
+        .warning-modal { background: linear-gradient(145deg, #3a0a0a, #2a0505); border: 2px solid rgba(255,80,80,0.4); border-radius: 20px; padding: 32px; text-align: center; max-width: 380px; width: 90%; box-shadow: 0 25px 60px rgba(200,0,0,0.4); }
+        .warning-modal .warn-icon { font-size: 3.5rem; margin-bottom: 12px; animation: shakeWarn 0.5s ease; }
+        @keyframes shakeWarn { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+        .warning-modal h2 { color: #ff6b6b; font-size: 1.4rem; margin-bottom: 10px; }
+        .warning-modal p { color: #ffaaaa; font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px; }
+        .warning-modal .btn-primary { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+
+        .lang-select { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+        .lang-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #999; font-size: 0.8rem; padding: 5px 14px; border-radius: 15px; cursor: pointer; transition: all 0.2s; }
+        .lang-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+        .lang-btn.active { background: rgba(102,126,234,0.25); border-color: #667eea; color: #fff; }
+
         @media (max-width: 400px) {
             .card-back::after { font-size: 1.1em; }
             .header { padding: 8px 10px; }
@@ -80,11 +94,11 @@
             <div class="level-badge" id="level-display">Lv. 1</div>
             <div class="theme-badge" id="theme-display"></div>
             <div class="stat">
-                <span class="stat-label">Matched</span>
+                <span class="stat-label" id="match-label">Matched</span>
                 <span class="stat-value" id="match-display">0/2</span>
             </div>
             <div class="stat">
-                <span class="stat-label">Attempts</span>
+                <span class="stat-label" id="attempts-label">Attempts</span>
                 <span class="stat-value" id="attempts-display">6</span>
             </div>
         </div>
@@ -112,7 +126,85 @@ const CONFIG = {
     MISMATCH_DELAY: 500,
     STORAGE_KEY: 'memory-game-best-level',
     SOUND_KEY: 'memory-game-sound',
+    LANG_KEY: 'memory-game-lang',
+    WARN_STREAK: 3,
+    GAMEOVER_STREAK: 5,
 };
+
+const I18N = {
+    en: {
+        title: '🧠 Memory Game',
+        subtitle: 'Match all emoji pairs before running out of attempts!',
+        matched: 'Matched',
+        attempts: 'Attempts',
+        best: 'Best',
+        start: 'Start',
+        levelSelect: 'Level Select',
+        levelClear: 'Level {n} Clear!',
+        next: 'Next: {pairs} pairs, {attempts} attempts',
+        nextLevel: 'Next Level →',
+        gameOver: 'Game Over',
+        retry: 'Retry Level {n}',
+        score: 'Score',
+        time: 'Time',
+        warnTitle: '⚠️ Slow down!',
+        warnMsg: 'You\'ve missed {n} times in a row. Take a moment to think carefully before clicking.',
+        warnBtn: 'I\'ll be careful',
+        streakOver: 'Too many random guesses!',
+        streakOverMsg: 'You missed {n} times in a row. Try to remember the card positions before clicking.',
+    },
+    ko: {
+        title: '🧠 메모리 게임',
+        subtitle: '시도 횟수가 다 떨어지기 전에 모든 이모지 짝을 맞추세요!',
+        matched: '매치',
+        attempts: '시도',
+        best: '최고',
+        start: '시작',
+        levelSelect: '레벨 선택',
+        levelClear: '레벨 {n} 클리어!',
+        next: '다음: {pairs}쌍, {attempts}번 시도',
+        nextLevel: '다음 레벨 →',
+        gameOver: '게임 오버',
+        retry: '레벨 {n} 재시도',
+        score: '점수',
+        time: '시간',
+        warnTitle: '⚠️ 천천히!',
+        warnMsg: '{n}번 연속으로 틀렸습니다. 잠시 멈추고 카드 위치를 잘 생각해보세요.',
+        warnBtn: '알겠습니다',
+        streakOver: '랜덤 클릭은 안 돼요!',
+        streakOverMsg: '{n}번 연속으로 틀렸습니다. 카드 위치를 기억한 후에 클릭하세요.',
+    },
+};
+
+let currentLang = (() => {
+    const saved = localStorage.getItem(CONFIG.LANG_KEY);
+    if (saved && I18N[saved]) return saved;
+    const nav = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+    return nav.startsWith('ko') ? 'ko' : 'en';
+})();
+
+function t(key, params) {
+    let s = I18N[currentLang][key] || I18N.en[key] || key;
+    if (params) Object.entries(params).forEach(([k, v]) => { s = s.replace(`{${k}}`, v); });
+    return s;
+}
+
+function setLang(lang) {
+    currentLang = lang;
+    localStorage.setItem(CONFIG.LANG_KEY, lang);
+    document.documentElement.lang = lang;
+}
+
+function speakTTS(text) {
+    if (!SFX.enabled) return;
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = currentLang === 'ko' ? 'ko-KR' : 'en-US';
+    utter.rate = 0.9;
+    utter.volume = 0.8;
+    speechSynthesis.speak(utter);
+}
 
 const THEMES = {
     shapes: {
@@ -278,6 +370,7 @@ const state = {
     locked: false,
     revealing: false,
     startTime: 0,
+    consecutiveMisses: 0,
 };
 
 const $ = id => document.getElementById(id);
@@ -293,7 +386,9 @@ function renderHeader() {
     $('level-display').textContent = `Lv. ${state.level}`;
     $('theme-display').textContent = THEMES[state.themeKey].icon;
     $('theme-display').title = THEMES[state.themeKey].name;
+    $('match-label').textContent = t('matched');
     $('match-display').textContent = `${state.matched.size / 2}/${state.config.pairs}`;
+    $('attempts-label').textContent = t('attempts');
     const $att = $('attempts-display');
     $att.textContent = state.attemptsLeft;
     $att.className = 'stat-value' + (state.attemptsLeft / state.config.maxAttempts <= 0.25 ? ' danger' : '');
@@ -344,6 +439,7 @@ function startLevel(level) {
     state.flipped = [];
     state.locked = true;
     state.revealing = true;
+    state.consecutiveMisses = 0;
 
     hideModal();
     renderHeader();
@@ -382,6 +478,7 @@ function onCardClick(index) {
             getCard(b).classList.add('matched');
             state.flipped = [];
             state.locked = false;
+            state.consecutiveMisses = 0;
             renderHeader();
 
             if (state.matched.size === state.config.pairs * 2) {
@@ -390,6 +487,7 @@ function onCardClick(index) {
             }
         } else {
             state.attemptsLeft--;
+            state.consecutiveMisses++;
             renderHeader();
 
             setTimeout(() => {
@@ -404,7 +502,15 @@ function onCardClick(index) {
                 state.flipped = [];
                 state.locked = false;
 
-                if (state.attemptsLeft <= 0) { SFX.play('lose'); showLoseModal(); }
+                if (state.attemptsLeft <= 0) {
+                    SFX.play('lose');
+                    showLoseModal();
+                } else if (state.consecutiveMisses >= CONFIG.GAMEOVER_STREAK) {
+                    SFX.play('lose');
+                    showStreakGameOver();
+                } else if (state.consecutiveMisses >= CONFIG.WARN_STREAK) {
+                    showWarning();
+                }
             }, CONFIG.MISMATCH_DELAY + 200);
         }
     }
@@ -430,6 +536,45 @@ function formatTime(sec) {
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
+function showWarning() {
+    state.locked = true;
+    const msg = t('warnMsg', { n: state.consecutiveMisses });
+    const el = document.createElement('div');
+    el.className = 'warning-overlay';
+    el.innerHTML = `<div class="warning-modal">
+        <div class="warn-icon">🛑</div>
+        <h2>${t('warnTitle')}</h2>
+        <p>${msg}</p>
+        <button class="btn-primary" id="btn-warn-ok">${t('warnBtn')}</button>
+    </div>`;
+    document.body.appendChild(el);
+    speakTTS(msg);
+    document.getElementById('btn-warn-ok').addEventListener('click', () => {
+        el.remove();
+        state.locked = false;
+    });
+}
+
+function showStreakGameOver() {
+    state.locked = true;
+    const elapsed = (Date.now() - state.startTime) / 1000;
+    const matched = state.matched.size / 2;
+    const msg = t('streakOverMsg', { n: state.consecutiveMisses });
+    const themeIcon = THEMES[state.themeKey].icon;
+    speakTTS(msg);
+    showModal(`
+        <div class="result-icon">🚫</div>
+        <h2>${themeIcon} ${t('streakOver')}</h2>
+        <p>${msg}</p>
+        <div class="stats-box">
+            <div class="sitem"><span class="slabel">${t('matched')}</span><span class="sval attempts">${matched}/${state.config.pairs}</span></div>
+            <div class="sitem"><span class="slabel">${t('time')}</span><span class="sval time">${formatTime(elapsed)}</span></div>
+        </div>
+        <button class="btn-primary" onclick="startLevel(${state.level})">${t('retry', { n: state.level })}</button>
+        <button class="btn-secondary" onclick="showLevelSelect()">${t('levelSelect')}</button>
+    `);
+}
+
 function showWinModal() {
     const next = state.level + 1;
     const nc = getLevelConfig(next);
@@ -439,15 +584,15 @@ function showWinModal() {
     const themeIcon = THEMES[state.themeKey].icon;
     showModal(`
         <div class="result-icon">🎉</div>
-        <h2>${themeIcon} Level ${state.level} Clear!</h2>
+        <h2>${themeIcon} ${t('levelClear', { n: state.level })}</h2>
         <div class="stats-box">
-            <div class="sitem"><span class="slabel">Attempts</span><span class="sval attempts">${attemptsUsed}/${state.config.maxAttempts}</span></div>
-            <div class="sitem"><span class="slabel">Time</span><span class="sval time">${formatTime(elapsed)}</span></div>
-            <div class="sitem"><span class="slabel">Score</span><span class="sval score">${score.toLocaleString()}</span></div>
+            <div class="sitem"><span class="slabel">${t('attempts')}</span><span class="sval attempts">${attemptsUsed}/${state.config.maxAttempts}</span></div>
+            <div class="sitem"><span class="slabel">${t('time')}</span><span class="sval time">${formatTime(elapsed)}</span></div>
+            <div class="sitem"><span class="slabel">${t('score')}</span><span class="sval score">${score.toLocaleString()}</span></div>
         </div>
-        <p style="margin-bottom:16px">Next: ${nc.pairs} pairs, ${nc.maxAttempts} attempts</p>
-        <button class="btn-primary" onclick="startLevel(${next})">Next Level →</button>
-        <button class="btn-secondary" onclick="showLevelSelect()">Level Select</button>
+        <p style="margin-bottom:16px">${t('next', { pairs: nc.pairs, attempts: nc.maxAttempts })}</p>
+        <button class="btn-primary" onclick="startLevel(${next})">${t('nextLevel')}</button>
+        <button class="btn-secondary" onclick="showLevelSelect()">${t('levelSelect')}</button>
     `);
 }
 
@@ -457,30 +602,38 @@ function showLoseModal() {
     const themeIcon = THEMES[state.themeKey].icon;
     showModal(`
         <div class="result-icon">😵</div>
-        <h2>${themeIcon} Game Over</h2>
+        <h2>${themeIcon} ${t('gameOver')}</h2>
         <div class="stats-box">
-            <div class="sitem"><span class="slabel">Matched</span><span class="sval attempts">${matched}/${state.config.pairs}</span></div>
-            <div class="sitem"><span class="slabel">Time</span><span class="sval time">${formatTime(elapsed)}</span></div>
+            <div class="sitem"><span class="slabel">${t('matched')}</span><span class="sval attempts">${matched}/${state.config.pairs}</span></div>
+            <div class="sitem"><span class="slabel">${t('time')}</span><span class="sval time">${formatTime(elapsed)}</span></div>
         </div>
-        <button class="btn-primary" onclick="startLevel(${state.level})">Retry Level ${state.level}</button>
-        <button class="btn-secondary" onclick="showLevelSelect()">Level Select</button>
+        <button class="btn-primary" onclick="startLevel(${state.level})">${t('retry', { n: state.level })}</button>
+        <button class="btn-secondary" onclick="showLevelSelect()">${t('levelSelect')}</button>
     `);
+}
+
+function langButtons() {
+    return `<div class="lang-select">
+        <button class="lang-btn${currentLang === 'en' ? ' active' : ''}" onclick="setLang('en');showLevelSelect()">English</button>
+        <button class="lang-btn${currentLang === 'ko' ? ' active' : ''}" onclick="setLang('ko');showLevelSelect()">한국어</button>
+    </div>`;
 }
 
 function showLevelSelect() {
     const best = loadBestLevel();
     showModal(`
-        <h2>🧠 Memory Game</h2>
-        <p>Match all emoji pairs before running out of attempts!</p>
+        <h2>${t('title')}</h2>
+        <p>${t('subtitle')}</p>
         <div class="level-select">
             <div class="level-input-row">
                 <button onclick="adjustLevel(-1)">−</button>
                 <input type="number" id="level-input" value="${state.level}" min="1" max="999">
                 <button onclick="adjustLevel(1)">+</button>
             </div>
-            <div class="best-level">Best: Level ${best}</div>
+            <div class="best-level">${t('best')}: Level ${best}</div>
         </div>
-        <button class="btn-primary" onclick="startFromInput()">Start</button>
+        <button class="btn-primary" onclick="startFromInput()">${t('start')}</button>
+        ${langButtons()}
     `);
     const input = $('level-input');
     input.addEventListener('keydown', e => { if (e.key === 'Enter') startFromInput(); });
