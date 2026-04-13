@@ -87,6 +87,14 @@
         .grid-container.potion-mode .card:not(.matched):not(.flipped):not(.potion-revealed) { cursor: crosshair; }
         .grid-container.potion-mode .card:not(.matched):not(.flipped):not(.potion-revealed) .card-back { border-color: rgba(155,89,182,0.4); transition: border-color 0.2s, box-shadow 0.2s; }
         .grid-container.potion-mode .card:not(.matched):not(.flipped):not(.potion-revealed):hover .card-back { border-color: rgba(155,89,182,0.6); box-shadow: 0 0 15px rgba(155,89,182,0.35); }
+
+        .btn-vision { width: auto !important; padding: 0 10px; display: flex; align-items: center; gap: 4px; }
+        .btn-vision.active { border-color: #e67e22; background: rgba(230,126,34,0.25); box-shadow: 0 0 10px rgba(230,126,34,0.3); color: #f5c77e; }
+        .btn-vision.no-potion { opacity: 0.3; pointer-events: none; }
+        .grid-container.vision-reveal .card:not(.matched) .card-inner { transform: rotateY(180deg); }
+        .grid-container.vision-reveal .card:not(.matched) .card-front { border-color: rgba(230,126,34,0.5); box-shadow: 0 0 15px rgba(230,126,34,0.25); }
+        @keyframes visionPulse { 0%,100% { box-shadow: 0 0 10px rgba(230,126,34,0.3); } 50% { box-shadow: 0 0 25px rgba(230,126,34,0.6); } }
+        .grid-container.vision-reveal { animation: visionPulse 0.5s ease infinite; border-radius: 12px; }
         .potion-overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; border-radius: 10px; z-index: 2; pointer-events: none; opacity: 0.35; }
         .card.potion-revealed .potion-overlay { display: flex; }
         .card.potion-revealed .card-back { border-color: rgba(150,100,255,0.4); }
@@ -119,6 +127,7 @@
             </div>
         </div>
         <div class="header-right">
+            <button class="btn-menu btn-vision no-potion" id="btn-vision" title="Vision Potion">🔮<span class="potion-count" id="vision-count">0</span></button>
             <button class="btn-menu btn-potion no-potion" id="btn-potion" title="Reveal Potion">🧪<span class="potion-count" id="potion-count">0</span></button>
             <button class="btn-menu" id="btn-sound" title="Sound">🔊</button>
             <button class="btn-menu" id="btn-restart" title="Restart">↺</button>
@@ -147,6 +156,8 @@ const CONFIG = {
     WARN_STREAK: 3,
     GAMEOVER_STREAK: 5,
     STREAK_KEY: 'memory-game-win-streak',
+    VISION_KEY: 'memory-game-vision-potions',
+    VISION_MIN_STREAK: 2,
 };
 
 const I18N = {
@@ -173,6 +184,10 @@ const I18N = {
         potion: 'Potion',
         potionHint: 'Reveal a card (earned by consecutive wins)',
         potionInfo: 'Win streak {n}: {n} potions next round',
+        vision: 'Vision',
+        visionHint: 'Reveal ALL cards briefly (earned by early match streak)',
+        visionInfo: '🔮 Vision potions: {n}',
+        visionEarned: '🔮 +{n} vision potions! (early {n}-match streak)',
         resultSummaryWin: 'You matched {matched} pairs in {time} using {attempts} attempts. You scored {score} points. {phrase}',
         resultSummaryLose: 'You matched {matched} out of {total} pairs in {time}. {phrase}',
         resultPhrases: [
@@ -220,7 +235,11 @@ const I18N = {
         streakOverMsg: '{n}번 연속으로 틀렸습니다. 카드 위치를 기억한 후에 클릭하세요.',
         potion: '물약',
         potionHint: '카드 한 장을 투시합니다 (연속 클리어 보상)',
-        potionInfo: '연속 {n}승 보상: 투시 물약 {n}개',
+        potionInfo: '연속 {n}승 보상: 투명 물약 {n}개',
+        vision: '투시',
+        visionHint: '전체 카드를 잠시 공개합니다 (초반 연속 매치 보상)',
+        visionInfo: '🔮 투시 물약: {n}개',
+        visionEarned: '🔮 +{n} 투시 물약! (초반 {n}연속 매치)',
         resultSummaryWin: '{time} 동안 {attempts}번 시도해서 {matched}개 짝을 맞췄습니다. 총 {score}점을 얻었네요. {phrase}',
         resultSummaryLose: '{time} 동안 {total}개 중 {matched}개 짝을 맞췄습니다. {phrase}',
         resultPhrases: [
@@ -379,6 +398,17 @@ const SFX = {
                 this._tone(900, 'sine', t + 0.1, 0.3, 0.1);
                 this._tone(1200, 'sine', t + 0.2, 0.4, 0.08);
                 break;
+            case 'vision':
+                this._tone(400, 'sine', t, 0.5, 0.1);
+                this._tone(600, 'sine', t + 0.05, 0.5, 0.1);
+                this._tone(800, 'sine', t + 0.1, 0.5, 0.08);
+                this._tone(1000, 'sine', t + 0.15, 0.6, 0.06);
+                this._tone(1200, 'sine', t + 0.2, 0.7, 0.05);
+                break;
+            case 'visionEarn':
+                this._tone(523, 'triangle', t, 0.2, 0.12);
+                this._tone(784, 'triangle', t + 0.15, 0.3, 0.1);
+                break;
         }
     },
 };
@@ -444,6 +474,14 @@ function saveWinStreak(streak) {
     localStorage.setItem(CONFIG.STREAK_KEY, streak);
 }
 
+function loadVisionPotions() {
+    return parseInt(localStorage.getItem(CONFIG.VISION_KEY)) || 0;
+}
+
+function saveVisionPotions(count) {
+    localStorage.setItem(CONFIG.VISION_KEY, Math.max(0, count));
+}
+
 const state = {
     level: 1,
     config: null,
@@ -459,6 +497,10 @@ const state = {
     potions: 0,
     potionMode: false,
     potionRevealed: new Set(),
+    visionPotions: 0,
+    visionActive: false,
+    earlyMatchStreak: 0,
+    earlyStreakEnded: false,
 };
 
 const $ = id => document.getElementById(id);
@@ -485,6 +527,11 @@ function renderHeader() {
     potionBtn.title = t('potionHint');
     potionBtn.classList.toggle('no-potion', state.potions <= 0);
     if (state.potions <= 0) { potionBtn.classList.remove('active'); state.potionMode = false; document.querySelector('.grid-container').classList.remove('potion-mode'); }
+
+    const visionBtn = $('btn-vision');
+    $('vision-count').textContent = state.visionPotions;
+    visionBtn.title = t('visionHint');
+    visionBtn.classList.toggle('no-potion', state.visionPotions <= 0 || state.visionActive);
 }
 
 function calcCardSize() {
@@ -537,7 +584,12 @@ function startLevel(level) {
     state.potions = loadWinStreak();
     state.potionMode = false;
     state.potionRevealed = new Set();
+    state.visionPotions = loadVisionPotions();
+    state.visionActive = false;
+    state.earlyMatchStreak = 0;
+    state.earlyStreakEnded = false;
     document.querySelector('.grid-container').classList.remove('potion-mode');
+    document.querySelector('.grid-container').classList.remove('vision-reveal');
 
     hideModal();
     renderHeader();
@@ -594,13 +646,19 @@ function onCardClick(index) {
             state.flipped = [];
             state.locked = false;
             state.consecutiveMisses = 0;
+            if (!state.earlyStreakEnded) state.earlyMatchStreak++;
             renderHeader();
 
             if (state.matched.size === state.config.pairs * 2) {
+                awardVisionPotions();
                 saveBestLevel(state.level + 1);
                 setTimeout(() => { SFX.play('win'); showWinModal(); }, 400);
             }
         } else {
+            if (!state.earlyStreakEnded) {
+                state.earlyStreakEnded = true;
+                awardVisionPotions();
+            }
             state.attemptsLeft--;
             state.consecutiveMisses++;
             renderHeader();
@@ -675,6 +733,47 @@ function buildResultTTS(isWin, elapsed, attemptsUsed, matched, total, score) {
     return t(key, { time: timeStr, attempts: attemptsUsed, matched, total, score: score.toLocaleString(), phrase });
 }
 
+function awardVisionPotions() {
+    if (state.earlyMatchStreak >= CONFIG.VISION_MIN_STREAK) {
+        const earned = state.earlyMatchStreak;
+        state.visionPotions += earned;
+        saveVisionPotions(state.visionPotions);
+        SFX.play('visionEarn');
+        renderHeader();
+        const msg = t('visionEarned', { n: earned });
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(230,126,34,0.9);color:#fff;padding:8px 20px;border-radius:20px;font-weight:700;font-size:0.9rem;z-index:150;pointer-events:none;animation:visionToast 2s ease forwards;';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        if (!document.getElementById('vision-toast-style')) {
+            const s = document.createElement('style');
+            s.id = 'vision-toast-style';
+            s.textContent = '@keyframes visionToast{0%{opacity:0;transform:translateX(-50%) translateY(-10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-20px)}}';
+            document.head.appendChild(s);
+        }
+        setTimeout(() => toast.remove(), 2000);
+    }
+}
+
+function useVisionPotion() {
+    if (state.visionPotions <= 0 || state.locked || state.revealing || state.visionActive) return;
+    state.visionPotions--;
+    state.visionActive = true;
+    saveVisionPotions(state.visionPotions);
+    SFX.play('vision');
+    const container = document.querySelector('.grid-container');
+    container.classList.add('vision-reveal');
+    state.locked = true;
+    renderHeader();
+    const duration = state.level / 10 * 1000;
+    setTimeout(() => {
+        container.classList.remove('vision-reveal');
+        state.visionActive = false;
+        state.locked = false;
+        renderHeader();
+    }, duration);
+}
+
 function showWarning() {
     state.locked = true;
     const msg = t('warnMsg', { n: state.consecutiveMisses });
@@ -741,6 +840,7 @@ function showWinModal() {
         </div>
         <p class="result-phrase">${phrase}</p>
         ${streak > 0 ? `<p style="color:#9b59b6;font-size:0.85rem;margin-bottom:4px">🧪 ${t('potionInfo', { n: streak })}</p>` : ''}
+        ${state.visionPotions > 0 ? `<p style="color:#e67e22;font-size:0.85rem;margin-bottom:4px">${t('visionInfo', { n: state.visionPotions })}</p>` : ''}
         <p style="margin-bottom:16px">${t('next', { pairs: nc.pairs, attempts: nc.maxAttempts })}</p>
         <button class="btn-primary" onclick="startLevel(${next})">${t('nextLevel')}</button>
         <button class="btn-secondary" onclick="showLevelSelect()">${t('levelSelect')}</button>
@@ -792,6 +892,7 @@ function showLevelSelect() {
             </div>
             <div class="best-level">${t('best')}: Level ${best}</div>
             ${streak > 0 ? `<div class="best-level" style="color:#9b59b6">🧪 ${t('potionInfo', { n: streak })}</div>` : ''}
+            ${loadVisionPotions() > 0 ? `<div class="best-level" style="color:#e67e22">${t('visionInfo', { n: loadVisionPotions() })}</div>` : ''}
         </div>
         <button class="btn-primary" onclick="startFromInput()">${t('start')}</button>
         ${langButtons()}
@@ -811,6 +912,7 @@ function startFromInput() {
     startLevel(Math.max(1, parseInt($('level-input').value) || 1));
 }
 
+$('btn-vision').addEventListener('click', useVisionPotion);
 $('btn-potion').addEventListener('click', () => {
     if (state.potions <= 0 || state.locked || state.revealing) return;
     state.potionMode = !state.potionMode;
