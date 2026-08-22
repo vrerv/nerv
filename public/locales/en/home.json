@@ -1,0 +1,71 @@
+{
+  "metaTitle": "VReRV — Building how people and AI agents work together",
+  "metaDescription": "VReRV builds collaboration tools that don't lose context: Collavre, which merges docs, tasks and conversation into one tree, plus Danvre, Tank Echo, Magic Duel and our open source.",
+
+  "heroBadge": "Collavre beta is open",
+  "heroTitleLine1": "Building how people and",
+  "heroTitleLine2": "AI agents work together.",
+  "heroBodyBefore": "VReRV builds collaboration tools that don't lose context. Our flagship is ",
+  "heroBodyAfter": ", which merges docs, tasks and conversation into a single tree. Experiments ship as small products and open source.",
+  "heroPrimaryCta": "Try Collavre for free",
+  "heroSecondaryCta": "See all products",
+  "heroStripLabel": "What we build",
+
+  "productsHeading": "Products",
+  "statusLive": "Live",
+  "statusBeta": "Beta",
+
+  "product": {
+    "collavre": {
+      "tagline": "Docs, tasks and conversation in one tree.",
+      "body": "Write it once. Every block is a document, a task and a thread at the same time. Progress rolls up on its own, and that same structure becomes the context you hand to an AI agent.",
+      "bullet1": "Hierarchical blocks with automatic progress rollup",
+      "bullet2": "@mention AI agents like teammates",
+      "bullet3": "Real-time chat on every block · self-hostable",
+      "cta": "Open collavre.com"
+    },
+    "danvre": {
+      "body": "Dance along to a video and the camera scores your pose, movement and timing. Video and pose data never leave your browser.",
+      "cta": "Start dancing"
+    },
+    "tank": {
+      "body": "Battleship meets bingo, in 3D. Fire along your line of sight and read row, column and diagonal hints to find the hidden tanks. No sign-up.",
+      "cta": "Play now"
+    },
+    "magic": {
+      "body": "Real-time 1v1 spell duels. Combine prisms into spells and counter what your opponent throws next.",
+      "cta": "Enter a duel"
+    }
+  },
+
+  "opensourceHeading": "Open source",
+  "opensourceSubtitle": "Tools we split out while building our products.",
+  "opensourceAll": "github.com/vrerv →",
+  "repo": {
+    "rails_mcp_engine": "An MCP server engine for Rails. Sorbet · RubyLLM · FastMCP.",
+    "md-to-notion": "Upload a folder of markdown as a Notion page tree.",
+    "openapi-markdown": "Turn an OpenAPI spec into readable markdown docs.",
+    "cli-openai-proxy": "One OpenAI-compatible endpoint for agent CLIs like Claude Code and Codex. BYOK, self-hosted."
+  },
+
+  "blogHeading": "Engineering blog",
+  "blogAll": "Read all posts →",
+
+  "companyHeading": "Company",
+  "companyBody": "VReRV looks for more efficient ways to build software, makes technology usable by more people, and searches for the shape of AI that helps everyone.",
+  "stat": {
+    "founded": "Founded",
+    "repos": "Public repos",
+    "services": "Live services"
+  },
+
+  "membershipHeading": "Membership",
+  "membershipBody": "Sign up to use the services below.",
+  "membershipCta": "See membership",
+  "service": {
+    "drawing": { "name": "Drawing", "desc": "a canvas you can draw on and save" },
+    "learn": { "name": "Learn Hangul", "desc": "Hangul composition drills · TTS" },
+    "mentalcare": { "name": "Mental Care", "desc": "routine and challenge tracking" },
+    "magic-is-coming": { "name": "Magic is coming", "desc": "in progress" }
+  }
+}

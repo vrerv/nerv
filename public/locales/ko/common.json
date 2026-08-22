@@ -17,5 +17,18 @@
   "resetPassword": "비밀번호 재설정",
   "confirmPassword": "비밀번호 확인",
   "passwordConfirmFailed": "비밀번호 확인이 일치하지 않습니다",
-  "msgEmailSentForResetPassword": "비밀번호 재설정 이메일을 보냈습니다. 이메일을 확인하세요."
+  "msgEmailSentForResetPassword": "비밀번호 재설정 이메일을 보냈습니다. 이메일을 확인하세요.",
+  "navProducts": "제품",
+  "navOpensource": "오픈소스",
+  "navCompany": "회사",
+  "toggleTheme": "테마 전환",
+  "ctaCollavre": "Collavre 시작하기",
+  "footerTagline": "사람과 AI가 함께 일하는 방식.",
+  "footerProducts": "제품",
+  "footerDevelopers": "개발자",
+  "footerCompany": "회사",
+  "footerLanguage": "언어",
+  "footerAbout": "소개",
+  "footerStatus": "서비스 상태",
+  "footerRights": "All rights reserved."
 }

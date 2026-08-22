@@ -9,6 +9,8 @@ type IMetaProps = {
   title: string;
   description: string;
   canonical?: string;
+  /** schema.org payload rendered as JSON-LD. */
+  jsonLd?: Record<string, unknown>;
 };
 
 const Meta = (props: IMetaProps) => {
@@ -28,6 +30,14 @@ const Meta = (props: IMetaProps) => {
           href={`${router.basePath}/favicon.ico`}
           key="favicon"
         />
+        {props.jsonLd && (
+          <script
+            type="application/ld+json"
+            key="jsonld"
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(props.jsonLd) }}
+          />
+        )}
       </Head>
       <NextSeo
         title={props.title}

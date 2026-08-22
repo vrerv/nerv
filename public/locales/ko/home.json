@@ -1,0 +1,71 @@
+{
+  "metaTitle": "VReRV — 사람과 AI 에이전트가 함께 일하는 방식을 만듭니다",
+  "metaDescription": "VReRV는 컨텍스트를 잃지 않는 협업 도구를 만듭니다. 문서·태스크·대화를 하나의 트리로 합친 Collavre, 포즈 코칭 Danvre 댄스방, Tank Echo, Magic Duel, 그리고 오픈소스.",
+
+  "heroBadge": "Collavre 베타 오픈",
+  "heroTitleLine1": "사람과 AI 에이전트가",
+  "heroTitleLine2": "함께 일하는 방식을 만듭니다.",
+  "heroBodyBefore": "VReRV는 컨텍스트를 잃지 않는 협업 도구를 만듭니다. 문서·태스크·대화를 하나의 트리로 합친 ",
+  "heroBodyAfter": "가 우리의 주력 제품이고, 실험은 작은 제품과 오픈소스로 공개합니다.",
+  "heroPrimaryCta": "Collavre 무료로 써보기",
+  "heroSecondaryCta": "전체 제품 보기",
+  "heroStripLabel": "우리가 만든 것",
+
+  "productsHeading": "제품",
+  "statusLive": "Live",
+  "statusBeta": "Beta",
+
+  "product": {
+    "collavre": {
+      "tagline": "문서·태스크·대화를 하나의 트리로.",
+      "body": "한 번만 쓰면 됩니다. 모든 블록이 문서이자 태스크이자 스레드입니다. 진행률은 자동으로 상위로 올라가고, 그 구조를 그대로 AI 에이전트의 컨텍스트로 주입합니다.",
+      "bullet1": "계층형 블록 · 자동 진행률 롤업",
+      "bullet2": "AI 에이전트를 @멘션으로 팀원처럼",
+      "bullet3": "블록마다 실시간 채팅 · 셀프 호스팅",
+      "cta": "collavre.com 열기"
+    },
+    "danvre": {
+      "body": "춤 영상을 따라 추면 카메라가 자세·움직임·타이밍을 채점합니다. 영상과 포즈 데이터는 브라우저 밖으로 나가지 않습니다.",
+      "cta": "따라 춰보기"
+    },
+    "tank": {
+      "body": "3D로 즐기는 배틀십 + 빙고. 시야선 사격과 행·열·대각선 힌트로 숨은 탱크를 추리합니다. 가입 없이 브라우저에서 바로.",
+      "cta": "지금 플레이"
+    },
+    "magic": {
+      "body": "1:1 실시간 마법 대전. 프리즘을 조합해 주문을 만들고, 상대의 다음 수를 읽어 카운터합니다.",
+      "cta": "대전 참여"
+    }
+  },
+
+  "opensourceHeading": "오픈소스",
+  "opensourceSubtitle": "제품을 만들다 떼어낸 도구들.",
+  "opensourceAll": "github.com/vrerv →",
+  "repo": {
+    "rails_mcp_engine": "Rails용 MCP 서버 엔진. Sorbet · RubyLLM · FastMCP.",
+    "md-to-notion": "마크다운 폴더를 Notion 페이지 트리로 업로드.",
+    "openapi-markdown": "OpenAPI 스펙을 읽기 좋은 마크다운 문서로 변환.",
+    "cli-openai-proxy": "Claude Code · Codex 같은 에이전트 CLI를 OpenAI 호환 엔드포인트 하나로. BYOK · 셀프 호스팅."
+  },
+
+  "blogHeading": "엔지니어링 블로그",
+  "blogAll": "전체 글 보기 →",
+
+  "companyHeading": "회사",
+  "companyBody": "VReRV는 IT에서 더 효율적인 방법을 찾습니다. 기술을 더 많은 사람이 쓸 수 있게 만들고, AI가 모두에게 도움이 되는 형태를 찾습니다.",
+  "stat": {
+    "founded": "설립",
+    "repos": "공개 저장소",
+    "services": "운영 서비스"
+  },
+
+  "membershipHeading": "멤버십",
+  "membershipBody": "가입하면 아래 서비스를 쓸 수 있습니다.",
+  "membershipCta": "멤버십 보기",
+  "service": {
+    "drawing": { "name": "드로잉", "desc": "그리고 저장하는 캔버스" },
+    "learn": { "name": "Learn Hangul", "desc": "한글 조합 학습 · TTS" },
+    "mentalcare": { "name": "멘탈케어", "desc": "루틴·챌린지 기록" },
+    "magic-is-coming": { "name": "Magic is coming", "desc": "준비 중" }
+  }
+}
