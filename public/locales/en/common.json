@@ -17,5 +17,18 @@
   "resetPassword": "Reset password",
   "confirmPassword": "Confirm password",
   "passwordConfirmFailed": "Password confirmation doesn't match",
-  "msgEmailSentForResetPassword": "We've sent you a password reset email, check your email."
+  "msgEmailSentForResetPassword": "We've sent you a password reset email, check your email.",
+  "navProducts": "Products",
+  "navOpensource": "Open source",
+  "navCompany": "Company",
+  "toggleTheme": "Toggle theme",
+  "ctaCollavre": "Get started with Collavre",
+  "footerTagline": "How people and AI work together.",
+  "footerProducts": "Products",
+  "footerDevelopers": "Developers",
+  "footerCompany": "Company",
+  "footerLanguage": "Language",
+  "footerAbout": "About",
+  "footerStatus": "Service status",
+  "footerRights": "All rights reserved."
 }

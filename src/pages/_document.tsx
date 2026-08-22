@@ -9,6 +9,14 @@ const MyDocument: FunctionComponent<DocumentProps> = ({ locale }) => {
     <Html lang={locale}>
       <Head>
         <link rel="manifest" href="/manifest.webmanifest" />
+
+        {/* Pretendard renders Korean far better than the system sans fallback.
+            Dynamic subset: only the glyph ranges a page actually uses load. */}
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+        />
         <meta name="theme-color" content="#000000" />
 
         <link rel="icon" type="image/png" sizes="32x32" href="/assets/pwa/favicon-32x32.png" />

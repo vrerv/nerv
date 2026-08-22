@@ -23,12 +23,19 @@ module.exports = {
         14: '3.5rem',
       },
       fontFamily: {
-        sans: ['InterVariable', ...defaultTheme.fontFamily.sans],
+        sans: ['Pretendard Variable', 'Pretendard', 'InterVariable', ...defaultTheme.fontFamily.sans],
+      },
+      letterSpacing: {
+        // Display tracking for headings — tighter than Tailwind's `tighter`.
+        tighter2: '-0.035em',
       },
       colors: {
         primary: colors.blue,
         gray: colors.neutral,
         bg: colors.neutral,
+        // Neutral scale used by the marketing pages. Same ramp as `gray`, named
+        // separately so product/marketing surfaces can move independently.
+        ink: colors.neutral,
       },
       keyframes: {
         "accordion-down": {

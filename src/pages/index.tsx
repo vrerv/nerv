@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 import React, { useEffect } from "react";
 import { Meta } from "@/layouts/Meta";
 import { Main } from "@/templates/Main";
+import { AppConfig } from "@/utils/AppConfig";
 
 const Index = () => {
   const router = useRouter();
@@ -11,7 +12,7 @@ const Index = () => {
   })
 
   return (
-    <Main meta={<Meta title="VReRV" description="Main site" />}>
+    <Main meta={<Meta title={AppConfig.title} description={AppConfig.description} />}>
     </Main>
   );
 };
