@@ -121,8 +121,9 @@ const elementsFromChars = (container, word) => {
 };
 
 const HangulGame = ({ words = DEFAULT_WORDS }) => {
+  const playableWords = Array.isArray(words) && words.length > 0 ? words : DEFAULT_WORDS;
   const [index, setIndex] = useState(0);
-  const [text, setText] = useState(`"${words[index]}" 글자를 만드세요`);
+  const [text, setText] = useState(`"${playableWords[index]}" 글자를 만드세요`);
   const [loading, setLoading] = useState(false);
   const [layout, setLayout] = useState({
     width: typeof window !== 'undefined' ? window.innerWidth : 1024,
@@ -133,7 +134,7 @@ const HangulGame = ({ words = DEFAULT_WORDS }) => {
 
   const handleNext = () => {
     setIndex((currentIndex) =>
-      currentIndex === words.length - 1 ? 0 : currentIndex + 1
+      currentIndex === playableWords.length - 1 ? 0 : currentIndex + 1
     );
   };
 
@@ -148,7 +149,7 @@ const HangulGame = ({ words = DEFAULT_WORDS }) => {
     setLayout((currentLayout) => ({ ...currentLayout, elements }));
     setCurrentWord(word);
 
-    if (word === words[index]) {
+    if (word === playableWords[index]) {
       setText('맞았어요!');
       setLoading(true);
       setTimeout(handleNext, 2000);
@@ -156,26 +157,22 @@ const HangulGame = ({ words = DEFAULT_WORDS }) => {
   };
 
   useEffect(() => {
-    if (index >= words.length) {
+    if (index >= playableWords.length) {
       setIndex(0);
       return;
     }
 
-    if (typeof window !== 'undefined') {
-      window.speechSynthesis?.cancel();
-    }
-
-    if (words[index]) {
+    if (playableWords[index]) {
       setLayout((currentLayout) => ({
         ...currentLayout,
-        elements: elementsFromChars(currentLayout, words[index]),
+        elements: elementsFromChars(currentLayout, playableWords[index]),
       }));
-      setText(`"${words[index]}" 글자를 만드세요`);
+      setText(`"${playableWords[index]}" 글자를 만드세요`);
     }
 
     setCurrentWord('');
     setLoading(false);
-  }, [index, words]);
+  }, [index, playableWords]);
 
   return (
     <>

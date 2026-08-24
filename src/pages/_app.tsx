@@ -12,10 +12,22 @@ import { WithAuth } from "@/components/with-auth";
 import { Provider } from "jotai";
 import { Toaster } from "@/components/ui/toaster"
 
+const PUBLIC_ROUTES = [
+  '/',
+  '/_error',
+  '/hello',
+  '/blog',
+  '/blog/[...slug]',
+  '/hangul-game',
+  '/membership',
+  '/membership/auth/[slug]',
+  '/membership/auth/reset-password',
+];
+
 const MyApp = ({ Component, pageProps }: AppProps) => (
 
   <Provider>
-    <WithAuth whiteList={['/', '/_error', '/hello', '/blog', '/blog/[...slug]', '/hangul-game', '/membership', '/membership/auth/[slug]', '/membership/auth/reset-password']} authPath={'/membership/auth/login'} locale={pageProps.locale}>
+    <WithAuth whiteList={PUBLIC_ROUTES} authPath={'/membership/auth/login'} locale={pageProps.locale}>
       {/* @ts-ignore */}
       <ThemeProvider attribute="class" defaultTheme="system">
         <Component {...pageProps} />

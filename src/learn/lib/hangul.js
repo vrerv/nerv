@@ -64,7 +64,7 @@ const KOR_BOTH_VOLES = ['ㅘ', 'ㅙ', 'ㅚ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅢ']
 export function evalLetters(i, paramElements, word) {
   const syllables = []; // 연결된 음절들을 저장할 리스트
   // x, y 좌표(글자 읽는 방향)를 기준으로 정렬된 elements
-  const elements = paramElements.sort((a, b) => a.x + a.y - b.x - b.y);
+  const elements = [...paramElements].sort((a, b) => a.x + a.y - b.x - b.y);
 
   // 문자 위치 및 크기를 기준으로 두 문자가 연결 가능한지 판단하는 함수
   function canConnect(element1, element2) {
@@ -129,4 +129,3 @@ export function evalLetters(i, paramElements, word) {
 
   return unletterfyAll(syllables);
 }
-

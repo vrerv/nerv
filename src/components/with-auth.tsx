@@ -7,7 +7,7 @@ import { userAtom } from '@/mentalcare/states';
 import { session } from '@/lib/api/auth';
 
 type WithAuthProps = {
-  whiteList: string[];
+  whiteList: readonly string[];
   authPath: string;
   children: JSX.IntrinsicAttributes;
   locale: string;
@@ -16,18 +16,23 @@ type WithAuthProps = {
 export const WithAuth = ({ whiteList, authPath, children, locale }: WithAuthProps) => {
   const router = useRouter();
   const [user] = useAtom(userAtom);
+  const isPublicRoute = whiteList.includes(router.pathname);
 
   const [authenticated, setAuthenticated] = useState(false);
 
   useEffect( () => {
     const pathName = router.pathname;
 
+    if (isPublicRoute) {
+      return;
+    }
+
     console.log("locale", locale)
     // @ts-ignore
     session().then(({ data, error }) => {
 
       console.log("session: data", data, !!data?.session?.user?.id, "error", error)
-      const newAuthenticated = whiteList.includes(pathName) || !!data?.session?.user?.id;
+      const newAuthenticated = !!data?.session?.user?.id;
       // eslint-disable-next-line no-console
       console.log(
         'authenticated',
@@ -46,6 +51,6 @@ export const WithAuth = ({ whiteList, authPath, children, locale }: WithAuthProp
         router.push(authPath, authPath, { locale: locale }).then((r) => r);
       }
     })
-  }, [user, router]);
-  return <>{authenticated && children}</>;
+  }, [authPath, isPublicRoute, locale, router, user, whiteList]);
+  return <>{(isPublicRoute || authenticated) && children}</>;
 };

@@ -3,6 +3,7 @@ import React, { useCallback, useEffect } from 'react';
 const TextToSpeech = ({ text, children }) => {
   const speak = useCallback((value) => {
     if (
+      !value ||
       typeof window === 'undefined' ||
       !window.speechSynthesis ||
       !window.SpeechSynthesisUtterance
@@ -12,6 +13,7 @@ const TextToSpeech = ({ text, children }) => {
 
     const utterance = new window.SpeechSynthesisUtterance(value);
     utterance.lang = 'ko-KR';
+    window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   }, []);
 

@@ -50,4 +50,16 @@ describe('evalLetters function', () => {
 
     expect(word).toEqual("가");
   });
+
+  it('should preserve the element draw order while evaluating letters', () => {
+    const elements = [
+      {id: 'BG', x: 100, y: 10, width: elementSize, height: elementSize, value: '가'},
+      {id: 'INITIAL', x: 10, y: 10, width: elementSize, height: elementSize, value: 'ㄱ'},
+      {id: 'VOWEL', x: 16, y: 10, width: elementSize, height: elementSize, value: 'ㅏ'},
+    ];
+
+    evalLetters(1, elements);
+
+    expect(elements.map(({ id }) => id)).toEqual(['BG', 'INITIAL', 'VOWEL']);
+  });
 });

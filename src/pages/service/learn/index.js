@@ -8,8 +8,9 @@ const LearnService = () => {
 
   useEffect(() => {
     getServiceByName('Learn Hangul').then(({ data }) => {
-      setWords(data?.configuration?.words || DEFAULT_WORDS);
-    });
+      const configuredWords = data?.configuration?.words;
+      setWords(configuredWords?.length ? configuredWords : DEFAULT_WORDS);
+    }).catch(() => setWords(DEFAULT_WORDS));
   }, []);
 
   return <HangulGame words={words} />;
