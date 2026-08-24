@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 
 import { FEATURED_PRODUCT, PRODUCTS } from '@/utils/products';
 
@@ -20,6 +20,14 @@ describe('Main template', () => {
       render(<Main meta={null}>{null}</Main>);
 
       expect(screen.getAllByRole('button', { name: 'toggleTheme' })).toHaveLength(1);
+    });
+
+    it('should not render the Collavre CTA in the header', () => {
+      render(<Main meta={null}>{null}</Main>);
+
+      const header = screen.getByRole('banner');
+
+      expect(within(header).queryByRole('link', { name: 'ctaCollavre' })).not.toBeInTheDocument();
     });
 
     it('should send every Collavre link to the landing page', () => {

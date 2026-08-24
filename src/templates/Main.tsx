@@ -105,12 +105,6 @@ const Main = (props: IMainProps) => {
                 {locale.toUpperCase()}
               </Link>
             ))}
-            <a
-              href={FEATURED_PRODUCT.href}
-              className="inline-flex h-9 items-center rounded-md bg-primary-600 px-3 text-[14px] font-medium text-white no-underline hover:bg-primary-700 sm:px-4"
-            >
-              {t('ctaCollavre')}
-            </a>
           </div>
         </div>
 
