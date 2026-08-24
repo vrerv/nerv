@@ -15,7 +15,7 @@ import { Toaster } from "@/components/ui/toaster"
 const MyApp = ({ Component, pageProps }: AppProps) => (
 
   <Provider>
-    <WithAuth whiteList={['/', '/_error', '/hello', '/blog', '/blog/[...slug]', '/membership', '/membership/auth/[slug]', '/membership/auth/reset-password']} authPath={'/membership/auth/login'} locale={pageProps.locale}>
+    <WithAuth whiteList={['/', '/_error', '/hello', '/blog', '/blog/[...slug]', '/hangul-game', '/membership', '/membership/auth/[slug]', '/membership/auth/reset-password']} authPath={'/membership/auth/login'} locale={pageProps.locale}>
       {/* @ts-ignore */}
       <ThemeProvider attribute="class" defaultTheme="system">
         <Component {...pageProps} />
