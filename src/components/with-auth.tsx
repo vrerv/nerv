@@ -11,9 +11,15 @@ type WithAuthProps = {
   authPath: string;
   children: ReactNode;
   locale?: string;
+  requireAuth?: boolean;
 };
 
-export const WithAuth = ({ authPath, children, locale }: WithAuthProps) => {
+export const WithAuth = ({
+  authPath,
+  children,
+  locale,
+  requireAuth = true,
+}: WithAuthProps) => {
   const router = useRouter();
   const [user] = useAtom(userAtom);
   const [authenticated, setAuthenticated] = useState(false);
@@ -36,7 +42,7 @@ export const WithAuth = ({ authPath, children, locale }: WithAuthProps) => {
 
       if (cancelled) return;
 
-      if (userId) {
+      if (userId || !requireAuth) {
         setAuthenticated(true);
       } else if (!router.pathname.startsWith(authPath)) {
         await router.replace(authPath, authPath, { locale });
@@ -48,7 +54,7 @@ export const WithAuth = ({ authPath, children, locale }: WithAuthProps) => {
     return () => {
       cancelled = true;
     };
-  }, [authPath, locale, router, router.pathname, user.valid]);
+  }, [authPath, locale, requireAuth, router, router.pathname, user.valid]);
 
   return authenticated ? <>{children}</> : null;
 };

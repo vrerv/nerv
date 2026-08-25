@@ -28,8 +28,11 @@ const PUBLIC_ROUTES = [
 ];
 
 const AUTH_PATH = '/membership/auth/login';
+const AUTH_CALLBACK_ROUTES = ['/membership'];
 
 const MyApp = ({ Component, pageProps, router }: AppProps) => {
+  const isPublicRoute = PUBLIC_ROUTES.includes(router.pathname);
+  const initializesAuth = AUTH_CALLBACK_ROUTES.includes(router.pathname);
   const page = (
     <ThemeProvider attribute="class" defaultTheme="system">
       <Component {...pageProps} />
@@ -37,18 +40,19 @@ const MyApp = ({ Component, pageProps, router }: AppProps) => {
       <Toaster />
     </ThemeProvider>
   );
-
-  return (
-    <Provider>
-      {PUBLIC_ROUTES.includes(router.pathname) ? (
-        page
-      ) : (
-        <WithAuth authPath={AUTH_PATH} locale={pageProps.locale}>
-          {page}
-        </WithAuth>
-      )}
-    </Provider>
+  const content = !isPublicRoute || initializesAuth ? (
+    <WithAuth
+      authPath={AUTH_PATH}
+      locale={pageProps.locale}
+      requireAuth={!isPublicRoute}
+    >
+      {page}
+    </WithAuth>
+  ) : (
+    page
   );
+
+  return <Provider>{content}</Provider>;
 };
 
 export default appWithTranslation(MyApp);

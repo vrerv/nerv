@@ -65,4 +65,30 @@ describe('WithAuth', () => {
     });
     expect(screen.queryByText('protected content')).not.toBeInTheDocument();
   });
+
+  it('initializes the session before rendering an auth callback route', async () => {
+    let resolveSession: ((value: unknown) => void) | undefined;
+    const pendingSession = new Promise((resolve) => {
+      resolveSession = resolve;
+    });
+    mockSession.mockReturnValueOnce(pendingSession);
+
+    const callbackProps = {
+      authPath: '/membership/auth/login',
+      locale: 'ko',
+      requireAuth: false,
+    };
+    const callbackGuard = (
+      <WithAuth {...callbackProps}>membership content</WithAuth>
+    );
+
+    render(callbackGuard);
+
+    expect(screen.queryByText('membership content')).not.toBeInTheDocument();
+
+    resolveSession?.({ data: { session: null } });
+
+    expect(await screen.findByText('membership content')).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
 });
