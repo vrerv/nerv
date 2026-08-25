@@ -1,30 +1,20 @@
-import { useRouter } from "next/router";
-import React, { useEffect } from "react";
-import { Meta } from "@/layouts/Meta";
-import { Main } from "@/templates/Main";
-import { AppConfig } from "@/utils/AppConfig";
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
-const Index = () => {
-  const router = useRouter();
+// @ts-ignore - plain JS module
+import { getAllFilesFrontMatter } from '@/lib/mdx';
 
-  useEffect(() => {
-    router.push("/hello")
-  })
+export { Home as default } from './hello';
 
-  return (
-    <Main meta={<Meta title={AppConfig.title} description={AppConfig.description} />}>
-    </Main>
-  );
-};
+const LATEST_POST_COUNT = 3;
 
-export default Index;
+export async function getStaticProps({ locale }: { locale: string }) {
+  const allPosts = await getAllFilesFrontMatter('blog', locale);
 
-export async function getServerSideProps({locale}: {locale: string;}) {
-  // make "HTTP/1.1 307 Temporary Redirect"
   return {
-    redirect: {
-      destination: `/${locale}/hello`,
-      permanent: false,
+    props: {
+      ...(await serverSideTranslations(locale, ['common', 'home'])),
+      posts: allPosts.slice(0, LATEST_POST_COUNT),
+      locale,
     },
-  }
+  };
 }

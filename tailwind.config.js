@@ -23,7 +23,9 @@ module.exports = {
         14: '3.5rem',
       },
       fontFamily: {
-        sans: ['Pretendard Variable', 'Pretendard', 'InterVariable', ...defaultTheme.fontFamily.sans],
+        // Keep first paint on the native UI font stack without a render-blocking
+        // external font stylesheet or a late webfont swap.
+        sans: defaultTheme.fontFamily.sans,
       },
       letterSpacing: {
         // Display tracking for headings — tighter than Tailwind's `tighter`.

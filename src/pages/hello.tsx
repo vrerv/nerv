@@ -1,7 +1,7 @@
-import Link from 'next/link';
+import Head from 'next/head';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 import { Meta } from '@/layouts/Meta';
 import { Main } from '@/templates/Main';
@@ -15,11 +15,7 @@ import {
   REPOS,
 } from '@/utils/products';
 // @ts-ignore - plain JS module
-import { getAllFilesFrontMatter } from '@/lib/mdx';
-// @ts-ignore - plain JS module
 import formatDate from '@/lib/utils/formatDate';
-
-const LATEST_POST_COUNT = 3;
 
 type Post = {
   slug: string;
@@ -36,7 +32,7 @@ type IHelloProps = {
 
 const Arrow = () => <span aria-hidden="true">&rarr;</span>;
 
-const Hello = ({ posts, locale }: IHelloProps) => {
+export const Home = ({ posts, locale }: IHelloProps) => {
   const { t } = useTranslation('home');
 
   const statusLabel = (status: string) =>
@@ -371,16 +367,29 @@ const Hello = ({ posts, locale }: IHelloProps) => {
   );
 };
 
-export default Hello;
+const LegacyHelloRedirect = ({ locale }: Pick<IHelloProps, 'locale'>) => {
+  const destination = locale === 'en' ? '/en/' : '/';
 
-export async function getStaticProps({ locale }: { locale: string }) {
-  const allPosts: Post[] = await getAllFilesFrontMatter('blog', locale);
+  return (
+    <>
+      <Head>
+        <title>VReRV</title>
+        <meta httpEquiv="refresh" content={`0; url=${destination}`} />
+        <link rel="canonical" href={`https://www.vrerv.com${destination}`} />
+      </Head>
+      <main>
+        <p>
+          This page has moved to <a href={destination}>{destination}</a>.
+        </p>
+      </main>
+    </>
+  );
+};
 
+export default LegacyHelloRedirect;
+
+export function getStaticProps({ locale }: { locale: string }) {
   return {
-    props: {
-      ...(await serverSideTranslations(locale, ['common', 'home'])),
-      posts: allPosts.slice(0, LATEST_POST_COUNT),
-      locale,
-    },
+    props: { locale },
   };
 }

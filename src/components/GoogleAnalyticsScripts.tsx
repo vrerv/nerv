@@ -11,8 +11,11 @@ export const GoogleAnalyticsScripts = ({ gaId }: GoogleAnalyticsScriptsProps) =>
     {/* Following nextjs doc - https://nextjs.org/docs/messages/next-script-for-ga */}
     { gaId &&
       <div>
-        <Script src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></Script>
-        <Script id="google-analytics">{`
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+          strategy="lazyOnload"
+        />
+        <Script id="google-analytics" strategy="lazyOnload">{`
         window.dataLayer = window.dataLayer || [];
         function gtag(){window.dataLayer.push(arguments);}
         gtag('js', new Date());

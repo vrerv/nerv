@@ -4,3 +4,15 @@
 
 [build.environment]
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
+
+[[redirects]]
+  from = "/hello"
+  to = "/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/en/hello"
+  to = "/en/"
+  status = 301
+  force = true

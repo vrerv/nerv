@@ -1,5 +1,6 @@
 import { useAtom } from 'jotai';
 import { useRouter } from 'next/router';
+import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 
 import { userAtom } from '@/mentalcare/states';
@@ -7,45 +8,53 @@ import { userAtom } from '@/mentalcare/states';
 import { session } from '@/lib/api/auth';
 
 type WithAuthProps = {
-  whiteList: string[];
   authPath: string;
-  children: JSX.IntrinsicAttributes;
-  locale: string;
+  children: ReactNode;
+  locale?: string;
+  requireAuth?: boolean;
 };
 
-export const WithAuth = ({ whiteList, authPath, children, locale }: WithAuthProps) => {
+export const WithAuth = ({
+  authPath,
+  children,
+  locale,
+  requireAuth = true,
+}: WithAuthProps) => {
   const router = useRouter();
   const [user] = useAtom(userAtom);
-
   const [authenticated, setAuthenticated] = useState(false);
 
-  useEffect( () => {
-    const pathName = router.pathname;
+  useEffect(() => {
+    let cancelled = false;
 
-    console.log("locale", locale)
-    // @ts-ignore
-    session().then(({ data, error }) => {
+    setAuthenticated(false);
 
-      console.log("session: data", data, !!data?.session?.user?.id, "error", error)
-      const newAuthenticated = whiteList.includes(pathName) || !!data?.session?.user?.id;
-      // eslint-disable-next-line no-console
-      console.log(
-        'authenticated',
-        newAuthenticated,
-        'pathName',
-        pathName,
-        router.pathname,
-        router.asPath,
-        user.valid,
-        'whiteList',
-        whiteList,
-        'locale', locale
-      );
-      setAuthenticated(newAuthenticated);
-      if (!newAuthenticated && !pathName.startsWith(authPath)) {
-        router.push(authPath, authPath, { locale: locale }).then((r) => r);
+    const verifySession = async () => {
+      let userId: string | undefined;
+
+      try {
+        // @ts-ignore
+        const { data } = await session();
+        userId = data?.session?.user?.id;
+      } catch {
+        // A failed session request is treated as signed out.
       }
-    })
-  }, [user, router]);
-  return <>{authenticated && children}</>;
+
+      if (cancelled) return;
+
+      if (userId || !requireAuth) {
+        setAuthenticated(true);
+      } else if (!router.pathname.startsWith(authPath)) {
+        await router.replace(authPath, authPath, { locale });
+      }
+    };
+
+    void verifySession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authPath, locale, requireAuth, router, router.pathname, user.valid]);
+
+  return authenticated ? <>{children}</> : null;
 };
