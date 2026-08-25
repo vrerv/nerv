@@ -11,7 +11,7 @@ describe('Main template', () => {
 
       const homeLinks = screen
         .getAllByRole('link')
-        .filter((link) => link.getAttribute('href') === '/hello');
+        .filter((link) => link.getAttribute('href') === '/');
 
       expect(homeLinks.length).toBeGreaterThan(0);
     });

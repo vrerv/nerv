@@ -19,7 +19,7 @@ type IMainProps = {
   children?: ReactNode;
 };
 
-const HOME_PATH = '/hello';
+const HOME_PATH = '/';
 const STATUS_URL = 'https://vrerv.instatus.com/';
 
 // Section anchors live on the home page, so link there explicitly — these have

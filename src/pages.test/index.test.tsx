@@ -1,32 +1,14 @@
-import { render } from '@testing-library/react';
 import Index from '@/pages/index';
-import { useRouter } from "next/router";
+import Hello from '@/pages/hello';
 
-jest.mock("next/router", () => ({
-  useRouter: jest.fn(),
+jest.mock('@/lib/mdx', () => ({
+  getAllFilesFrontMatter: jest.fn(),
 }));
 
 describe('Index page', () => {
-  describe('Render method', () => {
-    it('should call router.push /hello', () => {
-      const push = jest.fn();
-      (useRouter as jest.Mock).mockReturnValue({
-        push,
-        prefetch: jest.fn(),
-        route: '/',
-        pathname: '/',
-        query: {},
-        asPath: '/',
-        events: {
-          on: jest.fn(),
-          off: jest.fn(),
-          emit: jest.fn(),
-        }
-      });
-
-      render(<Index />);
-
-      expect(push).toHaveBeenCalledWith('/hello')
+  describe('Route component', () => {
+    it('should serve the home page directly without a client redirect', () => {
+      expect(Index).toBe(Hello);
     });
   });
 });

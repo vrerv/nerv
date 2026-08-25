@@ -1,29 +1,54 @@
 import '../styles/global.css';
 import '../styles/prism.css';
 
+import dynamic from 'next/dynamic';
 import type { AppProps } from 'next/app';
 import { ThemeProvider } from 'next-themes';
-// @ts-ignore
-import { Mermaid } from '@/components/Mermaid';
-import { GoogleAnalyticsScripts } from "@/components/GoogleAnalyticsScripts";
-import React from "react";
-import { appWithTranslation } from 'next-i18next'
-import { WithAuth } from "@/components/with-auth";
-import { Provider } from "jotai";
-import { Toaster } from "@/components/ui/toaster"
+import { appWithTranslation } from 'next-i18next';
+import { Provider } from 'jotai';
+import React from 'react';
 
-const MyApp = ({ Component, pageProps }: AppProps) => (
+import { GoogleAnalyticsScripts } from '@/components/GoogleAnalyticsScripts';
+import { Toaster } from '@/components/ui/toaster';
 
-  <Provider>
-    <WithAuth whiteList={['/', '/_error', '/hello', '/blog', '/blog/[...slug]', '/membership', '/membership/auth/[slug]', '/membership/auth/reset-password']} authPath={'/membership/auth/login'} locale={pageProps.locale}>
-      {/* @ts-ignore */}
-      <ThemeProvider attribute="class" defaultTheme="system">
-        <Component {...pageProps} />
-        <GoogleAnalyticsScripts gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS} />
-        <Toaster />
-      </ThemeProvider>
-    </WithAuth>
-  </Provider>
+const WithAuth = dynamic(
+  () => import('@/components/with-auth').then(({ WithAuth: AuthGuard }) => AuthGuard),
+  { ssr: false }
 );
+
+const PUBLIC_ROUTES = [
+  '/',
+  '/_error',
+  '/hello',
+  '/blog',
+  '/blog/[...slug]',
+  '/membership',
+  '/membership/auth/[slug]',
+  '/membership/auth/reset-password',
+];
+
+const AUTH_PATH = '/membership/auth/login';
+
+const MyApp = ({ Component, pageProps, router }: AppProps) => {
+  const page = (
+    <ThemeProvider attribute="class" defaultTheme="system">
+      <Component {...pageProps} />
+      <GoogleAnalyticsScripts gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS} />
+      <Toaster />
+    </ThemeProvider>
+  );
+
+  return (
+    <Provider>
+      {PUBLIC_ROUTES.includes(router.pathname) ? (
+        page
+      ) : (
+        <WithAuth authPath={AUTH_PATH} locale={pageProps.locale}>
+          {page}
+        </WithAuth>
+      )}
+    </Provider>
+  );
+};
 
 export default appWithTranslation(MyApp);

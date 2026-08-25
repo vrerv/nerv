@@ -22,6 +22,11 @@ module.exports = withPWA(withBundleAnalyzer({
   i18n: i18n,
   async redirects() {
     return [
+      {
+        source: '/hello',
+        destination: '/',
+        permanent: true,
+      },
       // redirects for old blog posts to update SEO
       {
         source: '/blog/en/using-obs-as-android-emulator-camera_en/',
